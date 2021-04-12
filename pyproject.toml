@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oc_graphenricher"
-version = "0.1.0"
+version = "0.1.1"
 description = "A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and deduplicating entities"
 authors = ["Gabriele Pisciotta <ga.pisciotta@gmail.com>"]
 
