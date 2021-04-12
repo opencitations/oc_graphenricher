@@ -105,24 +105,30 @@ To get a local copy up and running follow these simple steps:
 
 ```sudo apt install python3```
 
-2. clone this repository: 
+2. Install oc_graphenricher via pip:
+```
+pip install oc-graphenricher
+```
+
+### Installing from the sources
+1. Having already installed python, you can also install GraphEnricher via cloning this repository: 
 ```
 git clone https://github.com/opencitations/oc_graphenricher`
 cd ./oc_graphenricher
 ```
-3. install poetry:
+2. install poetry:
 
 ```pip install poetry```
 
-4 install all the dependencies:
+3. install all the dependencies:
 
 ``` poetry install```
 
-5. build the package:
+4. build the package:
 
 ```poetry build```
 
-6. install the package:
+5. install the package:
 
 ```    pip install ./dist/oc_graphenricher-<VERSION>.tar.gz```
 
