@@ -1,0 +1,7 @@
+tqdm==4.47.0
+rdflib==5.0.0
+requests==2.22.0
+networkx==2.5
+oc_ocdm==5.0.0
+python_Levenshtein==0.12.2
+requests_cache==0.6.0

@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "oc_graphenricher"
+version = "0.1.0"
+description = "A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and deduplicating entities"
+authors = ["Gabriele Pisciotta <ga.pisciotta@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+tqdm = "^4.47.0"
+rdflib = "^5.0.0"
+requests = "^2.22.0"
+networkx = "^2.5"
+oc_ocdm = "^5.0.0"
+python_Levenshtein = "^0.12.2"
+requests_cache = "^0.6.0"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
