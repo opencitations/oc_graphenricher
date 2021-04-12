@@ -4,6 +4,26 @@ version = "0.1.0"
 description = "A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and deduplicating entities"
 authors = ["Gabriele Pisciotta <ga.pisciotta@gmail.com>"]
 
+readme = "README.md"
+license = "ISC"
+homepage = "https://opencitations.net"
+repository = "https://github.com/opencitations/oc_graphenricher"
+documentation = "https://oc-graphenricher.readthedocs.io"
+keywords = ["opencitations", "openscience", "enricher", "instancematching"]
+
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: ISC License (ISCL)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Archiving",
+    "Typing :: Typed"
+]
+
 [tool.poetry.dependencies]
 python = "^3.8"
 
