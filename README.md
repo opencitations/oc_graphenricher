@@ -107,7 +107,7 @@ To get a local copy up and running follow these simple steps:
 
 2. clone this repository: 
 ```
-git clone https://github.com/GabrielePisciotta/oc_graphenricher`
+git clone https://github.com/opencitations/oc_graphenricher`
 cd ./oc_graphenricher
 ```
 3. install poetry:
@@ -171,7 +171,7 @@ Distributed under the ISC License. See `LICENSE` for more information.
 
 Gabriele Pisciotta - [@GaPisciotta](https://twitter.com/GaPisciotta) - ga.pisciotta@gmail.com
 
-Project Link: [https://github.com/GabrielePisciotta/oc_graphenricher](https://github.com/GabrielePisciotta/oc_graphenricher)
+Project Link: [https://github.com/opencitations/oc_graphenricher](https://github.com/opencitations/oc_graphenricher)
 
 
 
