@@ -31,7 +31,9 @@ from requests.exceptions import ReadTimeout, ConnectTimeout
 
 
 class QueryInterface(ABC):
-
+    """
+    This class is a sort of interface that you can implement in your own class
+    """
     def __init__(self):
         requests_cache.install_cache('GraphEnricher_cache')
 
@@ -41,6 +43,9 @@ class QueryInterface(ABC):
 
 
 class VIAF(QueryInterface):
+    """
+    This class let you extract the VIAF of an author, by querying the viaf.org API
+    """
     def __init__(self):
         super().__init__()
         self.headers = {
@@ -48,8 +53,15 @@ class VIAF(QueryInterface):
             "Accept": "application/json"}
         self.api_url = 'http://www.viaf.org/viaf/search?local.title+all+"{}"&query=local.names+all+"{}"&sortKeys=holdingscount&recordSchema=BriefVIAF'
 
-    def query(self, given_name, family_name, title):
+    def query(self, given_name: str, family_name: str, title: str):
+        """
+        Having specified the author's names and the title of a paper, extract a VIAF
 
+        :param given_name: author's given name
+        :param family_name: author's family name
+        :param title: paper's title
+        :return: VIAF, if exists, otherwise None
+        """
         try:
             name = f"{given_name} {family_name}".strip()
             query = self.api_url.format(quote(title), quote(name))
@@ -84,6 +96,10 @@ class VIAF(QueryInterface):
 
 
 class WikiData(QueryInterface):
+    """
+    This class let you query WikiData by means of another identifier, in order to check the existance of a related
+    entity on WikiData
+    """
     def __init__(self):
         super().__init__()
         self.headers = {
@@ -103,7 +119,14 @@ class WikiData(QueryInterface):
         self.pmid_property = "P698"
         self.pmcid_property = "P932"
 
-    def query(self, entity, schema):
+    def query(self, entity:str, schema: str):
+        """
+        Method to query WikiData, given the literal of an identifier and its schema
+
+        :param entity: the literal of the given identifier
+        :param schema: the schema of the given identifier
+        :return: Wikidata ID if found, otherwise None
+        """
         if schema == 'doi':
             query = self.base_query.format(property=self.doi_property, literal=entity.upper())
         elif schema == 'issn':
@@ -143,7 +166,9 @@ class WikiData(QueryInterface):
 
 
 class Crossref(QueryInterface):
-
+    """
+    This class let you query Crossref in order to extract DOIs, ISSNs and publishers' IDs
+    """
     def __init__(self,
                  crossref_min_similarity_score=0.95,
                  max_iteration=6,
@@ -151,8 +176,6 @@ class Crossref(QueryInterface):
                  headers={"User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; "
                                         "mailto:contact@opencitations.net)"},
                  timeout=30,
-                 repok=None,
-                 reperr=None,
                  is_json=True):
 
         super().__init__()
@@ -161,8 +184,6 @@ class Crossref(QueryInterface):
         self.sec_to_wait = sec_to_wait
         self.headers = headers
         self.timeout = timeout
-        self.repok = repok
-        self.reperr = reperr
         self.is_json = is_json
         self.crossref_min_similarity_score = crossref_min_similarity_score
         self.__crossref_doi_url = 'https://api.crossref.org/works/'
@@ -171,29 +192,37 @@ class Crossref(QueryInterface):
         self.stoplist = set([line.strip() for line in
                              open(os.path.join(str(__file__).replace("__init__.py", ""), "stopwords-it.txt"))])
 
-    def _cleaning_title(self, title, typ):
+    def _cleaning_title(self, title:str):
 
-        if typ == "oa":
-            n = 6
-        else:
-            n = 4
+        """ Clean a given title, filtering the words according to a stoplist
+        and extracting a subset of the keywords
 
+        :param title: the title string
+        :return: the cleaned title
+        """
+        n = 4
         keywords = [w for w in title.split(" ") if w not in self.stoplist]
         keywords = " ".join(keywords[:n])
-
         return keywords
 
     @staticmethod
-    def _cleaning_name(name_raw):
-
+    def _cleaning_name(name_raw: str):
+        """ Clean the name of an author
+        :param name_raw: the name string
+        :return: the cleaned name
+        """
         name_clean = u"".join([c for c in unicodedata.normalize("NFKD", name_raw) if not unicodedata.combining(c)])
         name_clean = name_clean.lower()
         name_clean = re.sub(r"[^\w\d\s]", "", name_clean)
-
         return name_clean
 
-    def query_journal(self, issn):
+    def query_journal(self, issn: str):
+        """ Query Crossref to get a list of any other ISSN known, related to an entity described by an ISSN to give
+        in input. The list of ISSNs returned will be cleaned from the ISSN already known.
 
+        :param issn: the ISSN of the bibliographic entity
+        :return: a list that contains any other ISSN found, otherwise an empty list
+        """
         query = self.__crossref_journal_url + issn
         try:
             r_cr = requests.get(query, headers=self.headers, timeout=60)
@@ -231,8 +260,11 @@ class Crossref(QueryInterface):
                 solution = self.query_journal(issn)
                 return solution
 
-    def query_publisher(self, doi):
-
+    def query_publisher(self, doi:str):
+        """ Method to extract the identifier of a publisher starting from a given DOI.
+        :param doi: the DOI of the paper
+        :return: a string representing the ID of the publisher, otherwise None
+        """
         url_cr = self.__crossref_doi_url + doi
         try:
             r_cr = requests.get(url_cr, headers=self.headers, timeout=60)
@@ -265,9 +297,15 @@ class Crossref(QueryInterface):
                 solution = self.query_publisher(doi)
                 return solution
 
-    def query(self, fullnames, title, year):
-
-        keywords = self._cleaning_title(title, "cr")
+    def query(self, fullnames: list, title: str, year: str):
+        """
+        Method to extract the DOI, given the names of the authors, the title of the paper and the year of publication
+        :param fullnames: a list composed of a tuple of <name, family_name> (e.g.: [ ("Gabriele", "Pisciotta") ]
+        :param title: the title of the paper
+        :param year: a string that represent the year of publication
+        :return: the DOI found, otherwise None
+        """
+        keywords = self._cleaning_title(title)
         query = f"query.bibliographic={keywords}"
         exist_author = False
         if fullnames is not None:
@@ -374,6 +412,9 @@ class Crossref(QueryInterface):
 
 
 class ORCID(QueryInterface):
+    """
+    This class let you query ORCID in order to extract ORCID IDs
+    """
     def __init__(self,
                  max_iteration=6,
                  sec_to_wait=10,
@@ -390,13 +431,18 @@ class ORCID(QueryInterface):
         self.sec_to_wait = sec_to_wait
         self.headers = headers
         self.timeout = timeout
-        self.repok = repok
-        self.reper = reperr
         self.is_json = is_json
         self.__orcid_api_url = 'https://pub.orcid.org/v2.1/search?q='
         self.__personal_url = "https://pub.orcid.org/v2.1/%s/personal-details"
 
-    def query(self, authors, identifiers):
+    def query(self, authors: list, identifiers: list):
+        """
+        Given a list of authors and a list of identifiers, returns the ORCIDs in the list of authors
+
+        :param authors: a list of tuples in the following form [ (name, family_name, ORCID, ar_object) ]
+        :param identifiers: a list of identifiers of the bibliographic resource
+        :return: the authors list enriched with the ORCID identifier
+        """
         to_return = {}
 
         if len(identifiers) == 0:
@@ -434,10 +480,7 @@ class ORCID(QueryInterface):
 
         return authors_to_return
 
-    def _get_orcid_records(self, identifiers, family_names=[]):
-        if self.repok is not None and self.reper is not None:
-            self.repok.new_article()
-            self.reper.new_article()
+    def _get_orcid_records(self, identifiers: list, family_names: list =[]):
         cur_query = ""
 
         i_counter = 0
@@ -549,6 +592,11 @@ class ORCID(QueryInterface):
         return result
 
     def __get_data(self, get_url):
+        """
+        Method to send requests
+        :param get_url: the URL to query
+        :return: results if found, otherwise None
+        """
         tentative = 0
         error_no_200 = False
         error_read = False

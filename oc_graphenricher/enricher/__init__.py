@@ -21,6 +21,7 @@ import requests_cache
 from oc_ocdm import Storer
 from oc_ocdm.graph import GraphSet
 from oc_ocdm.graph.graph_entity import GraphEntity
+from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
 from oc_ocdm.prov import ProvSet
 from tqdm import tqdm
 from tqdm.contrib import DummyTqdmFile
@@ -29,12 +30,25 @@ from oc_graphenricher.APIs import Crossref, ORCID, VIAF, WikiData
 
 
 class GraphEnricher:
-
+    """
+    The GraphEnricher class is the one responsible to enrich all the entities in a given graph set compliant to
+    the OpenCitations Data Model (OCDM). You have to specify in input the graph set, the output file name of the
+    enriched graph and the provenance file name. It's also possible to specify a debug flag to get more details
+    about the enrichment process.
+    """
     def __init__(self,
                  g_set: GraphSet,
-                 graph_filename="enriched.rdf",
-                 provenance_filename="provenance.rdf",
-                 debug=False):
+                 graph_filename: str = "enriched.rdf",
+                 provenance_filename: str = "provenance.rdf",
+                 debug: bool = False):
+        """
+
+        :param g_set: graph set to be enriched
+        :param graph_filename: file name of the enriched graph set that will be serialized
+        :param provenance_filename: file name of the provenance that will be serialized
+        :param debug: a bool flag to enable richer output
+        """
+        
         requests_cache.install_cache('GraphEnricher_cache')
 
         self.resp_agent = 'https://w3id.org/oc/meta/prov/pa/2'
@@ -71,7 +85,7 @@ class GraphEnricher:
         purpose, you should use the `instancematching` module after that you've enriched the graph set.
         """
         br_enriched_counter = 0
-        with self._std_out_err_redirect_tqdm() as orig_stdout:
+        with self.__std_out_err_redirect_tqdm() as orig_stdout:
 
             progress_bar = tqdm(self.g_set.get_br(), file=orig_stdout, dynamic_ncols=True)
             for br in progress_bar:
@@ -220,10 +234,15 @@ class GraphEnricher:
             prov_storer.store_graphs_in_file(self.provenance_filename, "")
 
 
-    def _add_id(self, entity, literal, schema, by_means_of=None):
-
+    def _add_id(self, entity: BibliographicResource, literal: str, schema: str, by_means_of: str=None):
         """ Method that let you add a new identifier to an entity,
-        having specified olso the schema and optionally the API used"""
+        having specified the literal value, the schema and optionally the API used
+
+        :param entity: a bibliographic resource
+        :param literal: the literal value of the identifier
+        :param schema: the schema of the identifier
+        :param by_means_of: an optional string that let you specify the API used
+        """
 
         old_identifiers = entity.get_identifiers()
 
@@ -264,7 +283,8 @@ class GraphEnricher:
             print("\tNEW : {}".format([x.get_literal_value() for x in entity.get_identifiers()]))
 
     @contextlib.contextmanager
-    def _std_out_err_redirect_tqdm(self):
+    def __std_out_err_redirect_tqdm(self):
+        """ This method is used to print messages with the TQDM progress bar"""
         orig_out_err = sys.stdout, sys.stderr
         try:
             sys.stdout, sys.stderr = map(DummyTqdmFile, orig_out_err)

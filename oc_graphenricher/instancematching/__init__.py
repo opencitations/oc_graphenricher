@@ -26,11 +26,24 @@ from rdflib import URIRef
 
 
 class InstanceMatching:
+    """
+    The InstanceMatching class is the one responsible to deduplicate all the entities in a given graph set compliant to
+    the OpenCitations Data Model (OCDM). You have to specify in input the graph set. It's also possible to specify
+    the output file name of the deduplicated graph, the provenance file name, and a debug flag to get more details
+    about the enrichment process.
+    """
     def __init__(self, g_set: GraphSet,
                  graph_filename="matched.rdf",
                  provenance_filename="provenance.rdf",
                  resp_agent='https://w3id.org/oc/meta/prov/pa/4',
                  debug=False):
+        """
+        :param g_set: input graph set
+        :param graph_filename: file name of the enriched graph set that will be serialized
+        :param provenance_filename: file name of the provenance that will be serialized
+        :param resp_agent: the responsible agent
+        :param debug: a bool flag to enable richer output
+        """
 
         self.g_set = g_set
         self.graph_filename = graph_filename
@@ -161,7 +174,6 @@ class InstanceMatching:
         NB: when two BRs are merged, you'll have the union of their ARs. You could have duplicates if the duplicates
         don't have any ID in common or if the method `instance_matching_ar` wasn't called before.
 
-
         In the end, generate the provenance and commit pending changes in the graph set"""
         merge_graph: nx.Graph = nx.Graph()
 
@@ -288,9 +300,13 @@ class InstanceMatching:
         self.g_set.commit_changes()
 
     @staticmethod
-    def __get_part_of(br):
+    def __get_part_of(br: BibliographicResource):
         """ Given a BR in input (e.g.: a journal article), walk the full 'part-of' chain.
-        Returns a list of BR that are the hierarchy of of containers  (e.g: given an article-> [issue, journal])"""
+        Returns a list of BR that are the hierarchy of of containers  (e.g: given an article-> [issue, journal])
+
+        :param br: a bibliographic resource
+        :returns partofs: a list that contains the BRs of the hierarchy
+        """
         partofs = []
         e = br
         ended = False
@@ -312,12 +328,11 @@ class InstanceMatching:
                 return ar
 
     def __get_association_ar_ra(self):
-        """ Returns the dictionary:
-                key-> RA
-                value-> list of AR
+        """
+        This let you take all the ARs associated to the same RA
 
-            This let you take all the ARs associated to the same RA
-            """
+        :return association: a dictionary having RA as key, and a list of AR as value
+        """
         association = {}
         for ar in self.g_set.get_ar():
             if ar.get_is_held_by() is not None and ar.get_is_held_by() not in association:
@@ -327,12 +342,11 @@ class InstanceMatching:
         return association
 
     def __get_association_ar_br(self):
-        """ Returns the dictionary:
-                key-> AR
-                value-> list of BR
+        """
+        This let you take all the BRs associated to the same AR
 
-            This let you take all the BRs associated to the same AR
-            """
+        :return association: a dictionary having AR as key, and a list of BR as value
+        """
         association = {}
         for br in self.g_set.get_br():
             for ar in br.get_contributors():
