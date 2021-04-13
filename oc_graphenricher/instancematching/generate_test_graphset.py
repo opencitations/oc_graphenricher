@@ -26,7 +26,8 @@ def add_one_author_with_single_id(type, literal):
 
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
-    add_id(sp_author, literal, type, gs)
+
+    add_id(sp, literal, type, gs)
     sp_author.create_author()
     return sp_author
 
@@ -38,9 +39,12 @@ def add_one_author_with_two_id(type, literal):
 
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
-    add_id(sp_author, 'orcid_author_1', 'orcid', gs)
-    add_id(sp_author, literal, type, gs)
+
+    add_id(sp, 'orcid_author_1', 'orcid', gs)
+    add_id(sp, literal, type, gs)
+
     sp_author.create_author()
+
     return sp_author
 
 def add_article():
@@ -64,7 +68,7 @@ def add_br_with_one_author(name):
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
     sp_author.create_author()
-    add_id(sp_author, "orcid1", 'orcid', gs)
+    add_id(sp, "orcid1", 'orcid', gs)
     #####
 
     ####
@@ -76,7 +80,8 @@ def add_br_with_one_author(name):
     sp_pub = gs.add_ar(ra)
     sp_pub.is_held_by(sp)
     sp_pub.create_publisher()
-    add_id(sp_pub, "pub1", 'crossref', gs)
+
+    add_id(sp, "pub1", 'crossref', gs)
     #####
 
     ####

@@ -72,7 +72,7 @@ class GraphEnricher:
         Any new identifier found will be added to the BR.
 
         Then, for each AR related to the BR, get the list of all the identifier already contained and:
-            - If doesn't have an ORCID, it query Crossref to get it
+            - If doesn't have an ORCID, it query ORCID to get it
             - If doesn't have a VIAF, it query VIAF to get it
             - If doesn't have a Wikidata ID, it query Wikidata by means of all the other identifier to get one
             - If the AR is related to a publisher, it query Crossref to get its ID by means of its DOI

@@ -41,7 +41,7 @@ class TestInstanceMatching(TestCase):
         matcher = InstanceMatching(g_set,
                                    graph_filename=self.test_dir + "matched.rdf",
                                    provenance_filename=self.test_dir + "provenance.rdf",
-                                   debug=False)
+                                   debug=True)
         matcher.match()
 
         g = Graph()
@@ -54,17 +54,23 @@ class TestInstanceMatching(TestCase):
                                           enable_validation=False,
                                           resp_agent='https://w3id.org/oc/meta/prov/pa/2')
 
-    def test_ars_merged(self):
-        for ar in self.g_set_new.get_ar():
-            if (str(ar) == 'http://example.com/ar/3' or str(ar) == 'http://example.com/ar/6' or
-                str(ar) == 'http://example.com/ar/4') and len(ar.get_identifiers()) != 0:
-                self.fail()
+    def test_ras_merged(self):
+        ids = set()
+        for ra in self.g_set_new.get_ra():
+            for idd in ra.get_identifiers():
+                newliteral = str(idd.get_scheme()) + str(idd.get_literal_value())
+                if newliteral in ids:
+                    self.fail()
+                else:
+                    ids.add(idd)
+
 
     def test_ids_not_duplicated(self):
         ids = set()
         for idd in self.g_set_new.get_id():
             newliteral = str(idd.get_scheme()) + str(idd.get_literal_value())
             if newliteral != "NoneNone" and newliteral in ids:
+                print("Ahia")
                 self.fail()
             else:
                 ids.add(newliteral)
@@ -107,6 +113,9 @@ class TestInstanceMatching(TestCase):
     def test_brs_have_only_one_list_of_authors(self):
         for br in self.g_set_new.get_br():
             if str(br) == 'http://example.com/br/3' and len(br.get_contributors()) != 2:
+                for ar in br.get_contributors():
+                    print(ar, ar.get_is_held_by())
+                print(f"Contributors len {len(br.get_contributors())}")
                 self.fail()
 
     def test_remove_files(self):

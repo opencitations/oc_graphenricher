@@ -29,8 +29,8 @@ and deduplicating entities.
 This tool is divided in two part: an Enricher component responsible to find new identifiers and adding them to the 
 graph set, and an InstanceMatching component responsible to deduplicate any entity that share the same identifier.
 ### Enricher
-The enricher iterates each BR contained in the graph set.
-For each BR (avoiding issues and journals), get the list of the identifiers already
+The enricher iterates each Bibliographic Resources (BRs) contained in the graph set.
+For each Bibliographic Resources (BRs) (avoiding issues and journals), get the list of the identifiers already
 contained in the graph set and check if it already has a DOI, an ISSN and a Wikidata ID:
 - If an ISSN is specified, it query Crossref to extract other ISSNs
 - If there's no DOI, it query Crossref to get one by means of all the other data extracted
@@ -38,11 +38,11 @@ contained in the graph set and check if it already has a DOI, an ISSN and a Wiki
 
 Any new identifier found will be added to the BR.
   
-Then, for each AR related to the BR, get the list of all the identifier already contained and:
-- If doesn't have an ORCID, it query Crossref to get it
+Then, for each Agent Role (AR) related to the BR, get the list of all the identifier already contained and:
+- If doesn't have an ORCID, it query ORCID to get it
 - If doesn't have a VIAF, it query VIAF to get it
 - If doesn't have a Wikidata ID, it query Wikidata by means of all the other identifier to get one
-- If the AR is related to a publisher, it query Crossref to get its ID by means of its DOI
+- If the Agent Role (AR) is related to a publisher, it query Crossref to get its ID by means of its DOI
 
 Any new identifier found will be added to the AR.
 
@@ -62,32 +62,30 @@ It's possible, anyway, to extend the class QueryInterface to add any other usefu
 
 ### Instance Matching
 The instance matching process is articulated in three sequential step:
-- match the ARs
-- match the BRs
+- match the Responsible Agents (RAs)
+- match the Bibliographic Resources (BRs) 
 - match the IDs
 
-#### Matching the ARs 
-Discover all the ARs that share the same identifier's literal, creating a graph of them.
-Then merge each connected component (cluster of ARs linked by the same identifier) into one.
+#### Matching the Responsible Agents (RAs) 
+Discover all the Responsible Agents (RAs)  that share the same identifier's literal, creating a graph of
+them. Then merge each connected component (cluster of Responsible Agents (RAs)  linked by the same identifier)
+into one.
+For each couple of Responsible Agent (RA) that are going to be merged, substitute the references of the
+Responsible Agent (RA) that will no longer exist, by removing the Responsible Agent (RA)
+from each of its referred Agent Role (AR) and add, instead, the merged one)
 
-For each couple of AR that are going to be merged, substitute the references of the AR that will no longer
-exist, by removing the AR  from each of its referred BR and add, instead, the merged one)
-
-If the RA linked by the AR that will no longer exist is not linked by any other AR, then
-it will be marked as to be deleted, otherwise not.
+If the Responsible Agent (RA) linked by the Agent Role (AR) that will no longer exist is not linked by any
+other Agent Role (AR), then it will be marked as to be deleted, otherwise not.
 
 In the end, generate the provenance and commit pending changes in the graph set
 
-#### Matching the BRs
+#### Matching the Bibliographic Resources (BRs) 
 
-Discover all the BRs that share the same identifier's literal, creating a graph of them.
-Then merge each connected component (cluster of Be RA associated to the Rs linked by the same identifier) into one.
-For each couple of BR that are going to be merged, merge also:
+Discover all the Bibliographic Resources (BRs)  that share the same identifier's literal, creating a graph of them.
+Then merge each connected component (cluster of Be Responsible Agents (RA) associated to the Rs linked by the same identifier) into one.
+For each couple of Bibliographic Resources (BRs) that are going to be merged, merge also:
  - their containers by matching the proper type (issue of BR1 -> issue of BR2)
  - their publisher
-
-NB: when two BRs are merged, you'll have the union of their ARs. You could have duplicates if the duplicates 
-don't have any ID in common or if the method `instance_matching_ar` wasn't called before.
 
 In the end, generate the provenance and commit pending changes in the graph set
 
@@ -132,7 +130,11 @@ cd ./oc_graphenricher
 
 ```    pip install ./dist/oc_graphenricher-<VERSION>.tar.gz```
 
+6. run the tests (from the root of the project):
 
+```
+poetry run test
+```
 
 <!-- USAGE EXAMPLES -->
 ## Usage

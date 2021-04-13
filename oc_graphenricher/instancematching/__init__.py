@@ -13,10 +13,10 @@ OF THIS SOFTWARE.
 
 __author__ = "Gabriele Pisciotta"
 
+import Levenshtein
 import networkx as nx
 from oc_ocdm import Storer
 from oc_ocdm.graph import GraphSet
-from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
 from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
 from oc_ocdm.graph.graph_entity import GraphEntity
@@ -24,14 +24,14 @@ from oc_ocdm.prov import ProvSet
 from rdflib import URIRef
 
 
-
 class InstanceMatching:
     """
-    The InstanceMatching class is the one responsible to deduplicate all the entities in a given graph set compliant to
-    the OpenCitations Data Model (OCDM). You have to specify in input the graph set. It's also possible to specify
-    the output file name of the deduplicated graph, the provenance file name, and a debug flag to get more details
-    about the enrichment process.
+    The InstanceMatching class is the one responsible to deduplicate all the entities (Bibliographic Resources, Agent
+    Roles) in a given graph set compliant to the OpenCitations Data Model (OCDM). You have to specify in input the
+    graph set. It's also possible to specify the output file name of the deduplicated graph, the provenance file name,
+    and a debug flag to get more details about the enrichment process.
     """
+
     def __init__(self, g_set: GraphSet,
                  graph_filename="matched.rdf",
                  provenance_filename="provenance.rdf",
@@ -54,15 +54,15 @@ class InstanceMatching:
 
     def match(self):
         """ Start the matching process that will do, in sequence:
-        - match the ARs
-        - match the BRs
+        - match the Responsible Agents (RAs) 
+        - match the Bibliographic Resources (BRs) 
         - match the IDs
 
         In the end, this process will produce:
             - `matched.rdf` that will contain the graph set specified previously without the duplicates.
             - `provenance.rdf` that will contain the provenance, tracking record of all the changes done.
         """
-        self.instance_matching_ar()
+        self.instance_matching_ra()
         self.instance_matching_br()
         self.instance_matching_ids()
         self.save()
@@ -78,45 +78,39 @@ class InstanceMatching:
         prov_storer = Storer(self.prov, output_format="nquads")
         prov_storer.store_graphs_in_file(self.provenance_filename, "")
 
-    def instance_matching_ar(self):
-        """ Discover all the ARs that share the same identifier's literal, creating a graph of them.
-        Then merge each connected component (cluster of ARs linked by the same identifier) into one.
-        For each couple of AR that are going to be merged, substitute the references of the AR that
-        will no longer exist, by removing the AR from each of its referred BR and add, instead, the merged one)
+    def instance_matching_ra(self):
+        """ Discover all the Responsible Agents (RAs)  that share the same identifier's literal, creating a graph of
+        them. Then merge each connected component (cluster of Responsible Agents (RAs)  linked by the same identifier)
+        into one.
+        For each couple of Responsible Agent (RA) that are going to be merged, substitute the references of the
+        Responsible Agent (RA) that will no longer exist, by removing the Responsible Agent (RA)
+        from each of its referred Agent Role (AR) and add, instead, the merged one)
 
-        If the RA linked by the AR that will no longer exist is not linked by any other AR, then
-        it will be marked as to be deleted, otherwise not.
+        If the Responsible Agent (RA) linked by the Agent Role (AR) that will no longer exist is not linked by any
+        other Agent Role (AR), then it will be marked as to be deleted, otherwise not.
 
         In the end, generate the provenance and commit pending changes in the graph set"""
 
         merge_graph: nx.Graph = nx.Graph()
 
         associated_ar_ra = self.__get_association_ar_ra()
-        associated_ar_br = self.__get_association_ar_br()
         identifiers = {}
+        for ra in self.g_set.get_ra():
+            for i in ra.get_identifiers():
+                if identifiers.get(i.get_scheme()) is None:
+                    identifiers[i.get_scheme()] = {}
 
-        for ar in self.g_set.get_ar():
-            role = ar.get_role_type()
-
-            # Extract Authors and Publishers, with their info and their identifiers
-            if role == GraphEntity.iri_author or role == GraphEntity.iri_publisher:
-                for i in ar.get_identifiers():
-
-                    if identifiers.get(i.get_scheme()) is None:
-                        identifiers[i.get_scheme()] = {}
-
-                    ra_first: ResponsibleAgent = identifiers[i.get_scheme()].get(i.get_literal_value())
-                    if ra_first is None:
-                        identifiers[i.get_scheme()][i.get_literal_value()] = ar
-                    else:
-                        merge_graph.add_edge(ra_first, ar)
-                        if self.debug:
-                            print("[IM-RA] Will merge {} and {} due to {}:{} in common".format(ar.res,
-                                                                                               ra_first.res,
-                                                                                               i.get_scheme().split(
-                                                                                                   "/")[-1],
-                                                                                               i.get_literal_value()))
-
+                ra_first: ResponsibleAgent = identifiers[i.get_scheme()].get(i.get_literal_value())
+                if ra_first is None:
+                    identifiers[i.get_scheme()][i.get_literal_value()] = ra
+                else:
+                    merge_graph.add_edge(ra_first, ra)
+                    if self.debug:
+                        print("[IM-RA] Will merge {} and {} due to {}:{} in common".format(ra.res,
+                                                                                           ra_first.res,
+                                                                                           i.get_scheme().split(
+                                                                                               "/")[-1],
+                                                                                           i.get_literal_value()))
         # Get the connected components of the graph (clusters of "to-be-merged"):
         clusters = sorted(nx.connected_components(merge_graph), key=len, reverse=True)
         print("[IM-RA] N° of clusters: {}".format(len(clusters)))
@@ -129,34 +123,31 @@ class InstanceMatching:
                 clusters_str_list.append(str(k))
             clusters_str_list.sort()
 
-            entity_first: AgentRole = clusters_dict[clusters_str_list[0]]
+            entity_first: ResponsibleAgent = clusters_dict[clusters_str_list[0]]
             if self.debug:
                 print("[IM-RA] Merging cluster #{}, with {} entities".format(n, len(cluster)))
 
             for entity in clusters_str_list[1:]:
                 other_entity = clusters_dict[entity]
                 if self.debug:
-                    print(f"\tMerging agent role {entity} in agent role {entity_first}")
+                    print(f"\tMerging responsible agent {entity} in responsible agent {entity_first}")
 
                 # The other entity has been merged in the first entity: at this point we need to change all the
-                # occurrencies of the other entity with the first entity by looking at all the BRs referred
-                if associated_ar_br.get(other_entity) is not None:
-                    for other_br in associated_ar_br.get(other_entity):
-                        other_br.remove_contributor(other_entity)
-                        other_br.has_contributor(entity_first)
-                        if self.debug:
-                            print(f"\tUnset {other_entity} as contributor of {other_br}")
-                            print(f"\tSet {entity_first} as contributor of {other_br} ")
-
-                ra_to_delete = entity_first.get_is_held_by()
+                # occurrencies of the other entity with the first entity by looking at all the ARs referred
+                #
+                # in the scenario in which:
+                #  AR1-> RA1
+                #  AR2-> RA2
+                #  and RA1==RA2
+                #
+                #  so we do RA1.merge(RA2) and in the end set AR2-> RA1
                 entity_first.merge(other_entity)
-
-                if entity_first.get_is_held_by() != ra_to_delete:
-                    if associated_ar_ra.get(ra_to_delete) is not None and len(associated_ar_ra.get(ra_to_delete)) == 1:
-                        ra_to_delete.mark_as_to_be_deleted()
-                    else:
-                        other_entity.mark_as_to_be_deleted(False)
-                other_entity.mark_as_to_be_deleted()
+                if associated_ar_ra.get(other_entity) is not None:
+                    for ar in associated_ar_ra.get(other_entity):
+                        ar.is_held_by(entity_first)
+                        if self.debug:
+                            print(f"\tUnset {other_entity} as helded by of {ar}")
+                            print(f"\tSet {entity_first} as helded by of {ar} ")
 
                 if self.debug:
                     print(f"\tMarking to delete: {other_entity} ")
@@ -165,14 +156,13 @@ class InstanceMatching:
         self.g_set.commit_changes()
 
     def instance_matching_br(self):
-        """ Discover all the BRs that share the same identifier's literal, creating a graph of them.
-        Then merge each connected component (cluster of Be RA associated to the Rs linked by the same identifier) into one.
-        For each couple of BR that are going to be merged, merge also:
+        """ Discover all the Bibliographic Resources (BRs)  that share the same identifier's literal, creating a
+        graph of them.
+        Then merge each connected component (cluster of Be Responsible Agent (RA) associated to the Rs linked by
+        the same identifier) into one.
+        For each couple of Bibliographic Resource (BR) that are going to be merged, merge also:
             - their containers by matching the proper type (issue of BR1 -> issue of BR2)
             - their publisher
-
-        NB: when two BRs are merged, you'll have the union of their ARs. You could have duplicates if the duplicates
-        don't have any ID in common or if the method `instance_matching_ar` wasn't called before.
 
         In the end, generate the provenance and commit pending changes in the graph set"""
         merge_graph: nx.Graph = nx.Graph()
@@ -241,33 +231,87 @@ class InstanceMatching:
                     if self.debug:
                         print(f"\tMerging publisher {publisher} in publisher {publisher_first}")
 
-                # Merge authors
-                # contributors = entity.get_contributors()
-
-                # Merging the two BRs
+                # Merging the two Bibliographic Resources (BRs)
                 entity_first.merge(entity)
 
-                # for ar in contributors:
-                #    print(f"\tRemoving agent role {ar} from bibliographic resource {entity_first}")
-                #    entity_first.remove_contributor(ar)
+                # Get only the authors
+                contributors = entity_first.get_contributors()
+                contributors = [x for x in contributors if x.get_role_type() != GraphEntity.iri_publisher]
+
+                # Dedupe by same RA
+                already_merged = set()
+                for ar1 in contributors:
+                    for ar2 in contributors:
+                        if ar1 != ar2:
+
+                            # If these two Agent Role (AR) point to the same RA, merge
+                            # (we assume that the deduplication of the RA's been done)
+                            if ar1.get_is_held_by() is not None and ar2.get_is_held_by() is not None and \
+                                    ar1.get_is_held_by() == ar2.get_is_held_by():
+                                if self.debug:
+                                    print(f"\tRemoving agent role {ar2} from bibliographic resource {entity_first}"
+                                          f" due to the fact that's been merged to because they point"
+                                          f" both to the same Responsible Agent (RA)")
+                                ar1.merge(ar2)
+                                entity_first.remove_contributor(ar2)
+                                already_merged.add(ar1)
+                                already_merged.add(ar2)
+
+
+                contributors = set(entity_first.get_contributors())
+                contributors = [x for x in contributors if x.get_role_type() != GraphEntity.iri_publisher]
+                contributors = set(contributors)
+                contributors = contributors.difference(already_merged)
+
+                for ar1 in contributors:
+                    ar1_name = ""
+                    if ar1.get_is_held_by() is not None and ar1.get_is_held_by().get_given_name() is not None:
+                        ar1_name += ar1.get_is_held_by().get_given_name() + " "
+
+                    if ar1.get_is_held_by() is not None and ar1.get_is_held_by().get_family_name() is not None:
+                        ar1_name += ar1.get_is_held_by().get_family_name()
+
+                    for ar2 in contributors:
+                        ar2_name = ""
+                        if ar2.get_is_held_by() is not None and ar2.get_is_held_by().get_given_name() is not None:
+                            ar2_name += ar2.get_is_held_by().get_given_name() + " "
+
+                        if ar2.get_is_held_by() is not None and ar2.get_is_held_by().get_family_name() is not None:
+                            ar2_name += ar2.get_is_held_by().get_family_name()
+
+                        name_similarity = 1 - Levenshtein.distance(ar1_name, ar2_name)
+                        if ar1_name != "" and ar2_name != "" and name_similarity > 0.95:
+                            ar1.merge(ar2)
+                            entity_first.remove_contributor(ar2)
+                            if self.debug:
+                                print(f"\tRemoving agent role {ar2} from bibliographic resource {entity_first}"
+                                      f" due to the fact that's been merged to {ar1} because their name"
+                                      f" has a similarity of {name_similarity} > 0.95")
+
+                # Remove contributors without RA
+                contributors = set(entity_first.get_contributors())
+                contributors = [x for x in contributors if x.get_role_type() != GraphEntity.iri_publisher]
+
+                for ar in contributors:
+                    if ar.get_is_held_by() is None:
+                        entity_first.remove_contributor(ar)
 
         self.prov.generate_provenance()
         self.g_set.commit_changes()
 
     def instance_matching_ids(self):
-        """ Discover all the IDs that share the same schema and literal, then merge all into one
-         and substitute all the reference with the merged one.
+        """ Discover all the IDs related to Bibliographic Resources (BRs) and Responsible Agents (RAs) that share the
+         same schema and literal, then merge all into one and substitute all the reference with the merged one.
          In the end, generate the provenance and commit pending changes in the graph set"""
         literal_to_id = {}
         id_to_resources = {}
 
         entities = list(self.g_set.get_br())
-        entities.extend(list(self.g_set.get_ar()))
+        entities.extend(list(self.g_set.get_ra()))
 
         for e in entities:
             for i in e.get_identifiers():
                 literal = i.get_scheme() + "#" + i.get_literal_value()
-
                 if i in id_to_resources:
                     id_to_resources[i].append(e)
                 else:
@@ -282,7 +326,8 @@ class InstanceMatching:
             if len(v) > 1:
                 schema, lit = k.split('#')
                 print(
-                    f"[IM-ID] Will merge {len(v) - 1} identifiers into {v[0]} because they share literal {lit} and schema {schema}")
+                    f"[IM-ID] Will merge {len(v) - 1} identifiers into {v[0]} because "
+                    f"they share literal {lit} and schema {schema}")
                 for actual_id in v[1:]:
                     v[0].merge(actual_id)
                     entities = id_to_resources[actual_id]
@@ -301,11 +346,12 @@ class InstanceMatching:
 
     @staticmethod
     def __get_part_of(br: BibliographicResource):
-        """ Given a BR in input (e.g.: a journal article), walk the full 'part-of' chain.
-        Returns a list of BR that are the hierarchy of of containers  (e.g: given an article-> [issue, journal])
+        """ Given a Bibliographic Resource (BR) in input (e.g.: a journal article), walk the full 'part-of' chain.
+        Returns a list of Bibliographic Resource (BR) that are the hierarchy of of containers
+        (e.g: given an article-> [issue, journal])
 
-        :param br: a bibliographic resource
-        :returns partofs: a list that contains the BRs of the hierarchy
+        :param br: a Bibliographic Resource (BR)
+        :returns partofs: a list that contains the Bibliographic Resources (BRs) of the hierarchy
         """
         partofs = []
         e = br
@@ -321,7 +367,7 @@ class InstanceMatching:
 
     @staticmethod
     def __get_publisher(br):
-        """ Given a BR as input, returns the AR that is a publisher """
+        """ Given a Bibliographic Resource (BR) as input, returns the Agent Role (AR) that is a publisher """
         for ar in br.get_contributors():
             role = ar.get_role_type()
             if role == GraphEntity.iri_publisher:
@@ -331,7 +377,7 @@ class InstanceMatching:
         """
         This let you take all the ARs associated to the same RA
 
-        :return association: a dictionary having RA as key, and a list of AR as value
+        :return association: a dictionary having Responsible Agent (RA) as key, and a list of Agent Role (AR) as value
         """
         association = {}
         for ar in self.g_set.get_ar():
@@ -343,9 +389,9 @@ class InstanceMatching:
 
     def __get_association_ar_br(self):
         """
-        This let you take all the BRs associated to the same AR
+        This let you take all the Bibliographic Resources (BRs)  associated to the same AR
 
-        :return association: a dictionary having AR as key, and a list of BR as value
+        :return association: a dictionary having Agent Role (AR) as key, and a list of Bibliographic Resource (BR) as value
         """
         association = {}
         for br in self.g_set.get_br():
