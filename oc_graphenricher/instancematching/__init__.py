@@ -64,7 +64,7 @@ class InstanceMatching:
         """
         self.instance_matching_ra()
         self.instance_matching_br()
-        self.instance_matching_ids()
+        self.instance_matching_id()
         self.save()
         return self.g_set
 
@@ -299,7 +299,7 @@ class InstanceMatching:
         self.prov.generate_provenance()
         self.g_set.commit_changes()
 
-    def instance_matching_ids(self):
+    def instance_matching_id(self):
         """ Discover all the IDs related to Bibliographic Resources (BRs) and Responsible Agents (RAs) that share the
          same schema and literal, then merge all into one and substitute all the reference with the merged one.
          In the end, generate the provenance and commit pending changes in the graph set"""

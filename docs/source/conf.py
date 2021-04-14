@@ -83,6 +83,6 @@ html_context = {
 
   'github_repo': 'oc_graphenricher',
 
-  'github_version': 'master/docs/source/',
+  'github_version': 'main/docs/source/',
 
 }

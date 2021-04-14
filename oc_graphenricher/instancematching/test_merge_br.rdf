@@ -1,0 +1,160 @@
+<http://example.com/id/12> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/orcid> .
+<http://example.com/ra/4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Agent> .
+<http://example.com/ra/6> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/14> .
+<http://example.com/id/10> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/doi> .
+<http://example.com/ar/6> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/pro/RoleInTime> .
+<http://example.com/ra/5> <http://xmlns.com/foaf/0.1/givenName> "othername" .
+<http://example.com/br/3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/Expression> .
+<http://example.com/br/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/Expression> .
+<http://example.com/br/4> <http://www.w3.org/2000/01/rdf-schema#label> "bibliographic resource 4 [br/4]" .
+<http://example.com/ra/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Agent> .
+<http://example.com/br/5> <http://purl.org/dc/terms/title> "BR6_issue" .
+<http://example.com/ra/1> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/1> .
+<http://example.com/br/2> <http://www.w3.org/2000/01/rdf-schema#label> "bibliographic resource 2 [br/2]" .
+<http://example.com/id/2> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 2 [id/2]" .
+<http://example.com/ra/4> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/7> .
+<http://example.com/id/8> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "br6_volume_doi" .
+<http://example.com/br/2> <http://purl.org/vocab/frbr/core#partOf> <http://example.com/br/1> .
+<http://example.com/id/14> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/viaf> .
+<http://example.com/ar/4> <http://www.w3.org/2000/01/rdf-schema#label> "agent role 4 [ar/4]" .
+<http://example.com/br/1> <http://www.w3.org/2000/01/rdf-schema#label> "bibliographic resource 1 [br/1]" .
+<http://example.com/id/2> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/crossref> .
+<http://example.com/id/1> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "orcid1" .
+<http://example.com/id/6> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/orcid> .
+<http://example.com/id/4> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/doi> .
+<http://example.com/ar/2> <http://purl.org/spar/pro/withRole> <http://purl.org/spar/pro/publisher> .
+<http://example.com/ar/1> <http://purl.org/spar/pro/isHeldBy> <http://example.com/ra/1> .
+<http://example.com/ra/5> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/12> .
+<http://example.com/id/9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/id/8> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/br/5> <http://purl.org/vocab/frbr/core#partOf> <http://example.com/br/4> .
+<http://example.com/ra/5> <http://www.w3.org/2000/01/rdf-schema#label> "responsible agent 5 [ra/5]" .
+<http://example.com/br/1> <http://prismstandard.org/namespaces/basic/2.0/publicationDate> "2020"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.com/br/6> <http://purl.org/spar/pro/isDocumentContextFor> <http://example.com/ar/3> .
+<http://example.com/br/4> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/8> .
+<http://example.com/ra/3> <http://xmlns.com/foaf/0.1/familyName> "familyname" .
+<http://example.com/br/6> <http://prismstandard.org/namespaces/basic/2.0/publicationDate> "2020-05-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/id/5> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "doi1" .
+<http://example.com/br/2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/Expression> .
+<http://example.com/id/2> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "pub1" .
+<http://example.com/ar/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/pro/RoleInTime> .
+<http://example.com/id/10> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/br/7> <http://purl.org/dc/terms/title> "test" .
+<http://example.com/id/7> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 7 [id/7]" .
+<http://example.com/id/12> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 12 [id/12]" .
+<http://example.com/id/9> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "br6_issue_doi" .
+<http://example.com/br/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/JournalVolume> .
+<http://example.com/br/2> <http://purl.org/dc/terms/title> "BR3_issue" .
+<http://example.com/ar/5> <http://purl.org/spar/pro/withRole> <http://purl.org/spar/pro/author> .
+<http://example.com/ra/2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Agent> .
+<http://example.com/br/4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/JournalVolume> .
+<http://example.com/br/6> <http://purl.org/spar/pro/isDocumentContextFor> <http://example.com/ar/4> .
+<http://example.com/id/12> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/ra/5> <http://xmlns.com/foaf/0.1/familyName> "otherfamilyname" .
+<http://example.com/id/6> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "orcid1" .
+<http://example.com/id/14> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/br/7> <http://purl.org/spar/pro/isDocumentContextFor> <http://example.com/ar/5> .
+<http://example.com/br/3> <http://purl.org/dc/terms/title> "BR3" .
+<http://example.com/ar/4> <http://purl.org/spar/pro/withRole> <http://purl.org/spar/pro/publisher> .
+<http://example.com/id/14> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "viaf1" .
+<http://example.com/ra/1> <http://www.w3.org/2000/01/rdf-schema#label> "responsible agent 1 [ra/1]" .
+<http://example.com/ar/5> <http://purl.org/spar/pro/isHeldBy> <http://example.com/ra/5> .
+<http://example.com/ar/5> <http://www.w3.org/2000/01/rdf-schema#label> "agent role 5 [ar/5]" .
+<http://example.com/id/6> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 6 [id/6]" .
+<http://example.com/br/6> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/Expression> .
+<http://example.com/ra/3> <http://xmlns.com/foaf/0.1/givenName> "name" .
+<http://example.com/id/13> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "orcid_author_1" .
+<http://example.com/ra/2> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/2> .
+<http://example.com/id/14> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 14 [id/14]" .
+<http://example.com/br/6> <http://purl.org/dc/terms/title> "BR6" .
+<http://example.com/id/8> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 8 [id/8]" .
+<http://example.com/ra/3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Agent> .
+<http://example.com/br/4> <http://purl.org/dc/terms/title> "BR6_volume" .
+<http://example.com/id/7> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "pub1" .
+<http://example.com/id/10> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 10 [id/10]" .
+<http://example.com/ar/2> <http://www.w3.org/2000/01/rdf-schema#label> "agent role 2 [ar/2]" .
+<http://example.com/id/13> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/orcid> .
+<http://example.com/br/3> <http://purl.org/spar/pro/isDocumentContextFor> <http://example.com/ar/2> .
+<http://example.com/ra/1> <http://xmlns.com/foaf/0.1/givenName> "name" .
+<http://example.com/ar/4> <http://purl.org/spar/pro/isHeldBy> <http://example.com/ra/4> .
+<http://example.com/br/4> <http://prismstandard.org/namespaces/basic/2.0/publicationDate> "2020"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.com/id/5> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 5 [id/5]" .
+<http://example.com/ra/4> <http://xmlns.com/foaf/0.1/name> "Pub" .
+<http://example.com/ra/2> <http://xmlns.com/foaf/0.1/name> "Pub" .
+<http://example.com/ar/2> <http://purl.org/spar/pro/isHeldBy> <http://example.com/ra/2> .
+<http://example.com/ar/6> <http://www.w3.org/2000/01/rdf-schema#label> "agent role 6 [ar/6]" .
+<http://example.com/br/7> <http://www.w3.org/2000/01/rdf-schema#label> "bibliographic resource 7 [br/7]" .
+<http://example.com/br/6> <http://www.w3.org/2000/01/rdf-schema#label> "bibliographic resource 6 [br/6]" .
+<http://example.com/id/11> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 11 [id/11]" .
+<http://example.com/id/5> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/doi> .
+<http://example.com/br/3> <http://www.w3.org/2000/01/rdf-schema#label> "bibliographic resource 3 [br/3]" .
+<http://example.com/id/4> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "br3_issue_doi" .
+<http://example.com/id/13> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/ra/5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Agent> .
+<http://example.com/id/7> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/id/2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/id/3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/id/3> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/doi> .
+<http://example.com/br/7> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/JournalArticle> .
+<http://example.com/ar/6> <http://purl.org/spar/pro/withRole> <http://purl.org/spar/pro/author> .
+<http://example.com/id/5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/id/8> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/doi> .
+<http://example.com/ra/6> <http://www.w3.org/2000/01/rdf-schema#label> "responsible agent 6 [ra/6]" .
+<http://example.com/br/3> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/5> .
+<http://example.com/br/5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/JournalIssue> .
+<http://example.com/ar/1> <http://www.w3.org/2000/01/rdf-schema#label> "agent role 1 [ar/1]" .
+<http://example.com/ar/3> <http://www.w3.org/2000/01/rdf-schema#label> "agent role 3 [ar/3]" .
+<http://example.com/id/4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/id/11> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/doi> .
+<http://example.com/ar/1> <http://purl.org/spar/pro/withRole> <http://purl.org/spar/pro/author> .
+<http://example.com/ra/4> <http://www.w3.org/2000/01/rdf-schema#label> "responsible agent 4 [ra/4]" .
+<http://example.com/ar/3> <http://purl.org/spar/pro/withRole> <http://purl.org/spar/pro/author> .
+<http://example.com/br/3> <http://purl.org/spar/pro/isDocumentContextFor> <http://example.com/ar/1> .
+<http://example.com/id/3> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 3 [id/3]" .
+<http://example.com/id/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/br/3> <http://purl.org/vocab/frbr/core#partOf> <http://example.com/br/2> .
+<http://example.com/id/3> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "br3_volume_doi" .
+<http://example.com/br/6> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/10> .
+<http://example.com/ra/2> <http://www.w3.org/2000/01/rdf-schema#label> "responsible agent 2 [ra/2]" .
+<http://example.com/br/3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/JournalArticle> .
+<http://example.com/br/1> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/3> .
+<http://example.com/id/7> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/crossref> .
+<http://example.com/br/5> <http://www.w3.org/2000/01/rdf-schema#label> "bibliographic resource 5 [br/5]" .
+<http://example.com/id/1> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 1 [id/1]" .
+<http://example.com/ra/6> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Agent> .
+<http://example.com/br/4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/Expression> .
+<http://example.com/ra/6> <http://xmlns.com/foaf/0.1/familyName> "otherfamilyname" .
+<http://example.com/br/2> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/4> .
+<http://example.com/ar/3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/pro/RoleInTime> .
+<http://example.com/ra/1> <http://xmlns.com/foaf/0.1/familyName> "familyname" .
+<http://example.com/ra/3> <http://www.w3.org/2000/01/rdf-schema#label> "responsible agent 3 [ra/3]" .
+<http://example.com/id/11> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "doi4" .
+<http://example.com/ar/4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/pro/RoleInTime> .
+<http://example.com/id/9> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/doi> .
+<http://example.com/br/1> <http://purl.org/dc/terms/title> "BR3_volume" .
+<http://example.com/br/3> <http://prismstandard.org/namespaces/basic/2.0/publicationDate> "2020-05-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/br/7> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/11> .
+<http://example.com/br/5> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/9> .
+<http://example.com/ra/3> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/6> .
+<http://example.com/id/13> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 13 [id/13]" .
+<http://example.com/br/7> <http://purl.org/spar/pro/isDocumentContextFor> <http://example.com/ar/6> .
+<http://example.com/id/10> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "doi1" .
+<http://example.com/br/7> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/Expression> .
+<http://example.com/ra/6> <http://xmlns.com/foaf/0.1/givenName> "othername" .
+<http://example.com/ar/3> <http://purl.org/spar/pro/isHeldBy> <http://example.com/ra/3> .
+<http://example.com/ar/5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/pro/RoleInTime> .
+<http://example.com/ar/2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/pro/RoleInTime> .
+<http://example.com/id/1> <http://purl.org/spar/datacite/usesIdentifierScheme> <http://purl.org/spar/datacite/orcid> .
+<http://example.com/id/12> <http://www.essepuntato.it/2010/06/literalreification/hasLiteralValue> "orcid_author_1" .
+<http://example.com/br/6> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/JournalArticle> .
+<http://example.com/id/4> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 4 [id/4]" .
+<http://example.com/ra/6> <http://purl.org/spar/datacite/hasIdentifier> <http://example.com/id/13> .
+<http://example.com/id/11> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/ar/6> <http://purl.org/spar/pro/isHeldBy> <http://example.com/ra/6> .
+<http://example.com/id/9> <http://www.w3.org/2000/01/rdf-schema#label> "identifier 9 [id/9]" .
+<http://example.com/br/5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/Expression> .
+<http://example.com/id/6> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/datacite/Identifier> .
+<http://example.com/br/6> <http://purl.org/vocab/frbr/core#partOf> <http://example.com/br/5> .
+<http://example.com/br/7> <http://prismstandard.org/namespaces/basic/2.0/publicationDate> "2020-05-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/br/2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/spar/fabio/JournalIssue> .
+

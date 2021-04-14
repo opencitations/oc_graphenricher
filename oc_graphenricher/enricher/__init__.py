@@ -16,17 +16,18 @@ __author__ = "Gabriele Pisciotta"
 import contextlib
 import datetime
 import sys
+from typing import Union
 
 import requests_cache
+from oc_graphenricher.APIs import Crossref, ORCID, VIAF, WikiData
 from oc_ocdm import Storer
 from oc_ocdm.graph import GraphSet
-from oc_ocdm.graph.graph_entity import GraphEntity
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
+from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
+from oc_ocdm.graph.graph_entity import GraphEntity
 from oc_ocdm.prov import ProvSet
 from tqdm import tqdm
 from tqdm.contrib import DummyTqdmFile
-
-from oc_graphenricher.APIs import Crossref, ORCID, VIAF, WikiData
 
 
 class GraphEnricher:
@@ -36,6 +37,7 @@ class GraphEnricher:
     enriched graph and the provenance file name. It's also possible to specify a debug flag to get more details
     about the enrichment process.
     """
+
     def __init__(self,
                  g_set: GraphSet,
                  graph_filename: str = "enriched.rdf",
@@ -48,7 +50,7 @@ class GraphEnricher:
         :param provenance_filename: file name of the provenance that will be serialized
         :param debug: a bool flag to enable richer output
         """
-        
+
         requests_cache.install_cache('GraphEnricher_cache')
 
         self.resp_agent = 'https://w3id.org/oc/meta/prov/pa/2'
@@ -62,7 +64,7 @@ class GraphEnricher:
         self.graph_filename = graph_filename
         self.provenance_filename = provenance_filename
 
-    def enrich(self):
+    def enrich(self) -> None:
         """ The enricher iterates each BR contained in the graph set.
         For each BR (avoiding issues and journals), get the list of the identifiers already
         contained in the graph set and check if it already has a DOI, an ISSN and a Wikidata ID:
@@ -93,8 +95,8 @@ class GraphEnricher:
 
                 br_enriched_counter += 1
                 if br_enriched_counter % 50 == 0 and not self.debug:
-                        gs_storer = Storer(self.g_set, output_format="nt11")
-                        gs_storer.store_graphs_in_file("enriched.rdf", "")
+                    gs_storer = Storer(self.g_set, output_format="nt11")
+                    gs_storer.store_graphs_in_file("enriched.rdf", "")
 
                 if GraphEntity.iri_journal_issue in br.get_types() or GraphEntity.iri_journal_volume in br.get_types():
                     continue
@@ -113,7 +115,6 @@ class GraphEnricher:
                         has_issn.append(i.get_literal_value())
                     elif i.get_scheme() == br.iri_wikidata:
                         has_wikidata.append(i.get_literal_value())
-
 
                 # Get more ISSNs
                 if len(has_issn) > 0:
@@ -154,23 +155,23 @@ class GraphEnricher:
                         elif i.get_scheme() == br.iri_pmcid:
                             res = self.wikidata_api.query(i.get_literal_value(), 'pmcid')
                             if res:
-                                self._add_id(br, res, 'wikidata',  "its PMCID {}".format(i.get_literal_value()))
+                                self._add_id(br, res, 'wikidata', "its PMCID {}".format(i.get_literal_value()))
                                 break
 
                 for ar in br.get_contributors():
                     role = ar.get_role_type()
-                    a = ar.get_is_held_by()
+                    ra: ResponsibleAgent = ar.get_is_held_by()
 
                     # Extract Authors, with their info and their identifiers
                     if role == GraphEntity.iri_author:
-                        authors.append((a.get_given_name(), a.get_family_name(), a))
+                        authors.append((ra.get_given_name(), ra.get_family_name(), ra))
                         has_orcid = None
                         has_viaf = None
                         has_wikidata = None
 
                         author_id_found = []
-                        for author_identifier in a.get_identifiers():
-                            if a.iri_orcid in author_identifier.get_scheme():
+                        for author_identifier in ra.get_identifiers():
+                            if ra.iri_orcid in author_identifier.get_scheme():
                                 has_orcid = author_identifier.get_literal_value()
                                 author_id_found.append((author_identifier.get_literal_value(), 'orcid'))
                             if br.iri_viaf in author_identifier.get_scheme():
@@ -184,21 +185,21 @@ class GraphEnricher:
 
                         if has_orcid is None:
                             res = self.orcid_api.query(
-                                [(a.get_given_name(), a.get_family_name(), None, a)],
+                                [(ra.get_given_name(), ra.get_family_name(), None, ra)],
                                 [(x.get_scheme(), x.get_literal_value()) for x in br.get_identifiers()])
 
                             if res:
                                 for res_tuple in res:
-                                    given_name, family_name, orcid, a = res_tuple
+                                    given_name, family_name, orcid, ra = res_tuple
                                     if orcid is not None:
-                                        self._add_id(a, orcid, 'orcid')
+                                        self._add_id(ra, orcid, 'orcid')
                                         author_id_found.append((orcid, 'orcid'))
 
                         # Search for the author on Wikidata
                         if not has_viaf:
-                            viaf = self.viaf_api.query(a.get_given_name(), a.get_family_name(), br.get_title())
+                            viaf = self.viaf_api.query(ra.get_given_name(), ra.get_family_name(), br.get_title())
                             if viaf is not None:
-                                self._add_id(a, viaf, 'viaf')
+                                self._add_id(ra, viaf, 'viaf')
                                 author_id_found.append((viaf, 'viaf'))
 
                         # If the author doesn't have Wikidata ID
@@ -206,14 +207,13 @@ class GraphEnricher:
                             for literal, scheme in author_id_found:
                                 res = self.wikidata_api.query(literal, scheme)
                                 if res:
-                                    self._add_id(a, res, 'wikidata', "its {} {}".format(scheme.upper(), literal))
+                                    self._add_id(ra, res, 'wikidata', "its {} {}".format(scheme.upper(), literal))
                                     break
-
 
                     # Get Publisher and its identifiers
                     if role == GraphEntity.iri_publisher:
 
-                        for publisher_id in a.get_identifiers():
+                        for publisher_id in ra.get_identifiers():
                             if GraphEntity.iri_crossref in publisher_id.get_scheme():
                                 publisher_has_crossrefid = True
                                 break
@@ -222,7 +222,7 @@ class GraphEnricher:
                         if not publisher_has_crossrefid and has_doi is not None:
                             crossref_id = self.crossref_api.query_publisher(has_doi)
                             if crossref_id:
-                                self._add_id(a, crossref_id, 'crossref')
+                                self._add_id(ra, crossref_id, 'crossref')
 
             gs_storer = Storer(self.g_set, output_format="nt11")
             gs_storer.store_graphs_in_file(self.graph_filename, "")
@@ -233,12 +233,12 @@ class GraphEnricher:
             prov_storer = Storer(prov, output_format="nquads")
             prov_storer.store_graphs_in_file(self.provenance_filename, "")
 
-
-    def _add_id(self, entity: BibliographicResource, literal: str, schema: str, by_means_of: str=None):
+    def _add_id(self, entity: Union[BibliographicResource, ResponsibleAgent], literal: str, schema: str,
+                by_means_of: str = None) -> None:
         """ Method that let you add a new identifier to an entity,
         having specified the literal value, the schema and optionally the API used
 
-        :param entity: a bibliographic resource
+        :param entity: a bibliographic resource or an agent role
         :param literal: the literal value of the identifier
         :param schema: the schema of the identifier
         :param by_means_of: an optional string that let you specify the API used
@@ -274,7 +274,8 @@ class GraphEnricher:
         if self.debug:
 
             # To pretty print it with tqdm's write()
-            to_print = "[{}] FOUND {}: {}".format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'), schema, literal)
+            to_print = "[{}] FOUND {}: {}".format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'), schema,
+                                                  literal)
             if by_means_of is not None:
                 to_print += ", by means of {}".format(by_means_of)
 

@@ -11,6 +11,9 @@ AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 OF THIS SOFTWARE.
 """
 
+"""
+This is an internal script that let us create a specific RDF graph to test the functionality of the instance matching module
+"""
 __author__ = "Gabriele Pisciotta"
 
 from oc_ocdm import Storer
@@ -19,7 +22,6 @@ from oc_ocdm.support import create_date
 
 
 def add_one_author_with_single_id(type, literal):
-
     sp = gs.add_ra(ra)
     sp.has_given_name("othername")
     sp.has_family_name("otherfamilyname")
@@ -31,8 +33,8 @@ def add_one_author_with_single_id(type, literal):
     sp_author.create_author()
     return sp_author
 
-def add_one_author_with_two_id(type, literal):
 
+def add_one_author_with_two_id(type, literal):
     sp = gs.add_ra(ra)
     sp.has_given_name("othername")
     sp.has_family_name("otherfamilyname")
@@ -47,6 +49,7 @@ def add_one_author_with_two_id(type, literal):
 
     return sp_author
 
+
 def add_article():
     my_paper = gs.add_br(ra)
     my_paper.has_title("test")
@@ -56,6 +59,7 @@ def add_article():
     add_id(my_paper, 'doi4', 'doi', gs)
     my_paper.create_journal_article()
     return my_paper
+
 
 def add_br_with_one_author(name):
     ####
@@ -88,17 +92,17 @@ def add_br_with_one_author(name):
     # volume
     ####
     my_volume = gs.add_br(ra)
-    my_volume.has_title(name+"_volume")
+    my_volume.has_title(name + "_volume")
     my_volume.has_pub_date("2020")
-    add_id(my_volume, name+'_volume_doi','doi', gs)
+    add_id(my_volume, name + '_volume_doi', 'doi', gs)
     my_volume.create_volume()
 
     ####
     # issue
     ####
     my_issue = gs.add_br(ra)
-    my_issue.has_title(name+"_issue")
-    add_id(my_issue, name+'_issue_doi','doi', gs)
+    my_issue.has_title(name + "_issue")
+    add_id(my_issue, name + '_issue_doi', 'doi', gs)
     my_issue.is_part_of(my_volume)
     my_issue.create_issue()
 
@@ -117,8 +121,8 @@ def add_br_with_one_author(name):
     my_paper.create_journal_article()
     #####
 
-def add_id(entity, literal, schema, g_set):
 
+def add_id(entity, literal, schema, g_set):
     new_id = g_set.add_id("http://responsible_agent/")
     if schema == 'issn':
         new_id.create_issn(literal)
