@@ -208,6 +208,7 @@ class Crossref(QueryInterface):
     @staticmethod
     def _cleaning_name(name_raw: str):
         """ Clean the name of an author
+
         :param name_raw: the name string
         :return: the cleaned name
         """
@@ -262,6 +263,7 @@ class Crossref(QueryInterface):
 
     def query_publisher(self, doi:str):
         """ Method to extract the identifier of a publisher starting from a given DOI.
+
         :param doi: the DOI of the paper
         :return: a string representing the ID of the publisher, otherwise None
         """
@@ -300,6 +302,7 @@ class Crossref(QueryInterface):
     def query(self, fullnames: list, title: str, year: str):
         """
         Method to extract the DOI, given the names of the authors, the title of the paper and the year of publication
+
         :param fullnames: a list composed of a tuple of <name, family_name> (e.g.: [ ("Gabriele", "Pisciotta") ]
         :param title: the title of the paper
         :param year: a string that represent the year of publication
@@ -594,6 +597,7 @@ class ORCID(QueryInterface):
     def __get_data(self, get_url):
         """
         Method to send requests
+
         :param get_url: the URL to query
         :return: results if found, otherwise None
         """

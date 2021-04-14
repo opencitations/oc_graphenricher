@@ -38,6 +38,7 @@ class InstanceMatching:
                  resp_agent='https://w3id.org/oc/meta/prov/pa/4',
                  debug=False):
         """
+
         :param g_set: input graph set
         :param graph_filename: file name of the enriched graph set that will be serialized
         :param provenance_filename: file name of the provenance that will be serialized
@@ -351,7 +352,7 @@ class InstanceMatching:
         (e.g: given an article-> [issue, journal])
 
         :param br: a Bibliographic Resource (BR)
-        :returns partofs: a list that contains the Bibliographic Resources (BRs) of the hierarchy
+        :return partofs: a list that contains the Bibliographic Resources (BRs) of the hierarchy
         """
         partofs = []
         e = br
