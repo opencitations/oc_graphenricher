@@ -5,11 +5,13 @@
 
 Welcome to oc_graphenricher's documentation!
 ============================================
+A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and deduplicating entities.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   modules/modules
 
 
 Indices and tables
