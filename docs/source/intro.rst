@@ -6,14 +6,10 @@ and deduplicating entities.
 
 You can use integrate this package in your own python program or use it from the CLI.
 
-
-
 License
 ########
 
 Distributed under the ISC License. See `LICENSE` for more information.
-
-
 
 Contact
 ########
