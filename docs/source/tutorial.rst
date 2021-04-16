@@ -1,8 +1,7 @@
 Usage
 ============================================
 It's supposed to accept only graph set objects. To create one:
-
-.. code-block::
+.. code-block:: python
     g = Graph()
     g = g.parse('../data/test_dump.ttl', format='nt11')
 
@@ -13,8 +12,7 @@ It's supposed to accept only graph set objects. To create one:
 Enrichment
 ########
 At this point, to run the enrichment phase:
-
-.. code-block::
+.. code-block:: python
     from oc_graphenricher.enricher import Enricher
 
     enricher = GraphEnricher(g_set)
@@ -27,8 +25,7 @@ Deduplication
 ########
 Then, having serialized the enriched graph set, and having read it again as the
 `g_set` object, to run the deduplication step do:
-
-.. code-block::
+.. code-block:: python
     from oc_graphenricher.instancematching import InstanceMatching
 
     matcher = InstanceMatching(g_set)
@@ -44,7 +41,7 @@ The match method will run sequentially:
 If you need to, you can also deduplicate one of those independently of each other.
 
 To deduplicate Responsible Agents (RAs):
-.. code-block::
+.. code-block:: python
     from oc_graphenricher.instancematching import InstanceMatching
 
     matcher = InstanceMatching(g_set)
@@ -53,8 +50,7 @@ To deduplicate Responsible Agents (RAs):
 
 
 To deduplicate Bibliographic Resources (BRs):
-
-.. code-block::
+.. code-block:: python
     from oc_graphenricher.instancematching import InstanceMatching
 
     matcher = InstanceMatching(g_set)
@@ -63,8 +59,7 @@ To deduplicate Bibliographic Resources (BRs):
 
 
 To deduplicate Identifiers (IDs):
-
-.. code-block::
+.. code-block:: python
     from oc_graphenricher.instancematching import InstanceMatching
 
     matcher = InstanceMatching(g_set)

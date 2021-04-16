@@ -19,12 +19,14 @@ Contact
 ########
 
 Gabriele Pisciotta - ga.pisciotta@gmail.com
+
+
 Project Link: https://github.com/opencitations/oc_graphenricher
 
 
 
 Acknowledgements
-==================
+########
 
 This project has been developed as part of the
 Wikipedia Citations in Wikidata research project, under the supervision of prof. Silvio Peroni.
