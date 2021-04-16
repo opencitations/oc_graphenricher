@@ -4,6 +4,7 @@ The OC GraphEnricher is supposed to accept only graph set objects.
 To create one:
 
     .. code-block:: python
+
         from oc_ocdm.reader import Reader
         from oc_ocdm.graph import GraphSet
         from rdflib import Graph
@@ -20,6 +21,7 @@ Enrichment
 At this point, to run the enrichment phase:
 
     .. code-block:: python
+
         from oc_graphenricher.enricher import Enricher
 
         enricher = GraphEnricher(g_set)
@@ -34,6 +36,7 @@ Then, having serialized the enriched graph set, and having read it again as the
 `g_set` object, to run the deduplication step do:
 
     .. code-block:: python
+
         from oc_graphenricher.instancematching import InstanceMatching
 
         matcher = InstanceMatching(g_set)
@@ -50,6 +53,7 @@ If you need to, you can also deduplicate one of those independently of each othe
 To deduplicate Responsible Agents (RAs):
 
     .. code-block:: python
+
         from oc_graphenricher.instancematching import InstanceMatching
 
         matcher = InstanceMatching(g_set)
@@ -60,6 +64,7 @@ To deduplicate Responsible Agents (RAs):
 To deduplicate Bibliographic Resources (BRs):
 
     .. code-block:: python
+
         from oc_graphenricher.instancematching import InstanceMatching
 
         matcher = InstanceMatching(g_set)
@@ -70,6 +75,7 @@ To deduplicate Bibliographic Resources (BRs):
 To deduplicate Identifiers (IDs):
 
     .. code-block:: python
+
         from oc_graphenricher.instancematching import InstanceMatching
 
         matcher = InstanceMatching(g_set)
