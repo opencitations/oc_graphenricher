@@ -13,6 +13,11 @@ A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and
 
    modules/modules
 
+-----------
+Readme File
+-----------
+
+.. mdinclude:: ../../README.md
 
 Indices and tables
 ==================
