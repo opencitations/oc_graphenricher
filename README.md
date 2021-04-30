@@ -38,13 +38,13 @@ contained in the graph set and check if it already has a DOI, an ISSN and a Wiki
 
 Any new identifier found will be added to the Bibliographic Resource (BR).
   
-Then, for each Agent Role (AR) related to the Bibliographic Resource (BR), get the list of all the identifier already contained and:
+Then, for each Agent Role (AR) related to the Bibliographic Resource (BR), get the list of all the identifier already contained in its linked Responsible Agent (RA) and:
 - If doesn't have an ORCID, it query ORCID to get it
 - If doesn't have a VIAF, it query VIAF to get it
 - If doesn't have a Wikidata ID, it query Wikidata by means of all the other identifier to get one
-- If the Agent Role (AR) is related to a publisher, it query Crossref to get its ID by means of its DOI
+- If the Responsible Agent (RA) is related to a publisher, it query Crossref to get its ID by means of its DOI
 
-Any new identifier found will be added to the AR.
+Any new identifier found will be added to the RA related to the AR.
 
 In the end it will store a new graph set and its provenance.
 
