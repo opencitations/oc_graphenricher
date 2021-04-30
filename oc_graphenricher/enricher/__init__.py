@@ -42,12 +42,14 @@ class GraphEnricher:
                  g_set: GraphSet,
                  graph_filename: str = "enriched.rdf",
                  provenance_filename: str = "provenance.rdf",
+                 info_dir: str = "",
                  debug: bool = False):
         """
 
         :param g_set: graph set to be enriched
         :param graph_filename: file name of the enriched graph set that will be serialized
         :param provenance_filename: file name of the provenance that will be serialized
+        :param info_dir: the path to the counters directory
         :param debug: a bool flag to enable richer output
         """
 
@@ -63,6 +65,7 @@ class GraphEnricher:
         self.new_id_found = 0
         self.graph_filename = graph_filename
         self.provenance_filename = provenance_filename
+        self.info_dir = info_dir
 
     def enrich(self) -> None:
         """ The enricher iterates each BR contained in the graph set.
@@ -227,7 +230,7 @@ class GraphEnricher:
             gs_storer = Storer(self.g_set, output_format="nt11")
             gs_storer.store_graphs_in_file(self.graph_filename, "")
 
-            prov = ProvSet(self.g_set, self.resp_agent)
+            prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=self.info_dir)
             prov.generate_provenance()
 
             prov_storer = Storer(prov, output_format="nquads")

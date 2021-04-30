@@ -35,14 +35,14 @@ class InstanceMatching:
     def __init__(self, g_set: GraphSet,
                  graph_filename="matched.rdf",
                  provenance_filename="provenance.rdf",
-                 resp_agent='https://w3id.org/oc/meta/prov/pa/4',
+                 info_dir: str = "",
                  debug=False):
         """
 
         :param g_set: input graph set
         :param graph_filename: file name of the enriched graph set that will be serialized
         :param provenance_filename: file name of the provenance that will be serialized
-        :param resp_agent: the responsible agent
+        :param info_dir: the path to the counters directory
         :param debug: a bool flag to enable richer output
         """
 
@@ -50,8 +50,7 @@ class InstanceMatching:
         self.graph_filename = graph_filename
         self.provenance_filename = provenance_filename
         self.debug = debug
-        self.resp_agent = resp_agent
-        self.prov = ProvSet(self.g_set, self.resp_agent)
+        self.prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=info_dir)
 
     def match(self):
         """ Start the matching process that will do, in sequence:
@@ -211,7 +210,7 @@ class InstanceMatching:
 
                 # Merge containers
                 partofs = self.__get_part_of(entity)
-                p1: BibliographicResource;
+                p1: BibliographicResource
                 p2: BibliographicResource
                 for p1 in entity_first_partofs:
                     p1types = p1.get_types()
@@ -257,7 +256,6 @@ class InstanceMatching:
                                 entity_first.remove_contributor(ar2)
                                 already_merged.add(ar1)
                                 already_merged.add(ar2)
-
 
                 contributors = set(entity_first.get_contributors())
                 contributors = [x for x in contributors if x.get_role_type() != GraphEntity.iri_publisher]
