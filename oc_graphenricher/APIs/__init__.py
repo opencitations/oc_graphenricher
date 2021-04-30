@@ -119,7 +119,7 @@ class WikiData(QueryInterface):
         self.pmid_property = "P698"
         self.pmcid_property = "P932"
 
-    def query(self, entity:str, schema: str):
+    def query(self, entity: str, schema: str):
         """
         Method to query WikiData, given the literal of an identifier and its schema
 
@@ -189,10 +189,11 @@ class Crossref(QueryInterface):
         self.__crossref_doi_url = 'https://api.crossref.org/works/'
         self.__crossref_entry_url = 'https://api.crossref.org/works?query.bibliographic='
         self.__crossref_journal_url = 'https://api.crossref.org/journals/'
-        self.stoplist = set([line.strip() for line in
-                             open(os.path.join(str(__file__).replace("__init__.py", ""), "stopwords-it.txt"))])
+        with open(os.path.join(str(__file__).replace("__init__.py", ""), "stopwords-it.txt"),
+                  'rt', encoding='utf-8') as f:
+            self.stoplist = set([line.strip() for line in f])
 
-    def _cleaning_title(self, title:str):
+    def _cleaning_title(self, title: str):
 
         """ Clean a given title, filtering the words according to a stoplist
         and extracting a subset of the keywords
