@@ -91,7 +91,7 @@ In the end, generate the provenance and commit pending changes in the graph set
 #### Matching the Bibliographic Resources (BRs) 
 
 Discover all the Bibliographic Resources (BRs)  that share the same identifier's literal, creating a graph of them.
-Then merge each connected component (cluster of Be Responsible Agents (RA) associated to the Rs linked by the same identifier) into one.
+Then merge each connected component (cluster of Bibliographi Resources (BR) linked by the same identifier) into one.
 For each couple of Bibliographic Resources (BRs) that are going to be merged, merge also:
  - their containers by matching the proper type (issue of BR1 -> issue of BR2)
  - their publisher
