@@ -43,7 +43,8 @@ class GraphEnricher:
                  graph_filename: str = "enriched.rdf",
                  provenance_filename: str = "provenance.rdf",
                  info_dir: str = "",
-                 debug: bool = False):
+                 debug: bool = False,
+                 serialize_in_the_middle: bool = False):
         """
 
         :param g_set: graph set to be enriched
@@ -51,6 +52,8 @@ class GraphEnricher:
         :param provenance_filename: file name of the provenance that will be serialized
         :param info_dir: the path to the counters directory
         :param debug: a bool flag to enable richer output
+        :param serialize_in_the_middle: a bool flag to enable the serialization each 50 Bibliographic Resources (BRs)
+        processed (the resulting file will be always overwritten, this may slow the whole process)
         """
 
         requests_cache.install_cache('GraphEnricher_cache')
@@ -66,6 +69,7 @@ class GraphEnricher:
         self.graph_filename = graph_filename
         self.provenance_filename = provenance_filename
         self.info_dir = info_dir
+        self.serialize_in_the_middle = serialize_in_the_middle
 
     def enrich(self) -> None:
         """ The enricher iterates each BR contained in the graph set.
@@ -97,9 +101,9 @@ class GraphEnricher:
                 progress_bar.set_description(desc=f"New ID found: {self.new_id_found}")
 
                 br_enriched_counter += 1
-                if br_enriched_counter % 50 == 0 and not self.debug:
+                if br_enriched_counter % 50 == 0 and self.serialize_in_the_middle:
                     gs_storer = Storer(self.g_set, output_format="nt11")
-                    gs_storer.store_graphs_in_file("enriched.rdf", "")
+                    gs_storer.store_graphs_in_file(self.graph_filename, "")
 
                 if GraphEntity.iri_journal_issue in br.get_types() or GraphEntity.iri_journal_volume in br.get_types():
                     continue
