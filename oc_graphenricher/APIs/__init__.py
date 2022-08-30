@@ -220,7 +220,7 @@ class Crossref(QueryInterface):
 
     def query_journal(self, issn: str):
         """ Query Crossref to get a list of any other ISSN known, related to an entity described by an ISSN to give
-        in input. The list of ISSNs returned will be cleaned from the ISSN already known.
+        in input. The list of ISSNs retur will be cleaned from the ISSN already known.
 
         :param issn: the ISSN of the bibliographic entity
         :return: a list that contains any other ISSN found, otherwise an empty list
@@ -458,7 +458,7 @@ class ORCID(QueryInterface):
         if records is not None:
 
             for orcid_id in self.__dict_get(records, ["result", "orcid-identifier", "path"]):
-                personal_details = self.__get_data(self.__personal_url % orcid_id)
+                personal_details = self.__get_data(self.__personal_url % orcid_id.upper())
 
                 if personal_details is not None:
                     given_name = self.__dict_get(personal_details, ["name", "given-names", "value"])
@@ -469,11 +469,11 @@ class ORCID(QueryInterface):
 
                             if to_return.get((a[0], a[1])) is None and a[1] is not None and family_name is not None:
                                 if a[1].lower() in family_name:
-                                    to_return[(a[0], a[1])] = orcid_id
+                                    to_return[(a[0], a[1])] = orcid_id.upper()
 
                                     if a[0] is not None and given_name is not None:
                                         if a[0].lower() in given_name:
-                                            to_return[(a[0], a[1])] = orcid_id
+                                            to_return[(a[0], a[1])] = orcid_id.upper()
 
         authors_to_return = []
         for a in authors:
