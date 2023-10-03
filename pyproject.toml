@@ -1,49 +1,22 @@
 [tool.poetry]
-name = "oc_graphenricher"
+name = "oc-graphenricher"
 version = "0.2.4"
 description = "A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and deduplicating entities"
 authors = ["Gabriele Pisciotta <ga.pisciotta@gmail.com>"]
-
-readme = "README.md"
 license = "ISC"
-homepage = "https://opencitations.net"
-repository = "https://github.com/opencitations/oc_graphenricher"
-documentation = "https://oc-graphenricher.readthedocs.io"
-keywords = ["opencitations", "openscience", "enricher", "instancematching"]
-
-classifiers = [
-    "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: ISC License (ISCL)",
-    "Natural Language :: English",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Topic :: Database",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Archiving",
-    "Typing :: Typed"
-]
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-levenshtein = "^0.22.0"
-chardet = "^5.2.0"
+tqdm = "4.47.0"
+requests = "2.22.0"
+networkx = "2.5"
 oc-ocdm = "7.3.1"
-
-[tool.poetry.dev-dependencies]
-pytest = "^5.2"
-tqdm = "^4.47.0"
-rdflib = "^6.0.0"
-requests = "^2.22.0"
-networkx = "^2.5"
-oc_ocdm = "^7.0.0"
-python_Levenshtein = "^0.12.2"
-requests_cache = "^0.6.0"
+python-levenshtein = "0.12.2"
+requests-cache = "0.6.0"
+rdflib = "6.3.2"
 
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-test = 'scripts:test'
