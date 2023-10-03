@@ -19,9 +19,8 @@ import subprocess
 
 def test():
     """
-    Run all unittests. Equivalent to:
-    `poetry run python -u -m unittest discover`
+    Run all unittests using poetry's python interpreter.
     """
     subprocess.run(
-        ['python', '-u', '-m', 'unittest', 'discover']
+        ['poetry', 'run', 'python', '-u', '-m', 'unittest', 'discover', '-s', 'oc_graphenricher', '-p', 'test_*.py']
     )
