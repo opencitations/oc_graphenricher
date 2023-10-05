@@ -19,7 +19,7 @@ import sys
 from typing import Union
 
 import requests_cache
-from oc_graphenricher.APIs import Crossref, ORCID, VIAF, WikiData
+from oc_graphenricher.APIs import Crossref, ORCID, VIAF, WikiData, OpenAlex
 from oc_ocdm import Storer
 from oc_ocdm.graph import GraphSet
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
@@ -63,6 +63,7 @@ class GraphEnricher:
         self.orcid_api = ORCID()
         self.viaf_api = VIAF()
         self.wikidata_api = WikiData()
+        self.openalex_api = OpenAlex()
         self.g_set = g_set
         self.debug = debug
         self.new_id_found = 0
@@ -115,6 +116,7 @@ class GraphEnricher:
                 has_doi = None
                 has_issn = []
                 has_wikidata = []
+                has_openalex = None
                 for i in br.get_identifiers():
                     if i.get_scheme() == br.iri_doi:
                         has_doi = i.get_literal_value()
@@ -122,6 +124,8 @@ class GraphEnricher:
                         has_issn.append(i.get_literal_value())
                     elif i.get_scheme() == br.iri_wikidata:
                         has_wikidata.append(i.get_literal_value())
+                    elif i.get_scheme() == br.iri_openalex:
+                        has_openalex = i.get_literal_value()
 
                 # Get more ISSNs
                 if len(has_issn) > 0:
@@ -164,6 +168,38 @@ class GraphEnricher:
                             if res:
                                 self._add_id(br, res, 'wikidata', "its PMCID {}".format(i.get_literal_value()))
                                 break
+
+                # If it hasn't an OpenAlex ID, extract br's identifiers and search those IDs in OpenAlex
+                if has_openalex is None:
+                    possible_openalex_id = dict()
+                    if has_issn:
+                        for i in br.get_identifiers():
+                            if i.get_scheme() == br.iri_issn:
+                                res = self.openalex_api.query(i.get_literal_value(), 'issn')
+                                if res:
+                                    possible_openalex_id[res] = f"its ISSN {i.get_literal_value()}"
+                    elif has_doi:
+                        for i in br.get_identifiers():
+                            if i.get_scheme() == br.iri_doi:
+                                res = self.openalex_api.query(i.get_literal_value(), 'doi')
+                                if res:
+                                    possible_openalex_id[res] = f"its DOI {i.get_literal_value()}"
+                    else:
+                        for i in br.get_identifiers():
+                            if i.get_scheme() == br.iri_pmid:
+                                res = self.openalex_api.query(i.get_literal_value(), 'pmid')
+                                if res:
+                                    possible_openalex_id[res] = f"its PMID {i.get_literal_value()}"
+                            if i.get_scheme() == br.iri_pmcid:
+                                res = self.openalex_api.query(i.get_literal_value(), 'pmcid')
+                                if res:
+                                    possible_openalex_id[res] = f"its PMCID {i.get_literal_value()}"
+
+                    possible_openalex_id = list(possible_openalex_id.items())
+                    if len(possible_openalex_id) == 1:
+                        to_add = possible_openalex_id[0][0]  # the literal value of the OpenAlex ID
+                        by_means_of = possible_openalex_id[0][1]  # the ID used to find the OpenAlex ID
+                        self._add_id(br, to_add, 'openalex', by_means_of)
 
                 for ar in br.get_contributors():
                     role = ar.get_role_type()
@@ -275,6 +311,8 @@ class GraphEnricher:
             new_id.create_crossref(literal)
         elif schema == 'wikidata':
             new_id.create_wikidata(literal)
+        elif schema == 'openalex':
+            new_id.create_openalex(literal)
 
         entity.has_identifier(new_id)
 
