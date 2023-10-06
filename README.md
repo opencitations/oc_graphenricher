@@ -229,7 +229,20 @@ Distributed under the ISC License. See `LICENSE` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Gabriele Pisciotta - [@GaPisciotta](https://twitter.com/GaPisciotta) - ga.pisciotta@gmail.com
+#### Current maintainers of the repository
+
+- Arcangelo Massari - [@arcangelo7](https://github.com/arcangelo7) - arcangelo.massari@unibo.it
+- Arianna Moretti - [@ariannamorettj](https://github.com/ariannamorettj) - arianna.moretti4@unibo.it
+- Elia Rizzetto - [@eliarizzetto](https://github.com/eliarizzetto) - elia.rizzetto@studio.unibo.it
+- Silvio Peroni - [@essepuntato](https://github.com/essepuntato) - silvio.peroni@unibo.it
+
+
+#### Author of the repository and original code:
+- Gabriele Pisciotta - [@GaPisciotta](https://twitter.com/GaPisciotta) - ga.pisciotta@gmail.com
+
+
+
+
 
 Project Link: [https://github.com/opencitations/oc_graphenricher](https://github.com/opencitations/oc_graphenricher)
 
