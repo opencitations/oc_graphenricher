@@ -677,16 +677,20 @@ class OpenAlex(QueryInterface):
 
             try:
                 r = resp.json()
-                if len(r['results']) > 1 or not r['results']:
+                if len(r['results']) > 1 or not r['results']:  # discard results if ID is linked to multiple OpenAlexIDs
                     return None
                 else:
-                    return r['results'][0]['id']
+                    return r['results'][0]['id'].replace('https://openalex.org/', '')
 
             except Exception as ex1:
                 if hdrs["content-type"] == 'text/plain' or hdrs["content-type"] == 'text/html':
                     r = resp.text
                     if "503" in r:
                         time.sleep(5.0)
+                        solution = self.query(entity, schema)
+                        return solution
+                    elif "429" in r:  # only handles per-second rate limit (not daily rate limit)
+                        time.sleep(0.2)
                         solution = self.query(entity, schema)
                         return solution
                     else:

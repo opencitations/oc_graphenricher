@@ -79,6 +79,7 @@ class GraphEnricher:
             - If an ISSN is specified, it query Crossref to extract other ISSNs.
             - If there's no DOI, it query Crossref to get one by means of all the other data extracted
             - If there's no Wikidata ID, it query Wikidata to get one by means of all the other identifiers
+            - If there's no OpenAlex ID, it queries OpenAlex to get one by means of other identifiers available
         Any new identifier found will be added to the BR.
 
         Then, for each AR related to the BR, get the list of all the identifier already contained and:
@@ -197,8 +198,8 @@ class GraphEnricher:
 
                     possible_openalex_id = list(possible_openalex_id.items())
                     if len(possible_openalex_id) == 1:
-                        to_add = possible_openalex_id[0][0]  # the literal value of the OpenAlex ID
-                        by_means_of = possible_openalex_id[0][1]  # the ID used to find the OpenAlex ID
+                        to_add = possible_openalex_id[0][0]  # the literal of the OpenAlex ID
+                        by_means_of = possible_openalex_id[0][1]  # the PID used to find the OpenAlex ID
                         self._add_id(br, to_add, 'openalex', by_means_of)
 
                 for ar in br.get_contributors():
