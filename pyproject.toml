@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "oc-graphenricher"
-version = "0.2.4"
+version = "0.2.5"
 description = "A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and deduplicating entities"
-authors = ["Gabriele Pisciotta <ga.pisciotta@gmail.com>"]
+authors = ["Gabriele Pisciotta <ga.pisciotta@gmail.com>", "Arcangelo Massari <arcangelo.massari@unibo.it>", "Davide Brembilla <davide.brembilla@studio.unibo.it>" ,"Elia Rizzetto <elia.rizzetto@studio.unibo.it", "Arianna Moretti <arianna.moretti4@unibo.it"]
 license = "ISC"
 readme = "README.md"
 
