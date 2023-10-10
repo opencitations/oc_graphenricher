@@ -3,4 +3,6 @@ __pycache__/
 GraphEnricher_cache.sqlite
 oc_graphenricher/instancematching/matched.rdf
 oc_graphenricher/instancematching/provenance.rdf
-/oc_graphenricher/APIs/prova.py
+/prova.py
+/test_dump.ttl
+/1000.json

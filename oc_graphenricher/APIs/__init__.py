@@ -677,10 +677,11 @@ class OpenAlex(QueryInterface):
 
             try:
                 r = resp.json()
-                if len(r['results']) > 1 or not r['results']:  # discard results if ID is linked to multiple OpenAlexIDs
+                if not r['results']:
                     return None
                 else:
-                    return r['results'][0]['id'].replace('https://openalex.org/', '')
+                    res = [i['id'].replace('https://openalex.org/', '') for i in r['results']]
+                    return res
 
             except Exception as ex1:
                 if hdrs["content-type"] == 'text/plain' or hdrs["content-type"] == 'text/html':
