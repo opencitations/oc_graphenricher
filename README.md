@@ -26,23 +26,24 @@ and deduplicating entities.
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-This tool is divided in two part: an Enricher component responsible to find new identifiers and adding them to the 
-graph set, and an InstanceMatching component responsible to deduplicate any entity that share the same identifier.
+This tool is divided in two part: an Enricher component responsible for finding new identifiers and adding them to the 
+graph set, and an InstanceMatching component responsible for deduplicating any entity that share the same identifier.
 ### Enricher
 The enricher iterates each Bibliographic Resources (BRs) contained in the graph set.
 For each Bibliographic Resources (BRs) (avoiding issues and journals), get the list of the identifiers already
-contained in the graph set and check if it already has a DOI, an ISSN and a Wikidata ID:
-- If an ISSN is specified, it query Crossref to extract other ISSNs
-- If there's no DOI, it query Crossref to get one by means of all the other data extracted
-- If there's no Wikidata ID, it query Wikidata to get one by means of all the other identifiers
+contained in the graph set and check if it already has a DOI, an ISSN, a Wikidata ID and an OpenAlex ID:
+- If an ISSN is specified, query Crossref to extract other ISSNs
+- If there's no DOI, query Crossref to get one by means of all the other data extracted
+- If there's no Wikidata ID, query Wikidata to get one by means of all the other identifiers
+- If there's no OpenAlex ID, query OpenAlex to get one by means of all the other identifiers
 
 Any new identifier found will be added to the Bibliographic Resource (BR).
   
 Then, for each Agent Role (AR) related to the Bibliographic Resource (BR), get the list of all the identifier already contained in its linked Responsible Agent (RA) and:
-- If doesn't have an ORCID, it query ORCID to get it
-- If doesn't have a VIAF, it query VIAF to get it
-- If doesn't have a Wikidata ID, it query Wikidata by means of all the other identifier to get one
-- If the Responsible Agent (RA) is related to a publisher, it query Crossref to get its ID by means of its DOI
+- If it doesn't have an ORCID, query ORCID to get it
+- If it doesn't have a VIAF, query VIAF to get it
+- If it doesn't have a Wikidata ID, query Wikidata by means of all the other identifier to get one
+- If the Responsible Agent (RA) is related to a publisher, query Crossref to get its ID by means of its DOI
 
 Any new identifier found will be added to the RA related to the AR.
 
@@ -50,22 +51,24 @@ In the end it will store a new graph set and its provenance.
 
 NB: even if it's not possible to have an identifier duplicated for the same entity, it's possible that in
 the whole graph set you could find different identifiers that share the same schema and literal. For this
-purpose, you should use the **instancematching** module after that you've enriched the graph set.
+purpose, you should use the **instancematching** module after you've enriched the graph set.
 
 ### APIs and identifiers
-Actually there are 4 external API involved:
+Currently, there are 5 external API involved:
 - Crossref 
 - ORCID
 - VIAF
-- WikiData 
+- WikiData
+- OpenAlex
 
-and we can discover the following indentifiers:
+and we can discover the following identifiers:
 - DOI
 - ISSN
 - Crossref's publisher ID
 - ORCID
 - VIAF
 - Wikidata ID (by means of any other identifier, e.g.: PMID, VIAF, DOI, ...)
+- OpenAlex Work ID and Source ID (only for bibliographic resources and by means of other identifiers, e.g.: PMID, DOI, ...)
 
 It's possible, anyway, to extend the class QueryInterface to add any other useful API.
 
@@ -91,7 +94,7 @@ In the end, generate the provenance and commit pending changes in the graph set
 #### Matching the Bibliographic Resources (BRs) 
 
 Discover all the Bibliographic Resources (BRs)  that share the same identifier's literal, creating a graph of them.
-Then merge each connected component (cluster of Bibliographi Resources (BR) linked by the same identifier) into one.
+Then merge each connected component (cluster of Bibliographic Resources (BR) linked by the same identifier) into one.
 For each couple of Bibliographic Resources (BRs) that are going to be merged, merge also:
  - their containers by matching the proper type (issue of BR1 -> issue of BR2)
  - their publisher
