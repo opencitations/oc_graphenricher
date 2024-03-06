@@ -21,6 +21,7 @@ class TestAPI(TestCase):
         self.orcid_API = ORCID()
         self.viaf_API = VIAF()
         self.wikidata_API = WikiData()
+        self.openalex_API = OpenAlex()
 
     def test_crossref_doi(self):
         if self.crossref_API.query([("Stacey", "Willcox-Pidgeon")],
@@ -68,4 +69,20 @@ class TestAPI(TestCase):
 
     def test_Wikidata_pmcid(self):
         if self.wikidata_API.query("2981558", 'pmcid') != 'Q21089993':
+            self.fail()
+
+    def test_OpenAlex_doi(self):
+        if self.openalex_API.query('10.1111/j.1749-6632.1958.tb54685.x', 'doi') != ['W1985052597']:
+            self.fail()
+
+    def test_OpenAlex_issn(self):
+        if self.openalex_API.query('0014-2980', 'issn') != ['S126191069']:
+            self.fail()
+
+    def test_OpenAlex_pmid(self):
+        if self.openalex_API.query('21603045', 'pmid') != ['W2991792334']:
+            self.fail()
+
+    def test_OpenAlex_pmcid(self):
+        if self.openalex_API.query('1457197', 'pmcid') != ['W114870970']:
             self.fail()

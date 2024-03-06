@@ -19,7 +19,7 @@ import sys
 from typing import Union
 
 import requests_cache
-from oc_graphenricher.APIs import Crossref, ORCID, VIAF, WikiData
+from oc_graphenricher.APIs import Crossref, ORCID, VIAF, WikiData, OpenAlex
 from oc_ocdm import Storer
 from oc_ocdm.graph import GraphSet
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
@@ -63,6 +63,7 @@ class GraphEnricher:
         self.orcid_api = ORCID()
         self.viaf_api = VIAF()
         self.wikidata_api = WikiData()
+        self.openalex_api = OpenAlex()
         self.g_set = g_set
         self.debug = debug
         self.new_id_found = 0
@@ -78,6 +79,7 @@ class GraphEnricher:
             - If an ISSN is specified, it query Crossref to extract other ISSNs.
             - If there's no DOI, it query Crossref to get one by means of all the other data extracted
             - If there's no Wikidata ID, it query Wikidata to get one by means of all the other identifiers
+            - If there's no OpenAlex ID, it queries OpenAlex to get one by means of other identifiers available
         Any new identifier found will be added to the BR.
 
         Then, for each AR related to the BR, get the list of all the identifier already contained and:
@@ -115,6 +117,7 @@ class GraphEnricher:
                 has_doi = None
                 has_issn = []
                 has_wikidata = []
+                has_openalex = None
                 for i in br.get_identifiers():
                     if i.get_scheme() == br.iri_doi:
                         has_doi = i.get_literal_value()
@@ -122,6 +125,8 @@ class GraphEnricher:
                         has_issn.append(i.get_literal_value())
                     elif i.get_scheme() == br.iri_wikidata:
                         has_wikidata.append(i.get_literal_value())
+                    elif i.get_scheme() == br.iri_openalex:
+                        has_openalex = i.get_literal_value()
 
                 # Get more ISSNs
                 if len(has_issn) > 0:
@@ -164,6 +169,30 @@ class GraphEnricher:
                             if res:
                                 self._add_id(br, res, 'wikidata', "its PMCID {}".format(i.get_literal_value()))
                                 break
+
+                # If it has no OpenAlex ID, extract br's identifiers and search those IDs in OpenAlex
+                if has_openalex is None:
+                    for i in br.get_identifiers():
+                        if i.get_scheme() == br.iri_issn:
+                            res: list = self.openalex_api.query(i.get_literal_value(), 'issn')
+                            if res:
+                                for oaid in res:
+                                    self._add_id(br, oaid, 'openalex', f"its ISSN {i.get_literal_value()}")
+                        if i.get_scheme() == br.iri_doi:
+                            res = self.openalex_api.query(i.get_literal_value(), 'doi')
+                            if res:
+                                for oaid in res:
+                                    self._add_id(br, oaid, 'openalex', f"its DOI {i.get_literal_value()}")
+                        if i.get_scheme() == br.iri_pmid:
+                            res = self.openalex_api.query(i.get_literal_value(), 'pmid')
+                            if res:
+                                for oaid in res:
+                                    self._add_id(br, oaid, 'openalex', f"its PMID {i.get_literal_value()}")
+                        if i.get_scheme() == br.iri_pmcid:
+                            res = self.openalex_api.query(i.get_literal_value(), 'pmcid')
+                            if res:
+                                for oaid in res:
+                                    self._add_id(br, oaid, 'openalex', f"its PMCID {i.get_literal_value()}")
 
                 for ar in br.get_contributors():
                     role = ar.get_role_type()
@@ -275,6 +304,8 @@ class GraphEnricher:
             new_id.create_crossref(literal)
         elif schema == 'wikidata':
             new_id.create_wikidata(literal)
+        elif schema == 'openalex':
+            new_id.create_openalex(literal)
 
         entity.has_identifier(new_id)
 

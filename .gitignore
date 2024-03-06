@@ -1,2 +1,7 @@
 .idea/
 __pycache__/
+GraphEnricher_cache.sqlite
+oc_graphenricher/instancematching/matched.rdf
+oc_graphenricher/instancematching/provenance.rdf
+/data/
+/enriched.rdf

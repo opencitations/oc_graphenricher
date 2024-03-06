@@ -651,3 +651,62 @@ class ORCID(QueryInterface):
 
         # If the process comes here, no valid result has been returned
         print(" | ".join(errors) + "\n\tRequested URL: " + get_url)
+
+
+class OpenAlex(QueryInterface):
+
+    def __init__(self):
+        super().__init__()
+        self.headers = {
+            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net;  mailto:contact@opencitations.net)"}
+        self.api_url_works = 'https://api.openalex.org/works'
+        self.api_url_sources = 'https://api.openalex.org/sources'
+
+    def query(self, entity:str, schema:str):
+
+        schema = schema.lower()
+
+        if schema in ['doi', 'pmid', 'pmcid']:
+            query = f"{self.api_url_works}?filter={schema}:{entity}&select=id"
+        if schema == 'issn':
+            query = f"{self.api_url_sources}?filter={schema}:{entity}&select=id"
+
+        try:
+            resp = requests.get(query, headers=self.headers, timeout=60)
+            hdrs = resp.headers
+
+            try:
+                r = resp.json()
+                if not r['results']:
+                    return None
+                else:
+                    res = [i['id'].replace('https://openalex.org/', '') for i in r['results']]
+                    return res
+
+            except Exception as ex1:
+                if hdrs["content-type"] == 'text/plain' or hdrs["content-type"] == 'text/html':
+                    r = resp.text
+                    if "503" in r:
+                        time.sleep(5.0)
+                        solution = self.query(entity, schema)
+                        return solution
+                    elif "429" in r:  # only handles per-second rate limit (not daily rate limit)
+                        time.sleep(0.2)
+                        solution = self.query(entity, schema)
+                        return solution
+                    else:
+                        print("[GraphEnricher-OpenAlex]:" + repr(ex1) + "__" + query + "__" + r)
+                else:
+                    print(
+                        "[GraphEnricher-OpenAlex]:" + repr(ex1) + "__" + query + "__" + hdrs["content-type"])
+
+        except Exception as ex0:
+            if "ConnectTimeout" in repr(ex0):
+                print("[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + query)
+                time.sleep(5.0)
+                solution = self.query(entity, schema)
+                return solution
+            if "UnboundLocalError" in repr(ex0):
+                print("[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + f"The specified schema '{schema}' is not supported")
+            else:
+                print("[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + query)
