@@ -31,18 +31,35 @@ from tqdm.contrib import DummyTqdmFile
 
 
 class GraphEnricher:
+    """
+    The GraphEnricher class is the one responsible to enrich all the entities in a given graph set compliant to
+    the OpenCitations Data Model (OCDM). You have to specify in input the graph set, the output file name of the
+    enriched graph and the provenance file name. It's also possible to specify a debug flag to get more details
+    about the enrichment process.
+    """
 
     def __init__(self,
                  g_set: GraphSet,
                  graph_filename: str = "enriched.rdf",
                  provenance_filename: str = "provenance.rdf",
-                 incomplete_filename: str = "incomplete.nt",
                  info_dir: str = "",
                  debug: bool = False,
                  serialize_in_the_middle: bool = False,
                  use_wikidata: bool = True,
-                 use_viaf: bool = True, 
+                 use_viaf: bool = True,
                  use_orcid: bool = True):
+        """
+        :param g_set: graph set to be enriched
+        :param graph_filename: file name of the enriched graph set that will be serialized
+        :param provenance_filename: file name of the provenance that will be serialized
+        :param info_dir: the path to the counters directory
+        :param debug: a bool flag to enable richer output
+        :param serialize_in_the_middle: a bool flag to enable the serialization each 50 Bibliographic Resources (BRs)
+        processed (the resulting file will be always overwritten, this may slow the whole process)
+        :param use_wikidata: a bool flag to enable or disable Wikidata queries (default: True)
+        :param use_viaf: a bool flag to enable or disable VIAF queries (default: True)
+        :param use_orcid: a bool flag to enable or disable ORCID queries (default: True)
+        """
 
         requests_cache.install_cache('GraphEnricher_cache')
 
@@ -57,12 +74,8 @@ class GraphEnricher:
         self.new_id_found = 0
         self.graph_filename = graph_filename
         self.provenance_filename = provenance_filename
-        self.incomplete_filename = incomplete_filename  
         self.info_dir = info_dir
         self.serialize_in_the_middle = serialize_in_the_middle
-        # MODIFICA: aggiunti flag opzionali per disabilitare selettivamente
-        # le API di Wikidata, VIAF e ORCID. Utile per velocizzare il processo
-        # o escludere servizi non necessari per un determinato batch.
         self.use_wikidata = use_wikidata
         self.use_viaf = use_viaf
         self.use_orcid = use_orcid
@@ -133,32 +146,16 @@ class GraphEnricher:
                                 if r not in has_issn:
                                     self._add_id(br, r, 'issn', "its ISSN {}".format(issn))
                             break
-                
-                # MODIFICA:
-                # Aggiunto controllo sul titolo prima della query Crossref.
-                # Evita query inutili se titolo mancante o "unknown".
 
+                # If no DOI try to get it, but only if a valid title is available
                 _title = br.get_title()
-
-                if (
-                    has_doi is None
-                    and _title
-                    and _title.strip().lower() != "unknown"
-                ):
-                    res = self.crossref_api.query(
-                        authors,
-                        _title, 
-                        br.get_pub_date()
-                    )
-
+                if has_doi is None and _title and _title.strip().lower() != "unknown":
+                    res = self.crossref_api.query(authors, _title, br.get_pub_date())
                     if res:
                         self._add_id(br, res, 'doi', "Crossref query")
-                        has_doi = res 
+                        has_doi = res
 
                 # If it hasn't a Wikidata ID, extract br's identifiers and search on wikidata for that IDs
-
-                # MODIFICA: il blocco Wikidata viene eseguito solo se use_wikidata=True
-
                 if self.use_wikidata and len(has_wikidata) == 0:
                     for i in br.get_identifiers():
                         if i.get_scheme() == br.iri_doi:
@@ -243,10 +240,7 @@ class GraphEnricher:
                                         self._add_id(ra, orcid, 'orcid')
                                         author_id_found.append((orcid, 'orcid'))
 
-                        # Search for the author on Wikidata
-
-                        # MODIFICA: il blocco VIAF viene eseguito solo se use_viaf=True
-
+                        # Search for the author on VIAF
                         if self.use_viaf and not has_viaf:
                             viaf = self.viaf_api.query(ra.get_given_name(), ra.get_family_name(), br.get_title())
                             if viaf is not None:
@@ -254,8 +248,6 @@ class GraphEnricher:
                                 author_id_found.append((viaf, 'viaf'))
 
                         # If the author doesn't have Wikidata ID
-                        # MODIFICA: il blocco Wikidata per gli autori segue lo stesso pattern
-
                         if self.use_wikidata and not has_wikidata:
                             for literal, scheme in author_id_found:
                                 res = self.wikidata_api.query(literal, scheme)
@@ -277,14 +269,8 @@ class GraphEnricher:
                             if crossref_id:
                                 self._add_id(ra, crossref_id, 'crossref')
 
-            # Serialize enriched graph in JSON-LD
-            gs_storer = Storer(
-                abstract_set=self.g_set,
-                output_format="json-ld", # MODIFICA: originale usava "nt11"
-                dir_split=10000,
-                n_file_item=1000,
-            )
-            gs_storer.store_graphs_in_file(self.graph_filename)
+            gs_storer = Storer(self.g_set, output_format="nt11")
+            gs_storer.store_graphs_in_file(self.graph_filename, "")
 
             prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=self.info_dir)
             prov.generate_provenance()
@@ -292,76 +278,20 @@ class GraphEnricher:
             prov_storer = Storer(prov, output_format="nquads")
             prov_storer.store_graphs_in_file(self.provenance_filename, "")
 
-            # Build GraphSet with incomplete BRs
-            # MODIFICA: aggiunta gestione dei BR incompleti, assente nell'originale.
-            # Si costruisce un GraphSet separato con solo i BR a cui manca almeno uno
-            # tra DOI, ISSN, Wikidata e OpenAlex, e lo si serializza in un file distinto.
-            incomplete_g_set = GraphSet(
-                base_iri=self.g_set.base_iri
-            )
-
-            for br in self.g_set.get_br():
-
-                has_doi = False
-                has_issn = False
-                has_wikidata = False
-                has_openalex = False
-
-                for identifier in br.get_identifiers():
-
-                    scheme_str = str(
-                        identifier.get_scheme()
-                    ).lower()
-
-                    if "doi" in scheme_str:
-                        has_doi = True
-
-                    elif "issn" in scheme_str:
-                        has_issn = True
-
-                    elif "wikidata" in scheme_str:
-                        has_wikidata = True
-
-                    elif "openalex" in scheme_str:
-                        has_openalex = True
-
-                if not (
-                    has_doi
-                    and has_issn
-                    and has_wikidata
-                    and has_openalex
-                ):
-
-                    incomplete_g_set.add_br(
-                        resp_agent=self.resp_agent,
-                        res=br.res
-                    )
-
-            # Serialize incomplete graph
-
-            # MODIFICA: formato nt11 scelto perché append-safe: il chiamante (EnricherSupport)
-            # accoda questo file temporaneo al file principale tramite shutil.copyfileobj,
-            # evitando la sovrascrittura che avverrebbe con json-ld.
-
-            incomplete_storer = Storer(
-                abstract_set=incomplete_g_set,
-                output_format="nt11"
-            )
-
-            incomplete_storer.store_graphs_in_file(
-                self.incomplete_filename
-            )
-
-            print(
-                f"Incomplete BR saved in: "
-                f"{self.incomplete_filename}"
-            )
-
     def _add_id(self, entity: Union[BibliographicResource, ResponsibleAgent], literal: str, schema: str,
                 by_means_of: str = None) -> None:
+        """ Method that let you add a new identifier to an entity,
+        having specified the literal value, the schema and optionally the API used
+
+        :param entity: a bibliographic resource or an agent role
+        :param literal: the literal value of the identifier
+        :param schema: the schema of the identifier
+        :param by_means_of: an optional string that let you specify the API used
+        """
 
         old_identifiers = entity.get_identifiers()
 
+        # Check if the ID is already associated to the entity
         for i in old_identifiers:
             if i.get_literal_value() == literal:
                 if self.debug:
@@ -389,15 +319,20 @@ class GraphEnricher:
         entity.has_identifier(new_id)
 
         if self.debug:
-            to_print = "[{}] FOUND {}: {}".format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'), schema, literal)
+
+            # To pretty print it with tqdm's write()
+            to_print = "[{}] FOUND {}: {}".format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'), schema,
+                                                  literal)
             if by_means_of is not None:
                 to_print += ", by means of {}".format(by_means_of)
+
             print(to_print)
             print("\tOLD: {}".format([x.get_literal_value() for x in old_identifiers]))
             print("\tNEW : {}".format([x.get_literal_value() for x in entity.get_identifiers()]))
 
     @contextlib.contextmanager
     def __std_out_err_redirect_tqdm(self):
+        """ This method is used to print messages with the TQDM progress bar"""
         orig_out_err = sys.stdout, sys.stderr
         try:
             sys.stdout, sys.stderr = map(DummyTqdmFile, orig_out_err)
