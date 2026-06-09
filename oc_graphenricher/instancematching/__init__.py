@@ -21,7 +21,6 @@ from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import Bibliogr
 from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
 from oc_ocdm.graph.graph_entity import GraphEntity
 from oc_ocdm.prov import ProvSet
-from rdflib import URIRef
 
 
 class InstanceMatching:
@@ -214,10 +213,10 @@ class InstanceMatching:
                 p2: BibliographicResource
                 for p1 in entity_first_partofs:
                     p1types = p1.get_types()
-                    p1types.remove(URIRef('http://purl.org/spar/fabio/Expression'))
+                    p1types.remove(GraphEntity.iri_expression)
                     for p2 in partofs:
                         p2types = p2.get_types()
-                        p2types.remove(URIRef('http://purl.org/spar/fabio/Expression'))
+                        p2types.remove(GraphEntity.iri_expression)
                         intersection_of_types = set(p2types).intersection(set(p1types))
                         if intersection_of_types is not None and len(intersection_of_types) != 0:
                             p1.merge(p2)
