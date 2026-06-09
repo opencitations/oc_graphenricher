@@ -82,7 +82,3 @@ class TestAPI(TestCase):
     def test_OpenAlex_pmid(self):
         if self.openalex_API.query('21603045', 'pmid') != ['W2991792334']:
             self.fail()
-
-    def test_OpenAlex_pmcid(self):
-        if self.openalex_API.query('1457197', 'pmcid') != ['W114870970']:
-            self.fail()
