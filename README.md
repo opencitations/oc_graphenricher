@@ -110,8 +110,8 @@ In the end, generate the provenance and commit pending changes in the graph set
 <!-- GETTING STARTED -->
 ## Getting Started
 
-To get a local copy up and running follow these simple steps:
-1. install python >= 3.8:
+To get a local copy up and running follow these steps:
+1. install Python >= 3.10:
 
 ```sudo apt install python3```
 
@@ -121,22 +121,22 @@ pip install oc-graphenricher
 ```
 
 ### Installing from the sources
-1. Having already installed python, you can also install GraphEnricher via cloning this repository: 
+1. Having already installed Python, you can also install GraphEnricher via cloning this repository: 
 ```
-git clone https://github.com/opencitations/oc_graphenricher`
+git clone https://github.com/opencitations/oc_graphenricher
 cd ./oc_graphenricher
 ```
-2. install poetry:
+2. install uv by following the official installation instructions:
 
-```pip install poetry```
+https://docs.astral.sh/uv/getting-started/installation/
 
 3. install all the dependencies:
 
-``` poetry install```
+```uv sync```
 
 4. build the package:
 
-```poetry build```
+```uv build --clear```
 
 5. install the package:
 
@@ -145,7 +145,7 @@ cd ./oc_graphenricher
 6. run the tests (from the root of the project):
 
 ```
-poetry run test
+uv run test
 ```
 
 <!-- USAGE EXAMPLES -->

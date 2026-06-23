@@ -4,9 +4,9 @@ How to install
 Installing from Pypi
 ########
 
-To get the official and updated version of this package, follow these simple steps:
+To get the official and updated version of this package, follow these steps:
 
-1. install python >= 3.8:
+1. install Python >= 3.10:
 
     .. code-block:: console
 
@@ -23,30 +23,28 @@ Installing from the sources
 ########
 It's also possible to build the package from the sources. To do that, follow the following:
 
-1. Having already installed python, you can also install GraphEnricher via cloning this repository:
+1. Having already installed Python, you can also install GraphEnricher via cloning this repository:
 
     .. code-block:: bash
 
-        git clone https://github.com/opencitations/oc_graphenricher`
+        git clone https://github.com/opencitations/oc_graphenricher
         cd ./oc_graphenricher
 
-2. install poetry:
+2. install uv by following the official installation instructions:
 
-    .. code-block:: bash
-
-        pip install poetry
+    https://docs.astral.sh/uv/getting-started/installation/
 
 3. install all the dependencies:
 
     .. code-block:: bash
 
-        poetry install
+        uv sync
 
 4. build the package:
 
     .. code-block:: bash
 
-        poetry build
+        uv build --clear
 
 5. install the package:
 
@@ -60,4 +58,4 @@ To run the tests (from the root of the project):
 
     .. code-block:: bash
 
-        poetry run test
+        uv run test

@@ -1,26 +1,35 @@
-[tool.poetry]
+[project]
 name = "oc-graphenricher"
 version = "0.2.5"
 description = "A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and deduplicating entities"
-authors = ["Gabriele Pisciotta <ga.pisciotta@gmail.com>", "Arcangelo Massari <arcangelo.massari@unibo.it>", "Davide Brembilla <davide.brembilla@studio.unibo.it>" ,"Elia Rizzetto <elia.rizzetto@studio.unibo.it", "Arianna Moretti <arianna.moretti4@unibo.it"]
+authors = [
+    { name = "Gabriele Pisciotta", email = "ga.pisciotta@gmail.com" },
+    { name = "Arcangelo Massari", email = "arcangelo.massari@unibo.it" },
+    { name = "Davide Brembilla", email = "davide.brembilla@studio.unibo.it" },
+    { name = "Elia Rizzetto", email = "elia.rizzetto@studio.unibo.it" },
+    { name = "Arianna Moretti", email = "arianna.moretti4@unibo.it" },
+]
 license = "ISC"
 readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "tqdm>=4.67.1",
+    "requests>=2.26",
+    "networkx>=3.4",
+    "oc-ocdm>=11.0.14",
+    "python-levenshtein>=0.27",
+    "requests-cache>=0.6.0",
+    "rdflib>=7.4.0",
+    "levenshtein>=0.27",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.14"
-tqdm = ">=4.67.1"
-requests = ">=2.26"
-networkx = ">=3.4"
-oc-ocdm = ">=11.0.14"
-python-levenshtein = ">=0.27"
-requests-cache = ">=0.6.0"
-rdflib = ">=7.4.0"
-levenshtein = ">=0.27"
-
+[project.scripts]
+test = "oc_graphenricher._scripts:test"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.9.8,<0.10.0"]
+build-backend = "uv_build"
 
-[tool.poetry.scripts]
-test = 'scripts:test'
+[tool.uv.build-backend]
+module-name = "oc_graphenricher"
+module-root = ""
