@@ -1,3 +1,7 @@
+.. SPDX-FileCopyrightText: 2021 Gabriele Pisciotta <ga.pisciotta@gmail.com>
+..
+.. SPDX-License-Identifier: ISC
+
 OC GraphEnricher
 ==================
 

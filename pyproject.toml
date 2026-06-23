@@ -5,9 +5,12 @@ description = "A tool to enrich any OCDM compliant Knowledge Graph, finding new 
 authors = [
     { name = "Gabriele Pisciotta", email = "ga.pisciotta@gmail.com" },
     { name = "Arcangelo Massari", email = "arcangelo.massari@unibo.it" },
-    { name = "Davide Brembilla", email = "davide.brembilla@studio.unibo.it" },
     { name = "Elia Rizzetto", email = "elia.rizzetto@studio.unibo.it" },
     { name = "Arianna Moretti", email = "arianna.moretti4@unibo.it" },
+    { name = "Ilaria De Dominicis", email = "ilaria.dedominicis2@studio.unibo.it" },
+    { name = "Silvio Peroni", email = "silvio.peroni@unibo.it" },
+    { name = "Simone Persiani" },
+    { name = "Davide Brembilla", email = "davide.brembilla@studio.unibo.it" },
 ]
 license = "ISC"
 readme = "README.md"
@@ -54,6 +57,7 @@ dev = [
     "genbadge[coverage]>=1.1.3",
     "pyright>=1.1.410",
     "pytest>=9.1.1",
+    "reuse>=6.2.0",
     "ruff>=0.15.18",
     "sphinx>=8.1.3",
     "sphinx-rtd-theme>=3.1.0",

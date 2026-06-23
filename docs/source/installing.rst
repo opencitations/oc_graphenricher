@@ -1,3 +1,8 @@
+.. SPDX-FileCopyrightText: 2021 Gabriele Pisciotta <ga.pisciotta@gmail.com>
+.. SPDX-FileCopyrightText: 2026 Arcangelo Massari <arcangelo.massari@unibo.it>
+..
+.. SPDX-License-Identifier: ISC
+
 How to install
 ==================
 

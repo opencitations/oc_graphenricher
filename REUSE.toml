@@ -1,0 +1,15 @@
+version = 1
+
+# CC0-1.0 — no creative expression (manifests, lock files, generated data,
+# license text)
+
+[[annotations]]
+path = [
+    "LICENSE",
+    "pyproject.toml",
+    "uv.lock",
+    "src/oc_graphenricher/APIs/stopwords-it.txt",
+    "tests/fixtures/test_merge_br.rdf",
+]
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"

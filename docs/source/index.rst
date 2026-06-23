@@ -1,3 +1,7 @@
+.. SPDX-FileCopyrightText: 2021 Gabriele Pisciotta <ga.pisciotta@gmail.com>
+..
+.. SPDX-License-Identifier: ISC
+
 .. oc_graphenricher documentation master file, created by
    sphinx-quickstart on Mon Apr 12 12:05:06 2021.
    You can adapt this file completely to your liking, but it should at least

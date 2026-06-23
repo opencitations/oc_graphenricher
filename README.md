@@ -1,5 +1,16 @@
+<!--
+SPDX-FileCopyrightText: 2021 Gabriele Pisciotta <ga.pisciotta@gmail.com>
+SPDX-FileCopyrightText: 2021 Silvio Peroni <silvio.peroni@unibo.it>
+SPDX-FileCopyrightText: 2023 Arianna Moretti <arianna.moretti4@unibo.it>
+SPDX-FileCopyrightText: 2024 Elia Rizzetto <elia.rizzetto@studio.unibo.it>
+SPDX-FileCopyrightText: 2026 Arcangelo Massari <arcangelo.massari@unibo.it>
+
+SPDX-License-Identifier: ISC
+-->
+
 [![Tests](https://github.com/opencitations/oc_graphenricher/actions/workflows/test.yml/badge.svg)](https://github.com/opencitations/oc_graphenricher/actions/workflows/test.yml)
 [![Coverage](https://opencitations.github.io/oc_graphenricher/coverage/coverage-badge.svg)](https://opencitations.github.io/oc_graphenricher/coverage/)
+[![REUSE status](https://api.reuse.software/badge/github.com/opencitations/oc_graphenricher)](https://api.reuse.software/info/github.com/opencitations/oc_graphenricher)
 
 <p align="center">
 
