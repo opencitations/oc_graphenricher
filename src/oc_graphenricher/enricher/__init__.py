@@ -30,16 +30,18 @@ class GraphEnricher:
     about the enrichment process.
     """
 
-    def __init__(self,
-                 g_set: GraphSet,
-                 graph_filename: str = "enriched.rdf",
-                 provenance_filename: str = "provenance.rdf",
-                 info_dir: str = "",
-                 debug: bool = False,
-                 serialize_in_the_middle: bool = False,
-                 use_wikidata: bool = True,
-                 use_viaf: bool = True,
-                 use_orcid: bool = True):
+    def __init__(
+        self,
+        g_set: GraphSet,
+        graph_filename: str = "enriched.rdf",
+        provenance_filename: str = "provenance.rdf",
+        info_dir: str = "",
+        debug: bool = False,
+        serialize_in_the_middle: bool = False,
+        use_wikidata: bool = True,
+        use_viaf: bool = True,
+        use_orcid: bool = True,
+    ):
         """
         :param g_set: graph set to be enriched
         :param graph_filename: file name of the enriched graph set that will be serialized
@@ -53,9 +55,9 @@ class GraphEnricher:
         :param use_orcid: a bool flag to enable or disable ORCID queries (default: True)
         """
 
-        requests_cache.install_cache('GraphEnricher_cache')
+        requests_cache.install_cache("GraphEnricher_cache")
 
-        self.resp_agent = 'https://w3id.org/oc/meta/prov/pa/2'
+        self.resp_agent = "https://w3id.org/oc/meta/prov/pa/2"
         self.crossref_api = Crossref()
         self.orcid_api = ORCID()
         self.viaf_api = VIAF()
@@ -73,7 +75,7 @@ class GraphEnricher:
         self.use_orcid = use_orcid
 
     def enrich(self) -> None:
-        """ The enricher iterates each BR contained in the graph set.
+        """The enricher iterates each BR contained in the graph set.
         For each BR (avoiding issues and journals), get the list of the identifiers already
         contained in the graph set and check if it already has a DOI, an ISSN and a Wikidata ID:
             - If an ISSN is specified, it query Crossref to extract other ISSNs.
@@ -97,7 +99,6 @@ class GraphEnricher:
         """
         br_enriched_counter = 0
         with self.__std_out_err_redirect_tqdm() as orig_stdout:
-
             progress_bar = tqdm(self.g_set.get_br(), file=orig_stdout, dynamic_ncols=True)
             for br in progress_bar:
                 progress_bar.set_description(desc=f"New ID found: {self.new_id_found}")
@@ -136,7 +137,7 @@ class GraphEnricher:
                             for r in res:
                                 # To avoid to add already present ISSNs
                                 if r not in has_issn:
-                                    self._add_id(br, r, 'issn', "its ISSN {}".format(issn))
+                                    self._add_id(br, r, "issn", "its ISSN {}".format(issn))
                             break
 
                 # If no DOI try to get it, but only if a valid title is available
@@ -144,60 +145,68 @@ class GraphEnricher:
                 if has_doi is None and _title and _title.strip().lower() != "unknown":
                     res = self.crossref_api.query(authors, _title, br.get_pub_date())
                     if res:
-                        self._add_id(br, res, 'doi', "Crossref query")
+                        self._add_id(br, res, "doi", "Crossref query")
                         has_doi = res
 
                 # If it hasn't a Wikidata ID, extract br's identifiers and search on wikidata for that IDs
                 if self.use_wikidata and len(has_wikidata) == 0:
                     for i in br.get_identifiers():
+                        literal = i.get_literal_value()
+                        if literal is None:
+                            continue
                         if i.get_scheme() == br.iri_doi:
-                            res = self.wikidata_api.query(i.get_literal_value(), 'doi')
+                            res = self.wikidata_api.query(literal, "doi")
                             if res:
-                                self._add_id(br, res, 'wikidata', "its DOI".format(i.get_literal_value()))
+                                self._add_id(br, res, "wikidata", "its DOI {}".format(literal))
                                 break
                         elif i.get_scheme() == br.iri_issn:
-                            res = self.wikidata_api.query(i.get_literal_value(), 'issn')
+                            res = self.wikidata_api.query(literal, "issn")
                             if res:
-                                self._add_id(br, res, 'wikidata', "its ISSN {}".format(i.get_literal_value()))
+                                self._add_id(br, res, "wikidata", "its ISSN {}".format(literal))
                                 break
                         elif i.get_scheme() == br.iri_pmid:
-                            res = self.wikidata_api.query(i.get_literal_value(), 'pmid')
+                            res = self.wikidata_api.query(literal, "pmid")
                             if res:
-                                self._add_id(br, res, 'wikidata', "its PMID {}".format(i.get_literal_value()))
+                                self._add_id(br, res, "wikidata", "its PMID {}".format(literal))
                                 break
                         elif i.get_scheme() == br.iri_pmcid:
-                            res = self.wikidata_api.query(i.get_literal_value(), 'pmcid')
+                            res = self.wikidata_api.query(literal, "pmcid")
                             if res:
-                                self._add_id(br, res, 'wikidata', "its PMCID {}".format(i.get_literal_value()))
+                                self._add_id(br, res, "wikidata", "its PMCID {}".format(literal))
                                 break
 
                 # If it has no OpenAlex ID, extract br's identifiers and search those IDs in OpenAlex
                 if has_openalex is None:
                     for i in br.get_identifiers():
+                        literal = i.get_literal_value()
+                        if literal is None:
+                            continue
                         if i.get_scheme() == br.iri_issn:
-                            res: list = self.openalex_api.query(i.get_literal_value(), 'issn')
+                            res = self.openalex_api.query(literal, "issn")
                             if res:
                                 for oaid in res:
-                                    self._add_id(br, oaid, 'openalex', f"its ISSN {i.get_literal_value()}")
+                                    self._add_id(br, oaid, "openalex", f"its ISSN {literal}")
                         if i.get_scheme() == br.iri_doi:
-                            res = self.openalex_api.query(i.get_literal_value(), 'doi')
+                            res = self.openalex_api.query(literal, "doi")
                             if res:
                                 for oaid in res:
-                                    self._add_id(br, oaid, 'openalex', f"its DOI {i.get_literal_value()}")
+                                    self._add_id(br, oaid, "openalex", f"its DOI {literal}")
                         if i.get_scheme() == br.iri_pmid:
-                            res = self.openalex_api.query(i.get_literal_value(), 'pmid')
+                            res = self.openalex_api.query(literal, "pmid")
                             if res:
                                 for oaid in res:
-                                    self._add_id(br, oaid, 'openalex', f"its PMID {i.get_literal_value()}")
+                                    self._add_id(br, oaid, "openalex", f"its PMID {literal}")
                         if i.get_scheme() == br.iri_pmcid:
-                            res = self.openalex_api.query(i.get_literal_value(), 'pmcid')
+                            res = self.openalex_api.query(literal, "pmcid")
                             if res:
                                 for oaid in res:
-                                    self._add_id(br, oaid, 'openalex', f"its PMCID {i.get_literal_value()}")
+                                    self._add_id(br, oaid, "openalex", f"its PMCID {literal}")
 
                 for ar in br.get_contributors():
                     role = ar.get_role_type()
-                    ra: ResponsibleAgent = ar.get_is_held_by()
+                    ra = ar.get_is_held_by()
+                    if ra is None:
+                        continue
 
                     # Extract Authors, with their info and their identifiers
                     if role == GraphEntity.iri_author:
@@ -208,13 +217,16 @@ class GraphEnricher:
 
                         author_id_found = []
                         for author_identifier in ra.get_identifiers():
-                            if ra.iri_orcid in author_identifier.get_scheme():
+                            scheme = author_identifier.get_scheme()
+                            if scheme is None:
+                                continue
+                            if ra.iri_orcid in scheme:
                                 has_orcid = author_identifier.get_literal_value()
-                                author_id_found.append((author_identifier.get_literal_value(), 'orcid'))
-                            if br.iri_viaf in author_identifier.get_scheme():
+                                author_id_found.append((author_identifier.get_literal_value(), "orcid"))
+                            if br.iri_viaf in scheme:
                                 has_viaf = author_identifier.get_literal_value()
-                                author_id_found.append((author_identifier.get_literal_value(), 'viaf'))
-                            if br.iri_wikidata in author_identifier.get_scheme():
+                                author_id_found.append((author_identifier.get_literal_value(), "viaf"))
+                            if br.iri_wikidata in scheme:
                                 has_wikidata = author_identifier.get_literal_value()
 
                             if has_viaf is not None and has_orcid is not None and has_wikidata is not None:
@@ -223,35 +235,43 @@ class GraphEnricher:
                         if self.use_orcid and has_orcid is None:
                             res = self.orcid_api.query(
                                 [(ra.get_given_name(), ra.get_family_name(), None, ra)],
-                                [(x.get_scheme(), x.get_literal_value()) for x in br.get_identifiers()])
+                                [(x.get_scheme(), x.get_literal_value()) for x in br.get_identifiers()],
+                            )
 
                             if res:
                                 for res_tuple in res:
                                     given_name, family_name, orcid, ra = res_tuple
                                     if orcid is not None:
-                                        self._add_id(ra, orcid, 'orcid')
-                                        author_id_found.append((orcid, 'orcid'))
+                                        self._add_id(ra, orcid, "orcid")
+                                        author_id_found.append((orcid, "orcid"))
 
                         # Search for the author on VIAF
                         if self.use_viaf and not has_viaf:
-                            viaf = self.viaf_api.query(ra.get_given_name(), ra.get_family_name(), br.get_title())
-                            if viaf is not None:
-                                self._add_id(ra, viaf, 'viaf')
-                                author_id_found.append((viaf, 'viaf'))
+                            given = ra.get_given_name()
+                            family = ra.get_family_name()
+                            if given or family:
+                                viaf = self.viaf_api.query(given or "", family or "", br.get_title() or "")
+                                if viaf is not None:
+                                    self._add_id(ra, viaf, "viaf")
+                                    author_id_found.append((viaf, "viaf"))
 
                         # If the author doesn't have Wikidata ID
                         if self.use_wikidata and not has_wikidata:
                             for literal, scheme in author_id_found:
+                                if literal is None:
+                                    continue
                                 res = self.wikidata_api.query(literal, scheme)
                                 if res:
-                                    self._add_id(ra, res, 'wikidata', "its {} {}".format(scheme.upper(), literal))
+                                    self._add_id(ra, res, "wikidata", "its {} {}".format(scheme.upper(), literal))
                                     break
 
                     # Get Publisher and its identifiers
                     if role == GraphEntity.iri_publisher:
-
                         for publisher_id in ra.get_identifiers():
-                            if GraphEntity.iri_crossref in publisher_id.get_scheme():
+                            scheme = publisher_id.get_scheme()
+                            if scheme is None:
+                                continue
+                            if GraphEntity.iri_crossref in scheme:
                                 publisher_has_crossrefid = True
                                 break
 
@@ -259,7 +279,7 @@ class GraphEnricher:
                         if not publisher_has_crossrefid and has_doi is not None:
                             crossref_id = self.crossref_api.query_publisher(has_doi)
                             if crossref_id:
-                                self._add_id(ra, crossref_id, 'crossref')
+                                self._add_id(ra, crossref_id, "crossref")
 
             gs_storer = Storer(self.g_set, output_format="nt11")
             gs_storer.store_graphs_in_file(self.graph_filename, "")
@@ -270,9 +290,14 @@ class GraphEnricher:
             prov_storer = Storer(prov, output_format="nquads")
             prov_storer.store_graphs_in_file(self.provenance_filename, "")
 
-    def _add_id(self, entity: Union[BibliographicResource, ResponsibleAgent], literal: str, schema: str,
-                by_means_of: str = None) -> None:
-        """ Method that let you add a new identifier to an entity,
+    def _add_id(
+        self,
+        entity: Union[BibliographicResource, ResponsibleAgent],
+        literal: str,
+        schema: str,
+        by_means_of: str | None = None,
+    ) -> None:
+        """Method that let you add a new identifier to an entity,
         having specified the literal value, the schema and optionally the API used
 
         :param entity: a bibliographic resource or an agent role
@@ -293,28 +318,28 @@ class GraphEnricher:
         self.new_id_found += 1
 
         new_id = self.g_set.add_id(self.resp_agent)
-        if schema == 'issn':
+        if schema == "issn":
             new_id.create_issn(literal)
-        elif schema == 'doi':
+        elif schema == "doi":
             new_id.create_doi(literal)
-        elif schema == 'orcid':
+        elif schema == "orcid":
             new_id.create_orcid(literal)
-        elif schema == 'viaf':
+        elif schema == "viaf":
             new_id.create_viaf(literal)
-        elif schema == 'crossref':
+        elif schema == "crossref":
             new_id.create_crossref(literal)
-        elif schema == 'wikidata':
+        elif schema == "wikidata":
             new_id.create_wikidata(literal)
-        elif schema == 'openalex':
+        elif schema == "openalex":
             new_id.create_openalex(literal)
 
         entity.has_identifier(new_id)
 
         if self.debug:
-
             # To pretty print it with tqdm's write()
-            to_print = "[{}] FOUND {}: {}".format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'), schema,
-                                                  literal)
+            to_print = "[{}] FOUND {}: {}".format(
+                datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S"), schema, literal
+            )
             if by_means_of is not None:
                 to_print += ", by means of {}".format(by_means_of)
 
@@ -324,7 +349,7 @@ class GraphEnricher:
 
     @contextlib.contextmanager
     def __std_out_err_redirect_tqdm(self):
-        """ This method is used to print messages with the TQDM progress bar"""
+        """This method is used to print messages with the TQDM progress bar"""
         orig_out_err = sys.stdout, sys.stderr
         try:
             sys.stdout, sys.stderr = map(DummyTqdmFile, orig_out_err)

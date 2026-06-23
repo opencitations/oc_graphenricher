@@ -26,8 +26,9 @@ class QueryInterface(ABC):
     """
     This class is a sort of interface that you can implement in your own class
     """
+
     def __init__(self):
-        requests_cache.install_cache('GraphEnricher_cache')
+        requests_cache.install_cache("GraphEnricher_cache")
 
     @abstractmethod
     def query(self, entity):
@@ -38,11 +39,13 @@ class VIAF(QueryInterface):
     """
     This class let you extract the VIAF of an author, by querying the viaf.org API
     """
+
     def __init__(self):
         super().__init__()
         self.headers = {
             "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net;  mailto:contact@opencitations.net)",
-            "Accept": "application/json"}
+            "Accept": "application/json",
+        }
         self.api_url = 'http://www.viaf.org/viaf/search?local.title+all+"{}"&query=local.names+all+"{}"&sortKeys=holdingscount&recordSchema=BriefVIAF'
 
     def query(self, given_name: str, family_name: str, title: str):
@@ -61,16 +64,16 @@ class VIAF(QueryInterface):
             hdrs_cr = r_cr.headers
             try:
                 r = r_cr.json()
-                number_of_records = r['searchRetrieveResponse']['numberOfRecords']['content']
+                number_of_records = r["searchRetrieveResponse"]["numberOfRecords"]["content"]
                 if int(number_of_records) != 1:
                     return None
 
-                record_data = r['searchRetrieveResponse']['records']['record']['recordData']
-                viaf_id = record_data['v:VIAFCluster']['v:viafID']['content']
+                record_data = r["searchRetrieveResponse"]["records"]["record"]["recordData"]
+                viaf_id = record_data["v:VIAFCluster"]["v:viafID"]["content"]
                 return str(viaf_id)
 
             except Exception as ex1:
-                if hdrs_cr["content-type"] == 'text/plain' or hdrs_cr["content-type"] == 'text/html':
+                if hdrs_cr["content-type"] == "text/plain" or hdrs_cr["content-type"] == "text/html":
                     r = r_cr.text
                     if "503" in r:
                         time.sleep(5.0)
@@ -79,8 +82,7 @@ class VIAF(QueryInterface):
                     else:
                         print("[GraphEnricher-VIAF]:" + repr(ex1) + "__" + query + "__" + r)
                 else:
-                    print(
-                        "[GraphEnricher-VIAF]:" + repr(ex1) + "__" + query + "__" + hdrs_cr["content-type"])
+                    print("[GraphEnricher-VIAF]:" + repr(ex1) + "__" + query + "__" + hdrs_cr["content-type"])
 
         except Exception as ex0:
             if "ConnectTimeout" in repr(ex0):
@@ -95,18 +97,20 @@ class WikiData(QueryInterface):
     This class let you query WikiData by means of another identifier, in order to check the existance of a related
     entity on WikiData
     """
+
     def __init__(self):
         super().__init__()
         self.headers = {
             "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net;  mailto:contact@opencitations.net)",
-            "Accept": "application/json"}
-        self.api_url = 'https://query.wikidata.org/sparql'
-        self.base_query = '''
+            "Accept": "application/json",
+        }
+        self.api_url = "https://query.wikidata.org/sparql"
+        self.base_query = """
         SELECT ?item WHERE {{
               ?item p:{property} ?x.
               ?x ps:{property} "{literal}".
         }} LIMIT 1
-        '''
+        """
         self.doi_property = "P356"
         self.issn_property = "P236"
         self.orcid_property = "P496"
@@ -122,30 +126,29 @@ class WikiData(QueryInterface):
         :param schema: the schema of the given identifier
         :return: Wikidata ID if found, otherwise None
         """
-        if schema == 'doi':
+        if schema == "doi":
             query = self.base_query.format(property=self.doi_property, literal=entity.upper())
-        elif schema == 'issn':
+        elif schema == "issn":
             query = self.base_query.format(property=self.issn_property, literal=entity)
-        elif schema == 'orcid':
+        elif schema == "orcid":
             query = self.base_query.format(property=self.orcid_property, literal=entity)
-        elif schema == 'viaf':
+        elif schema == "viaf":
             query = self.base_query.format(property=self.viaf_property, literal=entity)
-        elif schema == 'pmid':
+        elif schema == "pmid":
             query = self.base_query.format(property=self.pmid_property, literal=entity)
-        elif schema == 'pmcid':
+        elif schema == "pmcid":
             query = self.base_query.format(property=self.pmcid_property, literal=entity)
 
-        r = requests.get(self.api_url, headers=self.headers, timeout=60, params={'format': 'json', 'query': query})
+        r = requests.get(self.api_url, headers=self.headers, timeout=60, params={"format": "json", "query": query})
         headers = r.headers
 
         try:
             data = r.json()
-            return data['results']['bindings'][0]['item']['value'].split("/")[-1]
+            return data["results"]["bindings"][0]["item"]["value"].split("/")[-1]
         except IndexError:
             return None
         except Exception as ex1:
-
-            if headers["content-type"] == 'text/plain' or headers["content-type"] == 'text/html':
+            if headers["content-type"] == "text/plain" or headers["content-type"] == "text/html":
                 r = r.text
 
                 if "503" in r:
@@ -164,14 +167,19 @@ class Crossref(QueryInterface):
     """
     This class let you query Crossref in order to extract DOIs, ISSNs and publishers' IDs
     """
-    def __init__(self,
-                 crossref_min_similarity_score=0.95,
-                 max_iteration=6,
-                 sec_to_wait=10,
-                 headers={"User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; "
-                                        "mailto:contact@opencitations.net)"},
-                 timeout=30,
-                 is_json=True):
+
+    def __init__(
+        self,
+        crossref_min_similarity_score=0.95,
+        max_iteration=6,
+        sec_to_wait=10,
+        headers={
+            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; "
+            "mailto:contact@opencitations.net)"
+        },
+        timeout=30,
+        is_json=True,
+    ):
 
         super().__init__()
 
@@ -181,16 +189,16 @@ class Crossref(QueryInterface):
         self.timeout = timeout
         self.is_json = is_json
         self.crossref_min_similarity_score = crossref_min_similarity_score
-        self.__crossref_doi_url = 'https://api.crossref.org/works/'
-        self.__crossref_entry_url = 'https://api.crossref.org/works?query.bibliographic='
-        self.__crossref_journal_url = 'https://api.crossref.org/journals/'
-        with open(os.path.join(str(__file__).replace("__init__.py", ""), "stopwords-it.txt"),
-                  'rt', encoding='utf-8') as f:
+        self.__crossref_doi_url = "https://api.crossref.org/works/"
+        self.__crossref_entry_url = "https://api.crossref.org/works?query.bibliographic="
+        self.__crossref_journal_url = "https://api.crossref.org/journals/"
+        with open(
+            os.path.join(str(__file__).replace("__init__.py", ""), "stopwords-it.txt"), "rt", encoding="utf-8"
+        ) as f:
             self.stoplist = set([line.strip() for line in f])
 
     def _cleaning_title(self, title: str):
-
-        """ Clean a given title, filtering the words according to a stoplist
+        """Clean a given title, filtering the words according to a stoplist
         and extracting a subset of the keywords
 
         :param title: the title string
@@ -203,18 +211,18 @@ class Crossref(QueryInterface):
 
     @staticmethod
     def _cleaning_name(name_raw: str):
-        """ Clean the name of an author
+        """Clean the name of an author
 
         :param name_raw: the name string
         :return: the cleaned name
         """
-        name_clean = u"".join([c for c in unicodedata.normalize("NFKD", name_raw) if not unicodedata.combining(c)])
+        name_clean = "".join([c for c in unicodedata.normalize("NFKD", name_raw) if not unicodedata.combining(c)])
         name_clean = name_clean.lower()
         name_clean = re.sub(r"[^\w\d\s]", "", name_clean)
         return name_clean
 
     def query_journal(self, issn: str):
-        """ Query Crossref to get a list of any other ISSN known, related to an entity described by an ISSN to give
+        """Query Crossref to get a list of any other ISSN known, related to an entity described by an ISSN to give
         in input. The list of ISSNs retur will be cleaned from the ISSN already known.
 
         :param issn: the ISSN of the bibliographic entity
@@ -234,7 +242,7 @@ class Crossref(QueryInterface):
                     return new_issn
 
             except Exception as ex1:
-                if hdrs_cr["content-type"] == 'text/plain' or hdrs_cr["content-type"] == 'text/html':
+                if hdrs_cr["content-type"] == "text/plain" or hdrs_cr["content-type"] == "text/html":
                     r = r_cr.text
                     if "Resource not found" in r:
                         return None
@@ -257,8 +265,8 @@ class Crossref(QueryInterface):
                 solution = self.query_journal(issn)
                 return solution
 
-    def query_publisher(self, doi:str):
-        """ Method to extract the identifier of a publisher starting from a given DOI.
+    def query_publisher(self, doi: str):
+        """Method to extract the identifier of a publisher starting from a given DOI.
 
         :param doi: the DOI of the paper
         :return: a string representing the ID of the publisher, otherwise None
@@ -275,7 +283,7 @@ class Crossref(QueryInterface):
 
             except Exception as ex1:
                 # ex1.with_traceback()
-                if hdrs_cr["content-type"] == 'text/plain' or hdrs_cr["content-type"] == 'text/html':
+                if hdrs_cr["content-type"] == "text/plain" or hdrs_cr["content-type"] == "text/html":
                     r = r_cr.text
                     if "503" in r:
                         time.sleep(5.0)
@@ -284,8 +292,14 @@ class Crossref(QueryInterface):
                     else:
                         print("[GraphEnricher-Crossref-publisher]:" + repr(ex1) + "__" + url_cr + "__" + r)
                 else:
-                    print("[GraphEnricher-Crossref-publisher]:" + repr(ex1) + "__" + url_cr + "__" + hdrs_cr[
-                        "content-type"])
+                    print(
+                        "[GraphEnricher-Crossref-publisher]:"
+                        + repr(ex1)
+                        + "__"
+                        + url_cr
+                        + "__"
+                        + hdrs_cr["content-type"]
+                    )
 
         except Exception as ex0:
             # ex0.with_traceback()
@@ -295,7 +309,7 @@ class Crossref(QueryInterface):
                 solution = self.query_publisher(doi)
                 return solution
 
-    def query(self, fullnames: list, title: str, year: str):
+    def query(self, fullnames: list, title: str, year: str | None):
         """
         Method to extract the DOI, given the names of the authors, the title of the paper and the year of publication
 
@@ -359,14 +373,14 @@ class Crossref(QueryInterface):
                                                 point_year += 3
                             if exist_author:
                                 if "author" in r["message"]["items"][idx].keys():
-
                                     for n in r["message"]["items"][idx]["author"]:
                                         if "family" in n.keys():
                                             if "given" in n.keys():
                                                 if n["family"].lower() == surname and n["given"].lower() == name:
                                                     point_authors += 2
-                                                elif n["family"].lower() == surname and n["given"].lower()[0] == name[
-                                                    0]:
+                                                elif (
+                                                    n["family"].lower() == surname and n["given"].lower()[0] == name[0]
+                                                ):
                                                     point_authors += 1
                                             elif n["family"].lower() == surname:
                                                 point_authors += 1
@@ -390,7 +404,7 @@ class Crossref(QueryInterface):
 
             except Exception as ex1:
                 # ex1.with_traceback()
-                if hdrs_cr["content-type"] == 'text/plain' or hdrs_cr["content-type"] == 'text/html':
+                if hdrs_cr["content-type"] == "text/plain" or hdrs_cr["content-type"] == "text/html":
                     r = r_cr.text
                     if "503" in r:
                         time.sleep(5.0)
@@ -414,16 +428,21 @@ class ORCID(QueryInterface):
     """
     This class let you query ORCID in order to extract ORCID IDs
     """
-    def __init__(self,
-                 max_iteration=6,
-                 sec_to_wait=10,
-                 headers={"User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; "
-                                        "mailto:contact@opencitations.net)",
-                          "Content-Type": "application/json"},
-                 timeout=30,
-                 repok=None,
-                 reperr=None,
-                 is_json=True):
+
+    def __init__(
+        self,
+        max_iteration=6,
+        sec_to_wait=10,
+        headers={
+            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; "
+            "mailto:contact@opencitations.net)",
+            "Content-Type": "application/json",
+        },
+        timeout=30,
+        repok=None,
+        reperr=None,
+        is_json=True,
+    ):
         super().__init__()
 
         self.max_iteration = max_iteration
@@ -431,7 +450,7 @@ class ORCID(QueryInterface):
         self.headers = headers
         self.timeout = timeout
         self.is_json = is_json
-        self.__orcid_api_url = 'https://pub.orcid.org/v2.1/search?q='
+        self.__orcid_api_url = "https://pub.orcid.org/v2.1/search?q="
         self.__personal_url = "https://pub.orcid.org/v2.1/%s/personal-details"
 
     def query(self, authors: list, identifiers: list):
@@ -462,7 +481,6 @@ class ORCID(QueryInterface):
 
                     for a in authors:
                         if a[2] is None:
-
                             if to_return.get((a[0], a[1])) is None and a[1] is not None and family_name is not None:
                                 if a[1].lower() in family_name:
                                     to_return[(a[0], a[1])] = orcid_id.upper()
@@ -480,7 +498,7 @@ class ORCID(QueryInterface):
 
         return authors_to_return
 
-    def _get_orcid_records(self, identifiers: list, family_names: list =[]):
+    def _get_orcid_records(self, identifiers: list, family_names: list = []):
         cur_query = ""
 
         i_counter = 0
@@ -496,15 +514,15 @@ class ORCID(QueryInterface):
                     cur_query += " OR "
 
                 doi_string = i[1]
-                cur_query += "doi-self:\"%s\"" % doi_string
+                cur_query += 'doi-self:"%s"' % doi_string
                 doi_string_l = doi_string.lower()
                 doi_string_u = doi_string.upper()
 
                 if doi_string_l != doi_string or doi_string_u != doi_string:
                     if doi_string_l != doi_string:
-                        cur_query += " OR doi-self:\"%s\"" % doi_string_l
+                        cur_query += ' OR doi-self:"%s"' % doi_string_l
                     if doi_string_u != doi_string:
-                        cur_query += " OR doi-self:\"%s\"" % doi_string_u
+                        cur_query += ' OR doi-self:"%s"' % doi_string_u
 
             elif i[0] == GraphEntity.iri_isbn:
                 if i_counter == 0:
@@ -512,16 +530,15 @@ class ORCID(QueryInterface):
                 if i_counter >= 1:
                     cur_query += " OR "
                 isbn_string = i[1]
-                cur_query += "isbn:\"%s\"" % isbn_string
+                cur_query += 'isbn:"%s"' % isbn_string
 
             elif i[0] == GraphEntity.iri_pmid:
-
                 if i_counter == 0:
                     cur_query += "( "
                 if i_counter >= 1:
                     cur_query += " OR "
                 pmid_string = i[1]
-                cur_query += "pmid-self:\"%s\"" % pmid_string
+                cur_query += 'pmid-self:"%s"' % pmid_string
             else:
                 continue
 
@@ -542,14 +559,14 @@ class ORCID(QueryInterface):
                     elif cur_query != "":
                         cur_query += " OR "
                     if family_name:
-                        cur_query += "family-name:\"%s\"" % \
-                                     unicodedata.normalize('NFKD', "" + family_name). \
-                                         encode("ASCII", "ignore").decode("utf-8")
+                        cur_query += 'family-name:"%s"' % unicodedata.normalize("NFKD", "" + family_name).encode(
+                            "ASCII", "ignore"
+                        ).decode("utf-8")
                     if given_names:
                         cur_query += " AND "
-                        cur_query += "given-names:\"%s\"" % \
-                                     unicodedata.normalize('NFKD', "" + given_names). \
-                                         encode("ASCII", "ignore").decode("utf-8")
+                        cur_query += 'given-names:"%s"' % unicodedata.normalize("NFKD", "" + given_names).encode(
+                            "ASCII", "ignore"
+                        ).decode("utf-8")
 
             # close query if has started with the doi thing
             if len(identifiers):
@@ -617,8 +634,9 @@ class ORCID(QueryInterface):
                     else:
                         return response.text
                 else:
-                    err_string = "We got an HTTP error when retrieving data (HTTP status code: %s)." % \
-                                 str(response.status_code)
+                    err_string = "We got an HTTP error when retrieving data (HTTP status code: %s)." % str(
+                        response.status_code
+                    )
                     if not error_no_200:
                         error_no_200 = True
                     if response.status_code == 404:
@@ -632,39 +650,41 @@ class ORCID(QueryInterface):
             except ReadTimeout as e:
                 if not error_read:
                     error_read = True
-                    errors += ["A timeout error happened when reading results from the API "
-                               "when retrieving data. %s" % e]
+                    errors += [
+                        "A timeout error happened when reading results from the API when retrieving data. %s" % e
+                    ]
             except ConnectTimeout as e:
                 if not error_connection:
                     error_connection = True
-                    errors += ["A timeout error happened when connecting to the API "
-                               "when retrieving data. %s" % e]
+                    errors += ["A timeout error happened when connecting to the API when retrieving data. %s" % e]
             except Exception:
                 if not error_generic:
                     error_generic = True
-                    errors += ["A generic error happened when trying to use the API "
-                               "when retrieving data. %s" % sys.exc_info()[0]]
+                    errors += [
+                        "A generic error happened when trying to use the API "
+                        "when retrieving data. %s" % sys.exc_info()[0]
+                    ]
 
         # If the process comes here, no valid result has been returned
         print(" | ".join(errors) + "\n\tRequested URL: " + get_url)
 
 
 class OpenAlex(QueryInterface):
-
     def __init__(self):
         super().__init__()
         self.headers = {
-            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net;  mailto:contact@opencitations.net)"}
-        self.api_url_works = 'https://api.openalex.org/works'
-        self.api_url_sources = 'https://api.openalex.org/sources'
+            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net;  mailto:contact@opencitations.net)"
+        }
+        self.api_url_works = "https://api.openalex.org/works"
+        self.api_url_sources = "https://api.openalex.org/sources"
 
-    def query(self, entity:str, schema:str):
+    def query(self, entity: str, schema: str):
 
         schema = schema.lower()
 
-        if schema in ['doi', 'pmid', 'pmcid']:
+        if schema in ["doi", "pmid", "pmcid"]:
             query = f"{self.api_url_works}?filter={schema}:{entity}&select=id"
-        if schema == 'issn':
+        if schema == "issn":
             query = f"{self.api_url_sources}?filter={schema}:{entity}&select=id"
 
         try:
@@ -673,14 +693,14 @@ class OpenAlex(QueryInterface):
 
             try:
                 r = resp.json()
-                if not r['results']:
+                if not r["results"]:
                     return None
                 else:
-                    res = [i['id'].replace('https://openalex.org/', '') for i in r['results']]
+                    res = [i["id"].replace("https://openalex.org/", "") for i in r["results"]]
                     return res
 
             except Exception as ex1:
-                if hdrs["content-type"] == 'text/plain' or hdrs["content-type"] == 'text/html':
+                if hdrs["content-type"] == "text/plain" or hdrs["content-type"] == "text/html":
                     r = resp.text
                     if "503" in r:
                         time.sleep(5.0)
@@ -693,8 +713,7 @@ class OpenAlex(QueryInterface):
                     else:
                         print("[GraphEnricher-OpenAlex]:" + repr(ex1) + "__" + query + "__" + r)
                 else:
-                    print(
-                        "[GraphEnricher-OpenAlex]:" + repr(ex1) + "__" + query + "__" + hdrs["content-type"])
+                    print("[GraphEnricher-OpenAlex]:" + repr(ex1) + "__" + query + "__" + hdrs["content-type"])
 
         except Exception as ex0:
             if "ConnectTimeout" in repr(ex0):
@@ -703,6 +722,8 @@ class OpenAlex(QueryInterface):
                 solution = self.query(entity, schema)
                 return solution
             if "UnboundLocalError" in repr(ex0):
-                print("[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + f"The specified schema '{schema}' is not supported")
+                print(
+                    "[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + f"The specified schema '{schema}' is not supported"
+                )
             else:
                 print("[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + query)

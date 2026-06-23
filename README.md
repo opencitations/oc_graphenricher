@@ -9,6 +9,8 @@ SPDX-License-Identifier: ISC
 -->
 
 [![Tests](https://github.com/opencitations/oc_graphenricher/actions/workflows/test.yml/badge.svg)](https://github.com/opencitations/oc_graphenricher/actions/workflows/test.yml)
+[![Pyright](https://github.com/opencitations/oc_graphenricher/actions/workflows/pyright.yml/badge.svg)](https://github.com/opencitations/oc_graphenricher/actions/workflows/pyright.yml)
+[![Ruff](https://github.com/opencitations/oc_graphenricher/actions/workflows/ruff.yml/badge.svg)](https://github.com/opencitations/oc_graphenricher/actions/workflows/ruff.yml)
 [![Coverage](https://opencitations.github.io/oc_graphenricher/coverage/coverage-badge.svg)](https://opencitations.github.io/oc_graphenricher/coverage/)
 [![REUSE status](https://api.reuse.software/badge/github.com/opencitations/oc_graphenricher)](https://api.reuse.software/info/github.com/opencitations/oc_graphenricher)
 
