@@ -58,4 +58,4 @@ To run the tests (from the root of the project):
 
     .. code-block:: bash
 
-        uv run test
+        uv run pytest

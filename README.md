@@ -1,3 +1,6 @@
+[![Tests](https://github.com/opencitations/oc_graphenricher/actions/workflows/test.yml/badge.svg)](https://github.com/opencitations/oc_graphenricher/actions/workflows/test.yml)
+[![Coverage](https://opencitations.github.io/oc_graphenricher/coverage/coverage-badge.svg)](https://opencitations.github.io/oc_graphenricher/coverage/)
+
 <p align="center">
 
   <h2 align="center">GraphEnricher</h3>
@@ -145,7 +148,7 @@ https://docs.astral.sh/uv/getting-started/installation/
 6. run the tests (from the root of the project):
 
 ```
-uv run test
+uv run pytest
 ```
 
 <!-- USAGE EXAMPLES -->

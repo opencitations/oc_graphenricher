@@ -13,115 +13,84 @@ OF THIS SOFTWARE.
 
 __author__ = "Gabriele Pisciotta"
 
-import os
-import unittest
-from unittest import TestCase
+EXPECTED_BR_CONTRIBUTOR_COUNTS = {
+    "http://example.com/br/1": 0,
+    "http://example.com/br/2": 0,
+    "http://example.com/br/3": 2,
+    "http://example.com/br/7": 2,
+}
 
-from oc_ocdm.graph import GraphSet
-from oc_ocdm.reader import Reader
-from rdflib import Graph
+EXPECTED_IDS = [
+    "http://purl.org/spar/datacite/crossrefpub1",
+    "http://purl.org/spar/datacite/doibr3_issue_doi",
+    "http://purl.org/spar/datacite/doibr3_volume_doi",
+    "http://purl.org/spar/datacite/doibr6_issue_doi",
+    "http://purl.org/spar/datacite/doibr6_volume_doi",
+    "http://purl.org/spar/datacite/doidoi1",
+    "http://purl.org/spar/datacite/doidoi4",
+    "http://purl.org/spar/datacite/orcidorcid1",
+    "http://purl.org/spar/datacite/orcidorcid_author_1",
+    "http://purl.org/spar/datacite/viafviaf1",
+]
 
-from oc_graphenricher.instancematching import InstanceMatching
-
-
-class TestInstanceMatching(TestCase):
-
-    def setUp(self) -> None:
-        self.test_dir = str(__file__).replace("test_instancematching.py", "")
-        g = Graph()
-        g = g.parse(self.test_dir + 'test_merge_br.rdf', format='nt11')
-
-        reader = Reader()
-        g_set = GraphSet(base_iri='https://w3id.org/oc/meta/')
-        reader.import_entities_from_graph(g_set,
-                                          g,
-                                          enable_validation=False,
-                                          resp_agent='https://w3id.org/oc/meta/prov/pa/2')
-
-        matcher = InstanceMatching(g_set,
-                                   graph_filename=self.test_dir + "matched.rdf",
-                                   provenance_filename=self.test_dir + "provenance.rdf",
-                                   debug=True)
-        matcher.match()
-
-        g = Graph()
-        g = g.parse(self.test_dir + 'matched.rdf', format='nt11')
-
-        reader = Reader()
-        self.g_set_new = GraphSet(base_iri='https://w3id.org/oc/meta/')
-        reader.import_entities_from_graph(self.g_set_new,
-                                          g,
-                                          enable_validation=False,
-                                          resp_agent='https://w3id.org/oc/meta/prov/pa/2')
-
-    def test_ras_merged(self):
-        ids = set()
-        for ra in self.g_set_new.get_ra():
-            for idd in ra.get_identifiers():
-                newliteral = str(idd.get_scheme()) + str(idd.get_literal_value())
-                if newliteral in ids:
-                    self.fail()
-                else:
-                    ids.add(idd)
+EXPECTED_RA_IDENTIFIERS = [
+    "http://purl.org/spar/datacite/crossrefpub1",
+    "http://purl.org/spar/datacite/orcidorcid1",
+    "http://purl.org/spar/datacite/orcidorcid_author_1",
+    "http://purl.org/spar/datacite/viafviaf1",
+]
 
 
-    def test_ids_not_duplicated(self):
-        ids = set()
-        for idd in self.g_set_new.get_id():
-            newliteral = str(idd.get_scheme()) + str(idd.get_literal_value())
-            if newliteral != "NoneNone" and newliteral in ids:
-                print("Ahia")
-                self.fail()
-            else:
-                ids.add(newliteral)
-
-    def test_orphan_ra(self):
-        ras_from_ar = set()
-        for ar in self.g_set_new.get_ar():
-            ras_from_ar.add(ar.get_is_held_by())
-
-        ras = set()
-        for ra in self.g_set_new.get_ra():
-            ras.add(ra)
-
-        difference = ras_from_ar.difference(ras)
-        if len(difference) > 0:
-            print(f"AR Orphans: {[str(d) for d in difference]}")
-            self.fail()
-
-    def test_orphan_ar(self):
-        ars_from_ar = set()
-        for br in self.g_set_new.get_br():
-            for ar in br.get_contributors():
-                ars_from_ar.add(ar)
-
-        ars = set()
-        for ar in self.g_set_new.get_ar():
-            ars.add(ar)
-
-        difference = ars.difference(ars_from_ar)
-        if len(difference) > 0:
-            print(f"Orphans: {[str(d) for d in difference]}")
-            self.fail()
-
-    def test_brs_merged(self):
-        for br in self.g_set_new.get_br():
-            if str(br) == 'http://example.com/br/6' and len(br.get_contributors()) != 0:
-                print(br, len(br.get_contributors()))
-                self.fail()
-
-    def test_brs_have_only_one_list_of_authors(self):
-        for br in self.g_set_new.get_br():
-            if str(br) == 'http://example.com/br/3' and len(br.get_contributors()) != 2:
-                for ar in br.get_contributors():
-                    print(ar, ar.get_is_held_by())
-                print(f"Contributors len {len(br.get_contributors())}")
-                self.fail()
-
-    def test_remove_files(self):
-        os.system(f'rm "{self.test_dir}matched.rdf"')
-        os.system(f'rm "{self.test_dir}provenance.rdf"')
+def identifier_key(identifier):
+    return f"{identifier.get_scheme()}{identifier.get_literal_value()}"
 
 
-if __name__ == '__main__':
-    unittest.main()
+def test_ras_merged(matched_graph_set):
+    identifiers = sorted(
+        identifier_key(identifier)
+        for ra in matched_graph_set.get_ra()
+        for identifier in ra.get_identifiers()
+    )
+    assert identifiers == EXPECTED_RA_IDENTIFIERS
+
+
+def test_ids_not_duplicated(matched_graph_set):
+    identifiers = sorted(
+        identifier_key(identifier)
+        for identifier in matched_graph_set.get_id()
+        if identifier_key(identifier) != "NoneNone"
+    )
+    assert identifiers == EXPECTED_IDS
+
+
+def test_agent_roles_reference_existing_responsible_agents(matched_graph_set):
+    held_responsible_agents = {ar.get_is_held_by() for ar in matched_graph_set.get_ar()}
+    responsible_agents = set(matched_graph_set.get_ra())
+    orphan_responsible_agents = sorted(str(ra) for ra in held_responsible_agents.difference(responsible_agents))
+
+    assert orphan_responsible_agents == []
+
+
+def test_bibliographic_resources_reference_existing_agent_roles(matched_graph_set):
+    agent_roles_from_brs = sorted(str(ar) for br in matched_graph_set.get_br() for ar in br.get_contributors())
+    agent_roles = sorted(str(ar) for ar in matched_graph_set.get_ar())
+
+    assert agent_roles_from_brs == agent_roles
+
+
+def test_brs_merged(matched_graph_set):
+    bibliographic_resources = sorted(str(br) for br in matched_graph_set.get_br())
+    assert bibliographic_resources == [
+        "http://example.com/br/1",
+        "http://example.com/br/2",
+        "http://example.com/br/3",
+        "http://example.com/br/7",
+    ]
+
+
+def test_brs_have_only_one_list_of_authors(matched_graph_set):
+    contributor_counts_by_br = {
+        str(br): len(br.get_contributors())
+        for br in matched_graph_set.get_br()
+    }
+    assert contributor_counts_by_br == EXPECTED_BR_CONTRIBUTOR_COUNTS

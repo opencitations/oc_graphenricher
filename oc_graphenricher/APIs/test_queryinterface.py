@@ -12,73 +12,64 @@ OF THIS SOFTWARE.
 """
 __author__ = "Gabriele Pisciotta"
 
-from unittest import TestCase
-from oc_graphenricher.APIs import *
+from oc_ocdm.graph.graph_entity import GraphEntity
 
-class TestAPI(TestCase):
-    def setUp(self) -> None:
-        self.crossref_API = Crossref()
-        self.orcid_API = ORCID()
-        self.viaf_API = VIAF()
-        self.wikidata_API = WikiData()
-        self.openalex_API = OpenAlex()
 
-    def test_crossref_doi(self):
-        if self.crossref_API.query([("Stacey", "Willcox-Pidgeon")],
-                                   "PW 1927 Reviewing the national swimming and water safety education framework: "
-                                   "a drowning prevention strategy",
-                                   2018) != '10.1136/injuryprevention-2018-safety.431':
-            self.fail()
+def test_crossref_doi(crossref_api):
+    assert crossref_api.query(
+        [("Stacey", "Willcox-Pidgeon")],
+        "PW 1927 Reviewing the national swimming and water safety education framework: "
+        "a drowning prevention strategy",
+        2018,
+    ) == "10.1136/injuryprevention-2018-safety.431"
 
-    def test_crossref_journal(self):
-        if self.crossref_API.query_journal("0008-4026")[0] != '1480-3305':
-            self.fail()
 
-    def test_ORCID(self):
-        authors = [("Silvio", "Peroni", None, None)]
-        identifiers = [(GraphEntity.iri_doi, "10.32388/LAKK5Q")]
-        if self.orcid_API.query(authors, identifiers)[0][2] != '0000-0003-0530-4305':
-            self.fail()
+def test_crossref_journal(crossref_api):
+    assert crossref_api.query_journal("0008-4026")[0] == "1480-3305"
 
-    def test_VIAF(self):
-        given_name = "Silvio"
-        family_name = "Peroni"
-        title = "A Smart City Data Model based on Semantics Best Practice and Principles"
-        if self.viaf_API.query(given_name, family_name, title) != '309649450':
-            self.fail()
-            
-    def test_Wikidata_doi(self):
-        if self.wikidata_API.query("10.1002/(ISSN)1098-2353", 'doi') != 'Q59755':
-            self.fail()
 
-    def test_Wikidata_issn(self):
-        if self.wikidata_API.query("0009-4722", 'issn') != 'Q1119421':
-            self.fail()
+def test_orcid(orcid_api):
+    authors = [("Silvio", "Peroni", None, None)]
+    identifiers = [(GraphEntity.iri_doi, "10.32388/LAKK5Q")]
+    assert orcid_api.query(authors, identifiers)[0][2] == "0000-0003-0530-4305"
 
-    def test_Wikidata_orcid(self):
-        if self.wikidata_API.query("0000-0002-7398-5483", 'orcid') != 'Q5345':
-            self.fail()
 
-    def test_Wikidata_viaf(self):
-        if self.wikidata_API.query("24715915", 'viaf') != 'Q1228':
-            self.fail()
+def test_viaf(viaf_api):
+    title = "A Smart City Data Model based on Semantics Best Practice and Principles"
+    assert viaf_api.query("Silvio", "Peroni", title) == "309649450"
 
-    def test_Wikidata_pmid(self):
-        if self.wikidata_API.query("15774072", 'pmid') != 'Q21092898':
-            self.fail()
 
-    def test_Wikidata_pmcid(self):
-        if self.wikidata_API.query("2981558", 'pmcid') != 'Q21089993':
-            self.fail()
+def test_wikidata_doi(wikidata_api):
+    assert wikidata_api.query("10.1002/(ISSN)1098-2353", "doi") == "Q59755"
 
-    def test_OpenAlex_doi(self):
-        if self.openalex_API.query('10.1111/j.1749-6632.1958.tb54685.x', 'doi') != ['W1985052597']:
-            self.fail()
 
-    def test_OpenAlex_issn(self):
-        if self.openalex_API.query('0014-2980', 'issn') != ['S126191069']:
-            self.fail()
+def test_wikidata_issn(wikidata_api):
+    assert wikidata_api.query("0009-4722", "issn") == "Q1119421"
 
-    def test_OpenAlex_pmid(self):
-        if self.openalex_API.query('21603045', 'pmid') != ['W2991792334']:
-            self.fail()
+
+def test_wikidata_orcid(wikidata_api):
+    assert wikidata_api.query("0000-0002-7398-5483", "orcid") == "Q5345"
+
+
+def test_wikidata_viaf(wikidata_api):
+    assert wikidata_api.query("24715915", "viaf") == "Q1228"
+
+
+def test_wikidata_pmid(wikidata_api):
+    assert wikidata_api.query("12344444", "pmid") == "Q78273175"
+
+
+def test_wikidata_pmcid(wikidata_api):
+    assert wikidata_api.query("3083595", "pmcid") == "Q54919067"
+
+
+def test_openalex_doi(openalex_api):
+    assert openalex_api.query("10.1111/j.1749-6632.1958.tb54685.x", "doi") == ["W1985052597"]
+
+
+def test_openalex_issn(openalex_api):
+    assert openalex_api.query("0014-2980", "issn") == ["S126191069"]
+
+
+def test_openalex_pmid(openalex_api):
+    assert openalex_api.query("21603045", "pmid") == ["W2991792334"]

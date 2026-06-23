@@ -21,6 +21,7 @@ import time
 import unicodedata
 from abc import ABC, abstractmethod
 from time import sleep
+from typing import cast
 from urllib.parse import quote
 
 import Levenshtein
@@ -69,10 +70,13 @@ class VIAF(QueryInterface):
             hdrs_cr = r_cr.headers
             try:
                 r = r_cr.json()
-                if int(r['searchRetrieveResponse']['numberOfRecords']) != 1:
+                number_of_records = r['searchRetrieveResponse']['numberOfRecords']['content']
+                if int(number_of_records) != 1:
                     return None
-                else:
-                    return r['searchRetrieveResponse']['records'][0]['record']['recordData']['viafID']['#text']
+
+                record_data = r['searchRetrieveResponse']['records']['record']['recordData']
+                viaf_id = record_data['v:VIAFCluster']['v:viafID']['content']
+                return str(viaf_id)
 
             except Exception as ex1:
                 if hdrs_cr["content-type"] == 'text/plain' or hdrs_cr["content-type"] == 'text/html':
@@ -329,7 +333,7 @@ class Crossref(QueryInterface):
                     exist_author = True
                     query += f"&query.author={name}{separator}{surname}"
 
-        query += f"&rows=4&select=DOI,title,author,issued"
+        query += "&rows=4&select=DOI,title,author,issued"
         url_cr = f"https://api.crossref.org/works?{query}"
 
         try:
@@ -347,20 +351,20 @@ class Crossref(QueryInterface):
                             point_authors = 0
                             point_title = 0
                             if year is not None:
-
-                                if "-" in str(year):
-                                    year_tokens = str(year).split("-")
+                                year_string = str(year)
+                                if "-" in year_string:
+                                    year_tokens = year_string.split("-")
                                     for element_of_year in year_tokens:
                                         if len(element_of_year) == 4:
-                                            year = int(element_of_year)
+                                            year_string = element_of_year
                                             break
-                                year = int(year)
+                                year_int = int(year_string)
 
                                 if "issued" in r["message"]["items"][idx].keys():
                                     if "date-parts" in r["message"]["items"][idx]["issued"].keys():
                                         if r["message"]["items"][idx]["issued"]["date-parts"][0][0] is not None:
                                             paper_year = int(r["message"]["items"][idx]["issued"]["date-parts"][0][0])
-                                            if paper_year == year:
+                                            if paper_year == year_int:
                                                 point_year += 3
                             if exist_author:
                                 if "author" in r["message"]["items"][idx].keys():
@@ -456,8 +460,9 @@ class ORCID(QueryInterface):
 
         records = self._get_orcid_records(identifiers, authors)
         if records is not None:
+            orcid_ids = cast(list[str], self.__dict_get(records, ["result", "orcid-identifier", "path"]))
 
-            for orcid_id in self.__dict_get(records, ["result", "orcid-identifier", "path"]):
+            for orcid_id in orcid_ids:
                 personal_details = self.__get_data(self.__personal_url % orcid_id.upper())
 
                 if personal_details is not None:
