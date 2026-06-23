@@ -7,8 +7,8 @@ coverage-badge.svg
 htmlcov/
 docs/build/
 GraphEnricher_cache.sqlite
-oc_graphenricher/instancematching/matched.rdf
-oc_graphenricher/instancematching/provenance.rdf
 /data/
 /enriched.rdf
+/matched.rdf
+/provenance.rdf
 /test_merge_br.rdf

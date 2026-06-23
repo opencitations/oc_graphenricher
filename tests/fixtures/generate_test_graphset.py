@@ -11,14 +11,14 @@ AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 OF THIS SOFTWARE.
 """
 
-"""
-This is an internal script that let us create a specific RDF graph to test the functionality of the instance matching module
-"""
-__author__ = "Gabriele Pisciotta"
+from pathlib import Path
+from typing import cast
 
 from oc_ocdm import Storer
 from oc_ocdm.graph import GraphSet
 from oc_ocdm.support import create_date
+
+__author__ = "Gabriele Pisciotta"
 
 
 def add_one_author_with_single_id(type, literal):
@@ -54,7 +54,7 @@ def add_article():
     my_paper = gs.add_br(ra)
     my_paper.has_title("test")
     my_paper.has_pub_date("2020")
-    iso_date_string = create_date([2020, 5, 1])
+    iso_date_string = cast(str, create_date([2020, 5, 1]))
     my_paper.has_pub_date(iso_date_string)
     add_id(my_paper, 'doi4', 'doi', gs)
     my_paper.create_journal_article()
@@ -115,7 +115,7 @@ def add_br_with_one_author(name):
     my_paper.has_contributor(sp_author)
     my_paper.has_contributor(sp_pub)
     my_paper.is_part_of(my_issue)
-    iso_date_string = create_date([2020, 5, 1])
+    iso_date_string = cast(str, create_date([2020, 5, 1]))
     my_paper.has_pub_date(iso_date_string)
     add_id(my_paper, 'doi1', 'doi', gs)
     my_paper.create_journal_article()
@@ -153,4 +153,4 @@ paper.has_contributor(author1)
 paper.has_contributor(author2)
 gs.commit_changes()
 gs_storer = Storer(gs, output_format="nt11")
-gs_storer.store_graphs_in_file("./test_merge_br.rdf", "")
+gs_storer.store_graphs_in_file(str(Path(__file__).with_name("test_merge_br.rdf")), "")

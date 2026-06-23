@@ -27,18 +27,11 @@ dependencies = [
 requires = ["uv_build>=0.9.8,<0.10.0"]
 build-backend = "uv_build"
 
-[tool.uv.build-backend]
-module-name = "oc_graphenricher"
-module-root = ""
-
 [tool.pytest.ini_options]
-testpaths = ["oc_graphenricher"]
+testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["oc_graphenricher"]
-omit = [
-    "oc_graphenricher/**/test_*.py",
-]
 
 [tool.coverage.report]
 show_missing = true

@@ -29,7 +29,7 @@ def orcid_api():
 
 @pytest.fixture
 def test_data_dir():
-    return Path(__file__).parent / "oc_graphenricher" / "instancematching"
+    return Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
