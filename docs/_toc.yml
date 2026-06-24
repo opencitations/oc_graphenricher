@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 Arcangelo Massari <arcangelo.massari@unibo.it>
+#
+# SPDX-License-Identifier: ISC
+
+format: jb-book
+root: intro
+parts:
+  - caption: "Guide"
+    numbered: false
+    chapters:
+      - file: installing
+      - file: usage
+      - file: api-guide

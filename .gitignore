@@ -9,7 +9,7 @@ __pycache__/
 coverage.xml
 coverage-badge.svg
 htmlcov/
-docs/build/
+docs/_build/
 GraphEnricher_cache.sqlite
 /data/
 /enriched.rdf

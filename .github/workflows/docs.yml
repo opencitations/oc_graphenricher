@@ -39,14 +39,14 @@ jobs:
         run: uv sync --locked --dev --python 3.13
 
       - name: Build documentation
-        run: uv run --python 3.13 sphinx-build -b html docs/source docs/build/html
+        run: uv run --python 3.13 jupyter-book build docs
 
       - name: Download coverage report
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           github-token: ${{ github.token }}
           name: coverage-report
-          path: docs/build/html/coverage
+          path: docs/_build/html/coverage
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Download coverage badge
@@ -54,7 +54,7 @@ jobs:
         with:
           github-token: ${{ github.token }}
           name: coverage-badge
-          path: docs/build/html/coverage
+          path: docs/_build/html/coverage
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Setup Pages
@@ -63,7 +63,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: docs/build/html
+          path: docs/_build/html
 
       - name: Deploy to GitHub Pages
         id: deployment
