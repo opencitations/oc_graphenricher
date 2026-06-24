@@ -6,12 +6,15 @@
 from pathlib import Path
 from typing import cast
 
+from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
+from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
+from oc_ocdm.graph.entities.bibliographic_entity import BibliographicEntity
 from oc_ocdm.graph.graph_set import GraphSet
 from oc_ocdm.storer import Storer
 from oc_ocdm.support.support import create_date
 
 
-def add_one_author_with_single_id(schema, literal):
+def add_one_author_with_single_id(schema: str, literal: str) -> AgentRole:
     sp = gs.add_ra(ra)
     sp.has_given_name("othername")
     sp.has_family_name("otherfamilyname")
@@ -24,7 +27,7 @@ def add_one_author_with_single_id(schema, literal):
     return sp_author
 
 
-def add_one_author_with_two_id(schema, literal):
+def add_one_author_with_two_id(schema: str, literal: str) -> AgentRole:
     sp = gs.add_ra(ra)
     sp.has_given_name("othername")
     sp.has_family_name("otherfamilyname")
@@ -40,7 +43,7 @@ def add_one_author_with_two_id(schema, literal):
     return sp_author
 
 
-def add_article():
+def add_article() -> BibliographicResource:
     my_paper = gs.add_br(ra)
     my_paper.has_title("test")
     my_paper.has_pub_date("2020")
@@ -51,7 +54,7 @@ def add_article():
     return my_paper
 
 
-def add_br_with_one_author(name):
+def add_br_with_one_author(name: str) -> None:
     ####
     # author
     ####
@@ -110,7 +113,7 @@ def add_br_with_one_author(name):
     #####
 
 
-def add_id(entity, literal, schema, g_set):
+def add_id(entity: BibliographicEntity, literal: str, schema: str, g_set: GraphSet) -> None:
     new_id = g_set.add_id("http://responsible_agent/")
     if schema == "issn":
         new_id.create_issn(literal)

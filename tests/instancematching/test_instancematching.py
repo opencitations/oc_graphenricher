@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: ISC
 
+from oc_ocdm.graph.entities.identifier import Identifier
+from oc_ocdm.graph.graph_set import GraphSet
+
 EXPECTED_BR_CONTRIBUTOR_COUNTS = {
     "http://example.com/br/1": 0,
     "http://example.com/br/2": 0,
@@ -31,18 +34,18 @@ EXPECTED_RA_IDENTIFIERS = [
 ]
 
 
-def identifier_key(identifier):
+def identifier_key(identifier: Identifier) -> str:
     return f"{identifier.get_scheme()}{identifier.get_literal_value()}"
 
 
-def test_ras_merged(matched_graph_set):
+def test_ras_merged(matched_graph_set: GraphSet) -> None:
     identifiers = sorted(
         identifier_key(identifier) for ra in matched_graph_set.get_ra() for identifier in ra.get_identifiers()
     )
     assert identifiers == EXPECTED_RA_IDENTIFIERS
 
 
-def test_ids_not_duplicated(matched_graph_set):
+def test_ids_not_duplicated(matched_graph_set: GraphSet) -> None:
     identifiers = sorted(
         identifier_key(identifier)
         for identifier in matched_graph_set.get_id()
@@ -51,7 +54,7 @@ def test_ids_not_duplicated(matched_graph_set):
     assert identifiers == EXPECTED_IDS
 
 
-def test_agent_roles_reference_existing_responsible_agents(matched_graph_set):
+def test_agent_roles_reference_existing_responsible_agents(matched_graph_set: GraphSet) -> None:
     held_responsible_agents = {ar.get_is_held_by() for ar in matched_graph_set.get_ar()}
     responsible_agents = set(matched_graph_set.get_ra())
     orphan_responsible_agents = sorted(str(ra) for ra in held_responsible_agents.difference(responsible_agents))
@@ -59,14 +62,14 @@ def test_agent_roles_reference_existing_responsible_agents(matched_graph_set):
     assert orphan_responsible_agents == []
 
 
-def test_bibliographic_resources_reference_existing_agent_roles(matched_graph_set):
+def test_bibliographic_resources_reference_existing_agent_roles(matched_graph_set: GraphSet) -> None:
     agent_roles_from_brs = sorted(str(ar) for br in matched_graph_set.get_br() for ar in br.get_contributors())
     agent_roles = sorted(str(ar) for ar in matched_graph_set.get_ar())
 
     assert agent_roles_from_brs == agent_roles
 
 
-def test_brs_merged(matched_graph_set):
+def test_brs_merged(matched_graph_set: GraphSet) -> None:
     bibliographic_resources = sorted(str(br) for br in matched_graph_set.get_br())
     assert bibliographic_resources == [
         "http://example.com/br/1",
@@ -76,6 +79,6 @@ def test_brs_merged(matched_graph_set):
     ]
 
 
-def test_brs_have_only_one_list_of_authors(matched_graph_set):
+def test_brs_have_only_one_list_of_authors(matched_graph_set: GraphSet) -> None:
     contributor_counts_by_br = {str(br): len(br.get_contributors()) for br in matched_graph_set.get_br()}
     assert contributor_counts_by_br == EXPECTED_BR_CONTRIBUTOR_COUNTS
