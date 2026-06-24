@@ -3,18 +3,24 @@
 #
 # SPDX-License-Identifier: ISC
 
+import json
+from http import HTTPStatus
+
 import pytest
 import requests
 from oc_ocdm.graph.graph_entity import GraphEntity
+from requests.exceptions import ReadTimeout
 
+from oc_graphenricher import APIs
 from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, JsonDict, OpenAlex, WikiData
 
 
 class JsonResponse:
-    def __init__(self, data: JsonDict) -> None:
+    def __init__(self, data: JsonDict, status_code: HTTPStatus = HTTPStatus.OK) -> None:
         self.data = data
+        self.status_code = status_code
         self.headers: dict[str, str] = {}
-        self.text = ""
+        self.text = json.dumps(data)
 
     def json(self) -> JsonDict:
         return self.data
@@ -44,6 +50,71 @@ def test_crossref_publisher(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(requests, "get", fake_get)
 
     assert Crossref().query_publisher("10.1007/978-3-030-00668-6_4") == "297"
+
+
+def test_crossref_publisher_retries_service_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    responses = [
+        JsonResponse({}, HTTPStatus.SERVICE_UNAVAILABLE),
+        JsonResponse({}, HTTPStatus.SERVICE_UNAVAILABLE),
+        JsonResponse({"message": {"member": "297"}}),
+    ]
+    sleep_values = []
+
+    def fake_get(url: str, headers: dict[str, str], timeout: int) -> JsonResponse:
+        del url, headers, timeout
+        return responses.pop(0)
+
+    def fake_sleep(seconds: float) -> None:
+        sleep_values.append(seconds)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(APIs, "sleep", fake_sleep)
+
+    assert Crossref(max_iteration=3, sec_to_wait=0.5).query_publisher("10.1007/978-3-030-00668-6_4") == "297"
+    assert responses == []
+    assert sleep_values == [0.5, 1.0]
+
+
+def test_crossref_journal_not_found_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = 0
+    sleep_values = []
+
+    def fake_get(url: str, headers: dict[str, str], timeout: int) -> JsonResponse:
+        nonlocal calls
+        del url, headers, timeout
+        calls += 1
+        return JsonResponse({}, HTTPStatus.NOT_FOUND)
+
+    def fake_sleep(seconds: float) -> None:
+        sleep_values.append(seconds)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(APIs, "sleep", fake_sleep)
+
+    assert Crossref().query_journal("0000-0000") is None
+    assert calls == 1
+    assert sleep_values == []
+
+
+def test_crossref_journal_non_ok_status_returns_none_without_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = 0
+    sleep_values = []
+
+    def fake_get(url: str, headers: dict[str, str], timeout: int) -> JsonResponse:
+        nonlocal calls
+        del url, headers, timeout
+        calls += 1
+        return JsonResponse({}, HTTPStatus.BAD_REQUEST)
+
+    def fake_sleep(seconds: float) -> None:
+        sleep_values.append(seconds)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(APIs, "sleep", fake_sleep)
+
+    assert Crossref().query_journal("not-an-issn") is None
+    assert calls == 1
+    assert sleep_values == []
 
 
 def test_crossref_selects_best_doi_from_response_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -81,6 +152,29 @@ def test_orcid() -> None:
 
 def test_orcid_without_identifiers() -> None:
     assert ORCID().query([], []) is None
+
+
+def test_orcid_returns_unmatched_author_after_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = 0
+    sleep_values = []
+
+    def fake_get(url: str, headers: dict[str, str], timeout: int) -> JsonResponse:
+        nonlocal calls
+        del url, headers, timeout
+        calls += 1
+        raise ReadTimeout
+
+    def fake_sleep(seconds: float) -> None:
+        sleep_values.append(seconds)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(APIs, "sleep", fake_sleep)
+
+    authors: list[AuthorTuple] = [("Ada", "Lovelace", None, None)]
+    identifiers: list[IdentifierTuple] = [(GraphEntity.iri_doi, "10.555/example")]
+    assert ORCID().query(authors, identifiers) == [("Ada", "Lovelace", None, None)]
+    assert calls == APIs.DEFAULT_RETRY_ATTEMPTS
+    assert sleep_values == [1.0, 2.0]
 
 
 def test_viaf() -> None:
@@ -126,6 +220,41 @@ def test_openalex_issn() -> None:
 
 def test_openalex_pmid() -> None:
     assert OpenAlex().query("21603045", "pmid") == ["W2991792334"]
+
+
+@pytest.mark.parametrize(
+    "status_code",
+    [
+        HTTPStatus.TOO_MANY_REQUESTS,
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        HTTPStatus.BAD_GATEWAY,
+        HTTPStatus.SERVICE_UNAVAILABLE,
+        HTTPStatus.GATEWAY_TIMEOUT,
+    ],
+)
+def test_openalex_retries_retryable_status_codes(
+    monkeypatch: pytest.MonkeyPatch,
+    status_code: HTTPStatus,
+) -> None:
+    responses = [
+        JsonResponse({}, status_code),
+        JsonResponse({"results": [{"id": "https://openalex.org/W123"}]}),
+    ]
+    sleep_values = []
+
+    def fake_get(url: str, headers: dict[str, str], timeout: int) -> JsonResponse:
+        del url, headers, timeout
+        return responses.pop(0)
+
+    def fake_sleep(seconds: float) -> None:
+        sleep_values.append(seconds)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(APIs, "sleep", fake_sleep)
+
+    assert OpenAlex().query("10.555/example", "doi") == ["W123"]
+    assert responses == []
+    assert sleep_values == [1.0]
 
 
 def test_openalex_unsupported_schema() -> None:
