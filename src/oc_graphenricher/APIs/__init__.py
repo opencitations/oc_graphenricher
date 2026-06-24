@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 import time
 import unicodedata
 from abc import ABC, abstractmethod
@@ -236,19 +235,6 @@ class Crossref(QueryInterface):
         """
         keywords = [word for word in title.split(" ") if word not in self.stoplist]
         return " ".join(keywords[:TITLE_KEYWORD_LIMIT])
-
-    @staticmethod
-    def _cleaning_name(name_raw: str) -> str:
-        """
-        Clean the name of an author.
-
-        :param name_raw: the name string
-        :return: the cleaned name
-        """
-        name_clean = "".join(
-            character for character in unicodedata.normalize("NFKD", name_raw) if not unicodedata.combining(character)
-        )
-        return re.sub(r"[^\w\d\s]", "", name_clean.lower())
 
     def query_journal(self, issn: str) -> list[str] | None:
         """
@@ -614,10 +600,6 @@ class ORCID(QueryInterface):
         if isinstance(data, list):
             return [self.__dict_get(item, key_list) for item in data]
         return None
-
-    @staticmethod
-    def __dict_add(data: dict[str, object]) -> dict[str, object]:
-        return {key: value for key, value in data.items() if value is not None}
 
     def __get_data(self, get_url: str) -> JsonDict | str | None:
         """

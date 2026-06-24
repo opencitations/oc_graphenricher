@@ -430,19 +430,6 @@ class InstanceMatching:
                 association.setdefault(responsible_agent, []).append(ar)
         return association
 
-    def __get_association_ar_br(self) -> dict[AgentRole, list[BibliographicResource]]:
-        """
-        Return all the Bibliographic Resources (BRs) associated to the same AR.
-
-        :return association: a dictionary having Agent Role (AR) as key, and a list of Bibliographic Resource (BR)
-        """
-        association: dict[AgentRole, list[BibliographicResource]] = {}
-        for br in self.g_set.get_br():
-            for ar in br.get_contributors():
-                if ar.get_is_held_by() is not None:
-                    association.setdefault(ar, []).append(br)
-        return association
-
     def __debug(self, message: str, *args: object) -> None:
         if self.debug:
             LOGGER.debug(message, *args)
