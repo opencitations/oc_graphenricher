@@ -6,12 +6,12 @@
 from pathlib import Path
 from typing import cast
 
-from oc_ocdm import Storer
-from oc_ocdm.graph import GraphSet
-from oc_ocdm.support import create_date
+from oc_ocdm.graph.graph_set import GraphSet
+from oc_ocdm.storer import Storer
+from oc_ocdm.support.support import create_date
 
 
-def add_one_author_with_single_id(type, literal):
+def add_one_author_with_single_id(schema, literal):
     sp = gs.add_ra(ra)
     sp.has_given_name("othername")
     sp.has_family_name("otherfamilyname")
@@ -19,12 +19,12 @@ def add_one_author_with_single_id(type, literal):
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
 
-    add_id(sp, literal, type, gs)
+    add_id(sp, literal, schema, gs)
     sp_author.create_author()
     return sp_author
 
 
-def add_one_author_with_two_id(type, literal):
+def add_one_author_with_two_id(schema, literal):
     sp = gs.add_ra(ra)
     sp.has_given_name("othername")
     sp.has_family_name("otherfamilyname")
@@ -32,8 +32,8 @@ def add_one_author_with_two_id(type, literal):
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
 
-    add_id(sp, 'orcid_author_1', 'orcid', gs)
-    add_id(sp, literal, type, gs)
+    add_id(sp, "orcid_author_1", "orcid", gs)
+    add_id(sp, literal, schema, gs)
 
     sp_author.create_author()
 
@@ -44,9 +44,9 @@ def add_article():
     my_paper = gs.add_br(ra)
     my_paper.has_title("test")
     my_paper.has_pub_date("2020")
-    iso_date_string = cast(str, create_date([2020, 5, 1]))
+    iso_date_string = cast("str", create_date([2020, 5, 1]))
     my_paper.has_pub_date(iso_date_string)
-    add_id(my_paper, 'doi4', 'doi', gs)
+    add_id(my_paper, "doi4", "doi", gs)
     my_paper.create_journal_article()
     return my_paper
 
@@ -58,11 +58,10 @@ def add_br_with_one_author(name):
     sp = gs.add_ra(ra)
     sp.has_given_name("name")
     sp.has_family_name("familyname")
-    #
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
     sp_author.create_author()
-    add_id(sp, "orcid1", 'orcid', gs)
+    add_id(sp, "orcid1", "orcid", gs)
     #####
 
     ####
@@ -70,12 +69,11 @@ def add_br_with_one_author(name):
     ####
     sp = gs.add_ra(ra)
     sp.has_name("Pub")
-    #
     sp_pub = gs.add_ar(ra)
     sp_pub.is_held_by(sp)
     sp_pub.create_publisher()
 
-    add_id(sp, "pub1", 'crossref', gs)
+    add_id(sp, "pub1", "crossref", gs)
     #####
 
     ####
@@ -84,7 +82,7 @@ def add_br_with_one_author(name):
     my_volume = gs.add_br(ra)
     my_volume.has_title(name + "_volume")
     my_volume.has_pub_date("2020")
-    add_id(my_volume, name + '_volume_doi', 'doi', gs)
+    add_id(my_volume, name + "_volume_doi", "doi", gs)
     my_volume.create_volume()
 
     ####
@@ -92,7 +90,7 @@ def add_br_with_one_author(name):
     ####
     my_issue = gs.add_br(ra)
     my_issue.has_title(name + "_issue")
-    add_id(my_issue, name + '_issue_doi', 'doi', gs)
+    add_id(my_issue, name + "_issue_doi", "doi", gs)
     my_issue.is_part_of(my_volume)
     my_issue.create_issue()
 
@@ -105,26 +103,26 @@ def add_br_with_one_author(name):
     my_paper.has_contributor(sp_author)
     my_paper.has_contributor(sp_pub)
     my_paper.is_part_of(my_issue)
-    iso_date_string = cast(str, create_date([2020, 5, 1]))
+    iso_date_string = cast("str", create_date([2020, 5, 1]))
     my_paper.has_pub_date(iso_date_string)
-    add_id(my_paper, 'doi1', 'doi', gs)
+    add_id(my_paper, "doi1", "doi", gs)
     my_paper.create_journal_article()
     #####
 
 
 def add_id(entity, literal, schema, g_set):
     new_id = g_set.add_id("http://responsible_agent/")
-    if schema == 'issn':
+    if schema == "issn":
         new_id.create_issn(literal)
-    elif schema == 'doi':
+    elif schema == "doi":
         new_id.create_doi(literal)
-    elif schema == 'orcid':
+    elif schema == "orcid":
         new_id.create_orcid(literal)
-    elif schema == 'viaf':
+    elif schema == "viaf":
         new_id.create_viaf(literal)
-    elif schema == 'crossref':
+    elif schema == "crossref":
         new_id.create_crossref(literal)
-    elif schema == 'wikidata':
+    elif schema == "wikidata":
         new_id.create_wikidata(literal)
 
     entity.has_identifier(new_id)
@@ -137,8 +135,8 @@ add_br_with_one_author("BR3")
 add_br_with_one_author("BR6")
 
 paper = add_article()
-author1 = add_one_author_with_single_id('orcid', 'orcid_author_1')
-author2 = add_one_author_with_two_id('viaf', 'viaf1')
+author1 = add_one_author_with_single_id("orcid", "orcid_author_1")
+author2 = add_one_author_with_two_id("viaf", "viaf1")
 paper.has_contributor(author1)
 paper.has_contributor(author2)
 gs.commit_changes()

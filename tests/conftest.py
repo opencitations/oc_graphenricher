@@ -5,11 +5,11 @@
 from pathlib import Path
 
 import pytest
-from oc_ocdm.graph import GraphSet
+from oc_ocdm.graph.graph_set import GraphSet
 from oc_ocdm.reader import Reader
 from rdflib import Graph
 
-from oc_graphenricher.APIs import Crossref, OpenAlex, ORCID, VIAF, WikiData
+from oc_graphenricher.APIs import ORCID, VIAF, Crossref, OpenAlex, WikiData
 from oc_graphenricher.instancematching import InstanceMatching
 
 BASE_IRI = "https://w3id.org/oc/meta/"

@@ -53,6 +53,25 @@ venv = ".venv"
 target-version = "py310"
 line-length = 120
 
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D1",     # pydocstyle missing docstring rules.
+    "D203",   # pydocstyle one blank line before class.
+    "D213",   # pydocstyle summary on second line in multiline docstring.
+    "D401",   # pydocstyle first line should be in imperative mood.
+    "D404",   # pydocstyle first word of docstring should not be "This".
+    "FBT001", # flake8-boolean-trap boolean positional argument type hint.
+    "FBT002", # flake8-boolean-trap boolean positional argument default.
+    "PLR0913", # Pylint too many arguments in function definition.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "ANN",    # flake8-annotations typing annotation rules.
+    "S101",   # flake8-bandit assert usage.
+]
+
 [dependency-groups]
 dev = [
     "coverage>=7.14.3",

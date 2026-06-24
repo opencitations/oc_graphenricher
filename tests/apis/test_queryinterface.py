@@ -7,12 +7,15 @@ from oc_ocdm.graph.graph_entity import GraphEntity
 
 
 def test_crossref_doi(crossref_api):
-    assert crossref_api.query(
-        [("Stacey", "Willcox-Pidgeon")],
-        "PW 1927 Reviewing the national swimming and water safety education framework: "
-        "a drowning prevention strategy",
-        2018,
-    ) == "10.1136/injuryprevention-2018-safety.431"
+    assert (
+        crossref_api.query(
+            [("Stacey", "Willcox-Pidgeon")],
+            "PW 1927 Reviewing the national swimming and water safety education framework: "  # noqa: RUF001
+            "a drowning prevention strategy",
+            2018,
+        )
+        == "10.1136/injuryprevention-2018-safety.431"
+    )
 
 
 def test_crossref_journal(crossref_api):

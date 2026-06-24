@@ -37,9 +37,7 @@ def identifier_key(identifier):
 
 def test_ras_merged(matched_graph_set):
     identifiers = sorted(
-        identifier_key(identifier)
-        for ra in matched_graph_set.get_ra()
-        for identifier in ra.get_identifiers()
+        identifier_key(identifier) for ra in matched_graph_set.get_ra() for identifier in ra.get_identifiers()
     )
     assert identifiers == EXPECTED_RA_IDENTIFIERS
 
@@ -79,8 +77,5 @@ def test_brs_merged(matched_graph_set):
 
 
 def test_brs_have_only_one_list_of_authors(matched_graph_set):
-    contributor_counts_by_br = {
-        str(br): len(br.get_contributors())
-        for br in matched_graph_set.get_br()
-    }
+    contributor_counts_by_br = {str(br): len(br.get_contributors()) for br in matched_graph_set.get_br()}
     assert contributor_counts_by_br == EXPECTED_BR_CONTRIBUTOR_COUNTS

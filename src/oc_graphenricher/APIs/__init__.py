@@ -4,13 +4,16 @@
 #
 # SPDX-License-Identifier: ISC
 
+from __future__ import annotations
+
 import json
-import os
+import logging
 import re
-import sys
 import time
 import unicodedata
 from abc import ABC, abstractmethod
+from http import HTTPStatus
+from pathlib import Path
 from time import sleep
 from typing import cast
 from urllib.parse import quote
@@ -19,89 +22,119 @@ import Levenshtein
 import requests
 import requests_cache
 from oc_ocdm.graph.graph_entity import GraphEntity
-from requests.exceptions import ReadTimeout, ConnectTimeout
+from requests.exceptions import ConnectTimeout, JSONDecodeError, ReadTimeout, RequestException
+
+LOGGER = logging.getLogger(__name__)
+
+USER_AGENT = "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+TEXT_CONTENT_TYPES = {"text/plain", "text/html"}
+CROSSREF_ROWS = 4
+TITLE_KEYWORD_LIMIT = 4
+CROSSREF_TITLE_THRESHOLD = 0.8
+YEAR_LENGTH = 4
+VIAF_RETRY_SECONDS = 5.0
+CROSSREF_RETRY_SECONDS = 5.0
+OPENALEX_RATE_LIMIT_SECONDS = 0.2
+
+JsonDict = dict[str, object]
+AuthorTuple = tuple[str | None, str | None, str | None, object]
+IdentifierTuple = tuple[str | None, str | None]
+
+
+def _default_headers(content_type: str | None = None) -> dict[str, str]:
+    headers = {"User-Agent": USER_AGENT}
+    if content_type is not None:
+        headers["Content-Type"] = content_type
+    return headers
+
+
+def _is_text_response(response: requests.Response) -> bool:
+    if "content-type" not in response.headers:
+        return False
+    return response.headers["content-type"] in TEXT_CONTENT_TYPES
+
+
+def _log_api_error(label: str, error: BaseException, url: str, payload: object) -> None:
+    LOGGER.warning("%s:%r__%s__%s", label, error, url, payload)
+
+
+def _normalize_ascii(value: str) -> str:
+    return unicodedata.normalize("NFKD", value).encode("ASCII", "ignore").decode("utf-8")
 
 
 class QueryInterface(ABC):
-    """
-    This class is a sort of interface that you can implement in your own class
-    """
+    """This class is a sort of interface that you can implement in your own class."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         requests_cache.install_cache("GraphEnricher_cache")
 
     @abstractmethod
-    def query(self, entity):
+    def query(self, *args: object, **kwargs: object) -> object:
         raise NotImplementedError
 
 
 class VIAF(QueryInterface):
-    """
-    This class let you extract the VIAF of an author, by querying the viaf.org API
-    """
+    """This class let you extract the VIAF of an author, by querying the viaf.org API."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.headers = {
-            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net;  mailto:contact@opencitations.net)",
+            "User-Agent": USER_AGENT,
             "Accept": "application/json",
         }
-        self.api_url = 'http://www.viaf.org/viaf/search?local.title+all+"{}"&query=local.names+all+"{}"&sortKeys=holdingscount&recordSchema=BriefVIAF'
+        self.api_url = (
+            'http://www.viaf.org/viaf/search?local.title+all+"{}"&query=local.names+all+"{}"'
+            "&sortKeys=holdingscount&recordSchema=BriefVIAF"
+        )
 
-    def query(self, given_name: str, family_name: str, title: str):
-        """
-        Having specified the author's names and the title of a paper, extract a VIAF
+    def query(self, given_name: str, family_name: str, title: str) -> str | None:
+        """Having specified the author's names and the title of a paper, extract a VIAF.
 
         :param given_name: author's given name
         :param family_name: author's family name
         :param title: paper's title
         :return: VIAF, if exists, otherwise None
         """
+        name = f"{given_name} {family_name}".strip()
+        query = self.api_url.format(quote(title), quote(name))
+
         try:
-            name = f"{given_name} {family_name}".strip()
-            query = self.api_url.format(quote(title), quote(name))
-            r_cr = requests.get(query, headers=self.headers, timeout=60)
-            hdrs_cr = r_cr.headers
-            try:
-                r = r_cr.json()
-                number_of_records = r["searchRetrieveResponse"]["numberOfRecords"]["content"]
-                if int(number_of_records) != 1:
-                    return None
+            response = requests.get(query, headers=self.headers, timeout=60)
+        except ConnectTimeout as error:
+            _log_api_error("[GraphEnricher-VIAF]", error, query, "")
+            time.sleep(VIAF_RETRY_SECONDS)
+            return self.query(given_name, family_name, title)
 
-                record_data = r["searchRetrieveResponse"]["records"]["record"]["recordData"]
-                viaf_id = record_data["v:VIAFCluster"]["v:viafID"]["content"]
-                return str(viaf_id)
+        try:
+            data = response.json()
+            response_data = data["searchRetrieveResponse"]
+            number_of_records = response_data["numberOfRecords"]["content"]
+            if int(number_of_records) != 1:
+                return None
 
-            except Exception as ex1:
-                if hdrs_cr["content-type"] == "text/plain" or hdrs_cr["content-type"] == "text/html":
-                    r = r_cr.text
-                    if "503" in r:
-                        time.sleep(5.0)
-                        solution = self.query(given_name, family_name, title)
-                        return solution
-                    else:
-                        print("[GraphEnricher-VIAF]:" + repr(ex1) + "__" + query + "__" + r)
-                else:
-                    print("[GraphEnricher-VIAF]:" + repr(ex1) + "__" + query + "__" + hdrs_cr["content-type"])
-
-        except Exception as ex0:
-            if "ConnectTimeout" in repr(ex0):
-                print("[GraphEnricher-Crossref]:" + repr(ex0) + "__" + query)
-                time.sleep(5.0)
-                solution = self.query(given_name, family_name, title)
-                return solution
+            record_data = response_data["records"]["record"]["recordData"]
+            return str(record_data["v:VIAFCluster"]["v:viafID"]["content"])
+        except (JSONDecodeError, KeyError, TypeError, ValueError) as error:
+            if _is_text_response(response):
+                if "503" in response.text:
+                    time.sleep(VIAF_RETRY_SECONDS)
+                    return self.query(given_name, family_name, title)
+                _log_api_error("[GraphEnricher-VIAF]", error, query, response.text)
+            elif "content-type" in response.headers:
+                _log_api_error("[GraphEnricher-VIAF]", error, query, response.headers["content-type"])
+        return None
 
 
 class WikiData(QueryInterface):
-    """
-    This class let you query WikiData by means of another identifier, in order to check the existance of a related
-    entity on WikiData
+    """This class let you query WikiData by means of another identifier.
+
+    It checks the existence of a related entity on WikiData.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.headers = {
-            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net;  mailto:contact@opencitations.net)",
+            "User-Agent": USER_AGENT,
             "Accept": "application/json",
         }
         self.api_url = "https://query.wikidata.org/sparql"
@@ -111,161 +144,132 @@ class WikiData(QueryInterface):
               ?x ps:{property} "{literal}".
         }} LIMIT 1
         """
-        self.doi_property = "P356"
-        self.issn_property = "P236"
-        self.orcid_property = "P496"
-        self.viaf_property = "P214"
-        self.pmid_property = "P698"
-        self.pmcid_property = "P932"
+        self.schema_properties = {
+            "doi": "P356",
+            "issn": "P236",
+            "orcid": "P496",
+            "viaf": "P214",
+            "pmid": "P698",
+            "pmcid": "P932",
+        }
 
-    def query(self, entity: str, schema: str):
-        """
-        Method to query WikiData, given the literal of an identifier and its schema
+    def query(self, entity: str, schema: str) -> str | None:
+        """Method to query WikiData, given the literal of an identifier and its schema.
 
         :param entity: the literal of the given identifier
         :param schema: the schema of the given identifier
         :return: Wikidata ID if found, otherwise None
         """
-        if schema == "doi":
-            query = self.base_query.format(property=self.doi_property, literal=entity.upper())
-        elif schema == "issn":
-            query = self.base_query.format(property=self.issn_property, literal=entity)
-        elif schema == "orcid":
-            query = self.base_query.format(property=self.orcid_property, literal=entity)
-        elif schema == "viaf":
-            query = self.base_query.format(property=self.viaf_property, literal=entity)
-        elif schema == "pmid":
-            query = self.base_query.format(property=self.pmid_property, literal=entity)
-        elif schema == "pmcid":
-            query = self.base_query.format(property=self.pmcid_property, literal=entity)
+        if schema not in self.schema_properties:
+            return None
 
-        r = requests.get(self.api_url, headers=self.headers, timeout=60, params={"format": "json", "query": query})
-        headers = r.headers
+        literal = entity.upper() if schema == "doi" else entity
+        query = self.base_query.format(property=self.schema_properties[schema], literal=literal)
+        response = requests.get(
+            self.api_url,
+            headers=self.headers,
+            timeout=60,
+            params={"format": "json", "query": query},
+        )
 
         try:
-            data = r.json()
+            data = response.json()
             return data["results"]["bindings"][0]["item"]["value"].split("/")[-1]
         except IndexError:
             return None
-        except Exception as ex1:
-            if headers["content-type"] == "text/plain" or headers["content-type"] == "text/html":
-                r = r.text
-
-                if "503" in r:
-                    time.sleep(5.0)
-                    solution = self.query(entity, schema)
-                    return solution
-                else:
-                    # ex1.with_traceback()
-                    print("[GraphEnricher-WikiData]:" + repr(ex1) + "__" + query + "__" + r)
-            else:
-                # ex1.with_traceback()
-                print("[GraphEnricher-WikiData]:" + repr(ex1) + "__" + query + "__" + headers["content-type"])
+        except (JSONDecodeError, KeyError, TypeError) as error:
+            if _is_text_response(response):
+                if "503" in response.text:
+                    time.sleep(CROSSREF_RETRY_SECONDS)
+                    return self.query(entity, schema)
+                _log_api_error("[GraphEnricher-WikiData]", error, query, response.text)
+            elif "content-type" in response.headers:
+                _log_api_error("[GraphEnricher-WikiData]", error, query, response.headers["content-type"])
+        return None
 
 
 class Crossref(QueryInterface):
-    """
-    This class let you query Crossref in order to extract DOIs, ISSNs and publishers' IDs
-    """
+    """This class let you query Crossref in order to extract DOIs, ISSNs and publishers' IDs."""
 
     def __init__(
         self,
-        crossref_min_similarity_score=0.95,
-        max_iteration=6,
-        sec_to_wait=10,
-        headers={
-            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; "
-            "mailto:contact@opencitations.net)"
-        },
-        timeout=30,
-        is_json=True,
-    ):
-
+        crossref_min_similarity_score: float = 0.95,
+        max_iteration: int = 6,
+        sec_to_wait: int = 10,
+        headers: dict[str, str] | None = None,
+        timeout: int = 30,
+        is_json: bool = True,
+    ) -> None:
         super().__init__()
 
         self.max_iteration = max_iteration
         self.sec_to_wait = sec_to_wait
-        self.headers = headers
+        self.headers = headers if headers is not None else _default_headers()
         self.timeout = timeout
         self.is_json = is_json
         self.crossref_min_similarity_score = crossref_min_similarity_score
         self.__crossref_doi_url = "https://api.crossref.org/works/"
         self.__crossref_entry_url = "https://api.crossref.org/works?query.bibliographic="
         self.__crossref_journal_url = "https://api.crossref.org/journals/"
-        with open(
-            os.path.join(str(__file__).replace("__init__.py", ""), "stopwords-it.txt"), "rt", encoding="utf-8"
-        ) as f:
-            self.stoplist = set([line.strip() for line in f])
+        stopwords_path = Path(__file__).with_name("stopwords-it.txt")
+        with stopwords_path.open(encoding="utf-8") as stopwords_file:
+            self.stoplist = {line.strip() for line in stopwords_file}
 
-    def _cleaning_title(self, title: str):
-        """Clean a given title, filtering the words according to a stoplist
-        and extracting a subset of the keywords
+    def _cleaning_title(self, title: str) -> str:
+        """Clean a given title, filtering the words according to a stoplist.
 
         :param title: the title string
         :return: the cleaned title
         """
-        n = 4
-        keywords = [w for w in title.split(" ") if w not in self.stoplist]
-        keywords = " ".join(keywords[:n])
-        return keywords
+        keywords = [word for word in title.split(" ") if word not in self.stoplist]
+        return " ".join(keywords[:TITLE_KEYWORD_LIMIT])
 
     @staticmethod
-    def _cleaning_name(name_raw: str):
-        """Clean the name of an author
+    def _cleaning_name(name_raw: str) -> str:
+        """Clean the name of an author.
 
         :param name_raw: the name string
         :return: the cleaned name
         """
-        name_clean = "".join([c for c in unicodedata.normalize("NFKD", name_raw) if not unicodedata.combining(c)])
-        name_clean = name_clean.lower()
-        name_clean = re.sub(r"[^\w\d\s]", "", name_clean)
-        return name_clean
+        name_clean = "".join(
+            character for character in unicodedata.normalize("NFKD", name_raw) if not unicodedata.combining(character)
+        )
+        return re.sub(r"[^\w\d\s]", "", name_clean.lower())
 
-    def query_journal(self, issn: str):
-        """Query Crossref to get a list of any other ISSN known, related to an entity described by an ISSN to give
-        in input. The list of ISSNs retur will be cleaned from the ISSN already known.
+    def query_journal(self, issn: str) -> list[str] | None:
+        """Query Crossref to get a list of other ISSNs for an ISSN.
 
         :param issn: the ISSN of the bibliographic entity
         :return: a list that contains any other ISSN found, otherwise an empty list
         """
         query = self.__crossref_journal_url + issn
         try:
-            r_cr = requests.get(query, headers=self.headers, timeout=60)
-            hdrs_cr = r_cr.headers
+            response = requests.get(query, headers=self.headers, timeout=60)
+        except ConnectTimeout as error:
+            _log_api_error("[GraphEnricher-Crossref]", error, query, "")
+            time.sleep(CROSSREF_RETRY_SECONDS)
+            return self.query_journal(issn)
 
-            try:
-                r = r_cr.json()
-                if r["message"]["ISSN"]:
-                    new_issn = r["message"]["ISSN"]
-                    if issn in new_issn:
-                        new_issn.remove(issn)
-                    return new_issn
+        try:
+            data = response.json()
+            new_issn = cast("list[str]", data["message"]["ISSN"])
+            if issn in new_issn:
+                new_issn.remove(issn)
+        except (JSONDecodeError, KeyError, TypeError) as error:
+            if _is_text_response(response):
+                if "Resource not found" in response.text:
+                    return None
+                if "503" in response.text:
+                    time.sleep(CROSSREF_RETRY_SECONDS)
+                    return self.query_journal(issn)
+                _log_api_error("[GraphEnricher-Crossref]", error, query, response.text)
+            elif "content-type" in response.headers:
+                _log_api_error("[GraphEnricher-Crossref]", error, query, response.headers["content-type"])
+        else:
+            return new_issn
+        return None
 
-            except Exception as ex1:
-                if hdrs_cr["content-type"] == "text/plain" or hdrs_cr["content-type"] == "text/html":
-                    r = r_cr.text
-                    if "Resource not found" in r:
-                        return None
-                    if "503" in r:
-                        time.sleep(5.0)
-                        solution = self.query_journal(issn)
-                        return solution
-                    else:
-                        # ex1.with_traceback()
-                        print("[GraphEnricher-Crossref]:" + repr(ex1) + "__" + query + "__" + r)
-                else:
-                    # ex1.with_traceback()
-                    print("[GraphEnricher-Crossref]:" + repr(ex1) + "__" + query + "__" + hdrs_cr["content-type"])
-
-        except Exception as ex0:
-            # ex0.with_traceback()
-            if "ConnectTimeout" in repr(ex0):
-                print("[GraphEnricher-Crossref]:" + repr(ex0) + "__" + query)
-                time.sleep(5.0)
-                solution = self.query_journal(issn)
-                return solution
-
-    def query_publisher(self, doi: str):
+    def query_publisher(self, doi: str) -> str | None:
         """Method to extract the identifier of a publisher starting from a given DOI.
 
         :param doi: the DOI of the paper
@@ -273,457 +277,400 @@ class Crossref(QueryInterface):
         """
         url_cr = self.__crossref_doi_url + doi
         try:
-            r_cr = requests.get(url_cr, headers=self.headers, timeout=60)
-            hdrs_cr = r_cr.headers
+            response = requests.get(url_cr, headers=self.headers, timeout=60)
+        except ConnectTimeout as error:
+            _log_api_error("[GraphEnricher-Crossref-publisher]", error, url_cr, "")
+            time.sleep(CROSSREF_RETRY_SECONDS)
+            return self.query_publisher(doi)
 
-            try:
-                r = r_cr.json()
-                if "message" in r and "member" in r["message"]:
-                    return r["message"]["member"]
+        try:
+            data = response.json()
+            if "message" in data and "member" in data["message"]:
+                return str(data["message"]["member"])
+        except (JSONDecodeError, KeyError, TypeError) as error:
+            if _is_text_response(response):
+                if "503" in response.text:
+                    time.sleep(CROSSREF_RETRY_SECONDS)
+                    return self.query_publisher(doi)
+                _log_api_error("[GraphEnricher-Crossref-publisher]", error, url_cr, response.text)
+            elif "content-type" in response.headers:
+                _log_api_error("[GraphEnricher-Crossref-publisher]", error, url_cr, response.headers["content-type"])
+        return None
 
-            except Exception as ex1:
-                # ex1.with_traceback()
-                if hdrs_cr["content-type"] == "text/plain" or hdrs_cr["content-type"] == "text/html":
-                    r = r_cr.text
-                    if "503" in r:
-                        time.sleep(5.0)
-                        solution = self.query_publisher(doi)
-                        return solution
-                    else:
-                        print("[GraphEnricher-Crossref-publisher]:" + repr(ex1) + "__" + url_cr + "__" + r)
-                else:
-                    print(
-                        "[GraphEnricher-Crossref-publisher]:"
-                        + repr(ex1)
-                        + "__"
-                        + url_cr
-                        + "__"
-                        + hdrs_cr["content-type"]
-                    )
-
-        except Exception as ex0:
-            # ex0.with_traceback()
-            if "ConnectTimeout" in repr(ex0):
-                print("[GraphEnricher-Crossref-publisher]:" + repr(ex0) + "__" + url_cr)
-                time.sleep(5.0)
-                solution = self.query_publisher(doi)
-                return solution
-
-    def query(self, fullnames: list, title: str, year: str | None):
-        """
-        Method to extract the DOI, given the names of the authors, the title of the paper and the year of publication
+    def query(self, fullnames: list[tuple[str | None, str | None]], title: str, year: str | None) -> str | None:
+        """Method to extract the DOI, given authors, title and year of publication.
 
         :param fullnames: a list composed of a tuple of <name, family_name> (e.g.: [ ("Gabriele", "Pisciotta") ]
         :param title: the title of the paper
         :param year: a string that represent the year of publication
         :return: the DOI found, otherwise None
         """
-        keywords = self._cleaning_title(title)
-        query = f"query.bibliographic={keywords}"
-        exist_author = False
-        if fullnames is not None:
-            for fullname in fullnames:
-                if isinstance(fullname, str):
-                    surname = self._cleaning_name(fullname[0].split(" ")[-1])
-                    name = self._cleaning_name(fullname[1].split(" ")[0])
-                else:
-                    surname = ""
-                    name = ""
-                    separator = ""
-                    if fullname[0] is not None:
-                        name += fullname[0].lower()
-                        separator = " "
-                    if fullname[1] is not None:
-                        surname += fullname[1].lower()
-                    exist_author = True
-                    query += f"&query.author={name}{separator}{surname}"
-
-        query += "&rows=4&select=DOI,title,author,issued"
+        author_query, exist_author, name, surname = self.__author_query(fullnames)
+        query = f"query.bibliographic={self._cleaning_title(title)}{author_query}"
+        query += f"&rows={CROSSREF_ROWS}&select=DOI,title,author,issued"
         url_cr = f"https://api.crossref.org/works?{query}"
 
         try:
-            r_cr = requests.get(url_cr, headers=self.headers, timeout=60)
-            hdrs_cr = r_cr.headers
+            response = requests.get(url_cr, headers=self.headers, timeout=60)
+        except ConnectTimeout as error:
+            _log_api_error("[GraphEnricher-Crossref]", error, url_cr, "")
+            time.sleep(CROSSREF_RETRY_SECONDS)
+            return self.query(fullnames, title, year)
 
-            try:
-                r = r_cr.json()
-                possible = []
-                if "message" in r and "items" in r["message"]:
-                    if r["message"]["items"]:
-                        idx = 0
-                        while idx < len(r["message"]["items"]):
-                            point_year = 0
-                            point_authors = 0
-                            point_title = 0
-                            if year is not None:
-                                year_string = str(year)
-                                if "-" in year_string:
-                                    year_tokens = year_string.split("-")
-                                    for element_of_year in year_tokens:
-                                        if len(element_of_year) == 4:
-                                            year_string = element_of_year
-                                            break
-                                year_int = int(year_string)
+        try:
+            data = response.json()
+            return self.__best_doi(data, title, year, exist_author, name, surname)
+        except (JSONDecodeError, KeyError, TypeError, ValueError) as error:
+            if _is_text_response(response):
+                if "503" in response.text:
+                    time.sleep(CROSSREF_RETRY_SECONDS)
+                    return self.query(fullnames, title, year)
+                _log_api_error("[GraphEnricher-Crossref-std1]", error, url_cr, response.text)
+            elif "content-type" in response.headers:
+                _log_api_error("[GraphEnricher-Crossref-std2]", error, url_cr, response.headers["content-type"])
+        return None
 
-                                if "issued" in r["message"]["items"][idx].keys():
-                                    if "date-parts" in r["message"]["items"][idx]["issued"].keys():
-                                        if r["message"]["items"][idx]["issued"]["date-parts"][0][0] is not None:
-                                            paper_year = int(r["message"]["items"][idx]["issued"]["date-parts"][0][0])
-                                            if paper_year == year_int:
-                                                point_year += 3
-                            if exist_author:
-                                if "author" in r["message"]["items"][idx].keys():
-                                    for n in r["message"]["items"][idx]["author"]:
-                                        if "family" in n.keys():
-                                            if "given" in n.keys():
-                                                if n["family"].lower() == surname and n["given"].lower() == name:
-                                                    point_authors += 2
-                                                elif (
-                                                    n["family"].lower() == surname and n["given"].lower()[0] == name[0]
-                                                ):
-                                                    point_authors += 1
-                                            elif n["family"].lower() == surname:
-                                                point_authors += 1
+    def __author_query(self, fullnames: list[tuple[str | None, str | None]]) -> tuple[str, bool, str, str]:
+        query = ""
+        exist_author = False
+        name = ""
+        surname = ""
+        for fullname in fullnames:
+            name, surname = self.__normalized_fullname(fullname)
+            if name or surname:
+                exist_author = True
+                query += f"&query.author={name} {surname}".rstrip()
+        return query, exist_author, name, surname
 
-                            if "title" in r["message"]["items"][idx].keys():
-                                title_pub = r["message"]["items"][idx]["title"][0].lower()
-                                point_title = Levenshtein.ratio(title, title_pub)
+    def __normalized_fullname(self, fullname: tuple[str | None, str | None]) -> tuple[str, str]:
+        name = fullname[0].lower() if fullname[0] is not None else ""
+        surname = fullname[1].lower() if fullname[1] is not None else ""
+        return name, surname
 
-                            possible.append((point_title, point_authors, point_year, idx))
-                            idx += 1
+    def __best_doi(
+        self,
+        data: JsonDict,
+        title: str,
+        year: str | None,
+        exist_author: bool,
+        name: str,
+        surname: str,
+    ) -> str | None:
+        doi = None
+        if "message" in data:
+            message = cast("JsonDict", data["message"])
+            if "items" in message:
+                items = cast("list[JsonDict]", message["items"])
+                if items:
+                    possible = [
+                        (*self.__score_crossref_item(item, title, year, exist_author, name, surname), item)
+                        for item in items
+                    ]
+                    best_title, best_authors, _best_year, best_item = sorted(possible, key=lambda item: item[:3])[-1]
+                    if (
+                        best_title > CROSSREF_TITLE_THRESHOLD
+                        and (not exist_author or best_authors >= 1)
+                        and "DOI" in best_item
+                    ):
+                        doi = str(best_item["DOI"])
+        return doi
 
-                        sort = sorted(possible)
+    def __score_crossref_item(
+        self,
+        item: JsonDict,
+        title: str,
+        year: str | None,
+        exist_author: bool,
+        name: str,
+        surname: str,
+    ) -> tuple[float, int, int]:
+        point_year = self.__year_score(item, year)
+        point_authors = self.__author_score(item, exist_author, name, surname)
+        point_title = self.__title_score(item, title)
+        return point_title, point_authors, point_year
 
-                        if sort[-1][0] > 0.8:
-                            if exist_author and sort[-1][1] < 1:
-                                return None
-                            # if year is not None and sort[-1][2] < 1:
-                            #    return None
-                            res = r["message"]["items"][sort[-1][3]]
-                            return res["DOI"]
+    def __year_score(self, item: JsonDict, year: str | None) -> int:
+        year_int = self.__year_int(year)
+        if year_int is None or "issued" not in item:
+            return 0
+        issued = cast("JsonDict", item["issued"])
+        if "date-parts" not in issued:
+            return 0
+        date_parts = cast("list[list[int | None]]", issued["date-parts"])
+        if not date_parts or not date_parts[0] or date_parts[0][0] is None:
+            return 0
+        return 3 if int(date_parts[0][0]) == year_int else 0
 
-            except Exception as ex1:
-                # ex1.with_traceback()
-                if hdrs_cr["content-type"] == "text/plain" or hdrs_cr["content-type"] == "text/html":
-                    r = r_cr.text
-                    if "503" in r:
-                        time.sleep(5.0)
-                        solution = self.query(fullnames, title, year)
-                        return solution
-                    else:
-                        print("[GraphEnricher-Crossref-std1]:" + repr(ex1) + "__" + url_cr + "__" + r)
-                else:
-                    print("[GraphEnricher-Crossref-std2]:" + repr(ex1) + "__" + url_cr + "__" + hdrs_cr["content-type"])
+    def __year_int(self, year: str | None) -> int | None:
+        if year is None:
+            return None
+        year_string = str(year)
+        if "-" in year_string:
+            for element_of_year in year_string.split("-"):
+                if len(element_of_year) == YEAR_LENGTH:
+                    year_string = element_of_year
+                    break
+        return int(year_string)
 
-        except Exception as ex0:
-            # ex0.with_traceback()
-            if "ConnectTimeout" in repr(ex0):
-                print("[GraphEnricher-Crossref]:" + repr(ex0) + "__" + url_cr)
-                time.sleep(5.0)
-                solution = self.query(fullnames, title, year)
-                return solution
+    def __author_score(self, item: JsonDict, exist_author: bool, name: str, surname: str) -> int:
+        if not exist_author or "author" not in item:
+            return 0
+        point_authors = 0
+        authors = cast("list[JsonDict]", item["author"])
+        for author in authors:
+            if "family" not in author:
+                continue
+            family = cast("str", author["family"]).lower()
+            if "given" not in author:
+                if family == surname:
+                    point_authors += 1
+                continue
+            given = cast("str", author["given"]).lower()
+            if family == surname and given == name:
+                point_authors += 2
+            elif family == surname and name and given and given[0] == name[0]:
+                point_authors += 1
+        return point_authors
+
+    def __title_score(self, item: JsonDict, title: str) -> float:
+        if "title" not in item:
+            return 0
+        title_values = cast("list[str]", item["title"])
+        if not title_values:
+            return 0
+        return Levenshtein.ratio(title, title_values[0].lower())
 
 
 class ORCID(QueryInterface):
-    """
-    This class let you query ORCID in order to extract ORCID IDs
-    """
+    """This class let you query ORCID in order to extract ORCID IDs."""
 
     def __init__(
         self,
-        max_iteration=6,
-        sec_to_wait=10,
-        headers={
-            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; "
-            "mailto:contact@opencitations.net)",
-            "Content-Type": "application/json",
-        },
-        timeout=30,
-        repok=None,
-        reperr=None,
-        is_json=True,
-    ):
+        max_iteration: int = 6,
+        sec_to_wait: int = 10,
+        headers: dict[str, str] | None = None,
+        timeout: int = 30,
+        repok: object = None,
+        reperr: object = None,
+        is_json: bool = True,
+    ) -> None:
+        del repok, reperr
         super().__init__()
 
         self.max_iteration = max_iteration
         self.sec_to_wait = sec_to_wait
-        self.headers = headers
+        self.headers = headers if headers is not None else _default_headers("application/json")
         self.timeout = timeout
         self.is_json = is_json
         self.__orcid_api_url = "https://pub.orcid.org/v2.1/search?q="
         self.__personal_url = "https://pub.orcid.org/v2.1/%s/personal-details"
 
-    def query(self, authors: list, identifiers: list):
-        """
-        Given a list of authors and a list of identifiers, returns the ORCIDs in the list of authors
+    def query(self, authors: list[AuthorTuple], identifiers: list[IdentifierTuple]) -> list[AuthorTuple] | None:
+        """Given a list of authors and a list of identifiers, returns the ORCIDs in the list of authors.
 
         :param authors: a list of tuples in the following form [ (name, family_name, ORCID, ar_object) ]
         :param identifiers: a list of identifiers of the bibliographic resource
         :return: the authors list enriched with the ORCID identifier
         """
-        to_return = {}
-
         if len(identifiers) == 0:
             return None
 
-        returned_orcids = 0
-
         records = self._get_orcid_records(identifiers, authors)
+        to_return: dict[tuple[str | None, str | None], str] = {}
         if records is not None:
-            orcid_ids = cast(list[str], self.__dict_get(records, ["result", "orcid-identifier", "path"]))
-
+            orcid_ids = cast("list[str]", self.__dict_get(records, ["result", "orcid-identifier", "path"]))
             for orcid_id in orcid_ids:
-                personal_details = self.__get_data(self.__personal_url % orcid_id.upper())
+                self.__collect_matching_orcid(authors, to_return, orcid_id)
 
-                if personal_details is not None:
-                    given_name = self.__dict_get(personal_details, ["name", "given-names", "value"])
-                    family_name = self.__dict_get(personal_details, ["name", "family-name", "value"])
+        return [(author[0], author[1], to_return.get((author[0], author[1])), author[3]) for author in authors]
 
-                    for a in authors:
-                        if a[2] is None:
-                            if to_return.get((a[0], a[1])) is None and a[1] is not None and family_name is not None:
-                                if a[1].lower() in family_name:
-                                    to_return[(a[0], a[1])] = orcid_id.upper()
+    def _get_orcid_records(
+        self,
+        identifiers: list[IdentifierTuple],
+        family_names: list[AuthorTuple] | None = None,
+    ) -> JsonDict | str | None:
+        if family_names is None:
+            family_names = []
 
-                                    if a[0] is not None and given_name is not None:
-                                        if a[0].lower() in given_name:
-                                            to_return[(a[0], a[1])] = orcid_id.upper()
-
-        authors_to_return = []
-        for a in authors:
-            orcid = to_return.get((a[0], a[1]))
-            if orcid is not None:
-                returned_orcids += 1
-            authors_to_return.append((a[0], a[1], orcid, a[3]))
-
-        return authors_to_return
-
-    def _get_orcid_records(self, identifiers: list, family_names: list = []):
-        cur_query = ""
-
-        i_counter = 0
-
-        for i in identifiers:
-            if i[0] == GraphEntity.iri_doi:
-                if i[1] is None:
-                    continue
-                if i_counter == 0:
-                    cur_query += "("
-
-                if i_counter >= 1:
-                    cur_query += " OR "
-
-                doi_string = i[1]
-                cur_query += 'doi-self:"%s"' % doi_string
-                doi_string_l = doi_string.lower()
-                doi_string_u = doi_string.upper()
-
-                if doi_string_l != doi_string or doi_string_u != doi_string:
-                    if doi_string_l != doi_string:
-                        cur_query += ' OR doi-self:"%s"' % doi_string_l
-                    if doi_string_u != doi_string:
-                        cur_query += ' OR doi-self:"%s"' % doi_string_u
-
-            elif i[0] == GraphEntity.iri_isbn:
-                if i_counter == 0:
-                    cur_query += "("
-                if i_counter >= 1:
-                    cur_query += " OR "
-                isbn_string = i[1]
-                cur_query += 'isbn:"%s"' % isbn_string
-
-            elif i[0] == GraphEntity.iri_pmid:
-                if i_counter == 0:
-                    cur_query += "( "
-                if i_counter >= 1:
-                    cur_query += " OR "
-                pmid_string = i[1]
-                cur_query += 'pmid-self:"%s"' % pmid_string
-            else:
-                continue
-
-            i_counter += 1
-
-        if i_counter > 0:
-            cur_query += ") "
-        if family_names:
-            first_name = True
-            for idx, full_name in enumerate(family_names):
-                family_name = full_name[1]
-                given_names = full_name[0]
-                if family_name is not None:
-                    if first_name:
-                        first_name = False
-                        if len(identifiers) and cur_query != "":
-                            cur_query += "AND ("
-                    elif cur_query != "":
-                        cur_query += " OR "
-                    if family_name:
-                        cur_query += 'family-name:"%s"' % unicodedata.normalize("NFKD", "" + family_name).encode(
-                            "ASCII", "ignore"
-                        ).decode("utf-8")
-                    if given_names:
-                        cur_query += " AND "
-                        cur_query += 'given-names:"%s"' % unicodedata.normalize("NFKD", "" + given_names).encode(
-                            "ASCII", "ignore"
-                        ).decode("utf-8")
-
-            # close query if has started with the doi thing
-            if len(identifiers):
-                cur_query += ")"
-
-        if cur_query != "":
-            self.__last_query_done = self.__orcid_api_url + quote(cur_query)
-            returned_data = self.__get_data(self.__orcid_api_url + quote(cur_query))
-            return returned_data
+        identifier_query = self.__identifier_query(identifiers)
+        family_query = self.__family_query(family_names)
+        if identifier_query and family_query:
+            cur_query = f"{identifier_query} AND ({family_query})"
+        elif identifier_query:
+            cur_query = identifier_query
         else:
+            cur_query = family_query
+
+        if cur_query == "":
             return None
 
-    def __dict_get(self, d, key_list):
-        if key_list:
-            if type(d) is dict:
-                k = key_list[0]
-                if k in d:
-                    return self.__dict_get(d[k], key_list[1:])
-                else:
-                    return None
-            elif type(d) is list:
-                result = []
-                for item in d:
-                    value = [self.__dict_get(item, key_list)]
-                    if value is not None:
-                        result += value
-                return result
-            else:
-                return None
-        else:
-            return d.lower()
+        self.__last_query_done = self.__orcid_api_url + quote(cur_query)
+        return self.__get_data(self.__last_query_done)
+
+    def __collect_matching_orcid(
+        self,
+        authors: list[AuthorTuple],
+        to_return: dict[tuple[str | None, str | None], str],
+        orcid_id: str,
+    ) -> None:
+        personal_details = self.__get_data(self.__personal_url % orcid_id.upper())
+        if not isinstance(personal_details, dict):
+            return
+
+        given_name = self.__dict_get(personal_details, ["name", "given-names", "value"])
+        family_name = self.__dict_get(personal_details, ["name", "family-name", "value"])
+        if not isinstance(given_name, str) and not isinstance(family_name, str):
+            return
+
+        for author in authors:
+            if self.__matches_author(author, given_name, family_name) and to_return.get((author[0], author[1])) is None:
+                to_return[(author[0], author[1])] = orcid_id.upper()
+
+    def __matches_author(self, author: AuthorTuple, given_name: object, family_name: object) -> bool:
+        if author[2] is not None or author[1] is None or not isinstance(family_name, str):
+            return False
+        if author[1].lower() not in family_name:
+            return False
+        return author[0] is None or not isinstance(given_name, str) or author[0].lower() in given_name
+
+    def __identifier_query(self, identifiers: list[IdentifierTuple]) -> str:
+        terms = []
+        for scheme, value in identifiers:
+            if value is None:
+                continue
+            if scheme == GraphEntity.iri_doi:
+                terms.extend(self.__doi_terms(value))
+            elif scheme == GraphEntity.iri_isbn:
+                terms.append(f'isbn:"{value}"')
+            elif scheme == GraphEntity.iri_pmid:
+                terms.append(f'pmid-self:"{value}"')
+        if not terms:
+            return ""
+        return f"({' OR '.join(terms)})"
+
+    def __doi_terms(self, doi_string: str) -> list[str]:
+        terms = [f'doi-self:"{doi_string}"']
+        doi_string_l = doi_string.lower()
+        doi_string_u = doi_string.upper()
+        if doi_string_l != doi_string:
+            terms.append(f'doi-self:"{doi_string_l}"')
+        if doi_string_u != doi_string:
+            terms.append(f'doi-self:"{doi_string_u}"')
+        return terms
+
+    def __family_query(self, family_names: list[AuthorTuple]) -> str:
+        terms = []
+        for given_names, family_name, _orcid, _entity in family_names:
+            if family_name is None:
+                continue
+            term = f'family-name:"{_normalize_ascii(family_name)}"'
+            if given_names:
+                term += f' AND given-names:"{_normalize_ascii(given_names)}"'
+            terms.append(term)
+        return " OR ".join(terms)
+
+    def __dict_get(self, data: object, key_list: list[str]) -> object:
+        if not key_list:
+            return cast("str", data).lower()
+        if isinstance(data, dict):
+            key = key_list[0]
+            if key in data:
+                return self.__dict_get(data[key], key_list[1:])
+            return None
+        if isinstance(data, list):
+            return [self.__dict_get(item, key_list) for item in data]
+        return None
 
     @staticmethod
-    def __dict_add(d):
-        result = {}
-        for k in d:
-            value = d[k]
-            if value is not None:
-                result[k] = value
-        return result
+    def __dict_add(data: dict[str, object]) -> dict[str, object]:
+        return {key: value for key, value in data.items() if value is not None}
 
-    def __get_data(self, get_url):
-        """
-        Method to send requests
+    def __get_data(self, get_url: str) -> JsonDict | str | None:
+        """Method to send requests.
 
         :param get_url: the URL to query
         :return: results if found, otherwise None
         """
-        tentative = 0
-        error_no_200 = False
-        error_read = False
-        error_connection = False
-        error_generic = False
-        errors = []
-        while tentative < self.max_iteration:
+        errors: list[str] = []
+        for tentative in range(self.max_iteration):
             if tentative != 0:
                 sleep(self.sec_to_wait)
-            tentative += 1
 
             try:
                 response = requests.get(get_url, headers=self.headers, timeout=self.timeout)
-                if response.status_code == 200:
+                if response.status_code == HTTPStatus.OK:
                     if self.is_json:
-                        return json.loads(response.text)
-                    else:
-                        return response.text
-                else:
-                    err_string = "We got an HTTP error when retrieving data (HTTP status code: %s)." % str(
-                        response.status_code
-                    )
-                    if not error_no_200:
-                        error_no_200 = True
-                    if response.status_code == 404:
-                        # print(err_string + " However, the process could continue anyway.")
-                        # If the resource has not found, we can break the process immediately,
-                        # by returning None so as to allow the callee to continue (or not) the process
-                        return None
-                    else:
-                        errors += [err_string]
+                        return cast("JsonDict", json.loads(response.text))
+                    return response.text
+                if response.status_code == HTTPStatus.NOT_FOUND:
+                    return None
+                errors.append(
+                    f"We got an HTTP error when retrieving data (HTTP status code: {response.status_code}).",
+                )
+            except ReadTimeout as error:
+                errors.append(f"A timeout error happened when reading results from the API. {error}")
+            except ConnectTimeout as error:
+                errors.append(f"A timeout error happened when connecting to the API. {error}")
+            except (RequestException, json.JSONDecodeError) as error:
+                errors.append(f"A generic error happened when trying to use the API. {type(error)}")
 
-            except ReadTimeout as e:
-                if not error_read:
-                    error_read = True
-                    errors += [
-                        "A timeout error happened when reading results from the API when retrieving data. %s" % e
-                    ]
-            except ConnectTimeout as e:
-                if not error_connection:
-                    error_connection = True
-                    errors += ["A timeout error happened when connecting to the API when retrieving data. %s" % e]
-            except Exception:
-                if not error_generic:
-                    error_generic = True
-                    errors += [
-                        "A generic error happened when trying to use the API "
-                        "when retrieving data. %s" % sys.exc_info()[0]
-                    ]
-
-        # If the process comes here, no valid result has been returned
-        print(" | ".join(errors) + "\n\tRequested URL: " + get_url)
+        LOGGER.warning("%s\n\tRequested URL: %s", " | ".join(errors), get_url)
+        return None
 
 
 class OpenAlex(QueryInterface):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.headers = {
-            "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net;  mailto:contact@opencitations.net)"
-        }
+        self.headers = {"User-Agent": USER_AGENT}
         self.api_url_works = "https://api.openalex.org/works"
         self.api_url_sources = "https://api.openalex.org/sources"
 
-    def query(self, entity: str, schema: str):
-
+    def query(self, entity: str, schema: str) -> list[str] | None:
         schema = schema.lower()
-
-        if schema in ["doi", "pmid", "pmcid"]:
-            query = f"{self.api_url_works}?filter={schema}:{entity}&select=id"
-        if schema == "issn":
-            query = f"{self.api_url_sources}?filter={schema}:{entity}&select=id"
-
-        try:
-            resp = requests.get(query, headers=self.headers, timeout=60)
-            hdrs = resp.headers
-
+        query = self.__query_url(entity, schema)
+        result = None
+        if query is None:
+            LOGGER.warning("[GraphEnricher-OpenAlex]:The specified schema '%s' is not supported", schema)
+        else:
             try:
-                r = resp.json()
-                if not r["results"]:
-                    return None
-                else:
-                    res = [i["id"].replace("https://openalex.org/", "") for i in r["results"]]
-                    return res
-
-            except Exception as ex1:
-                if hdrs["content-type"] == "text/plain" or hdrs["content-type"] == "text/html":
-                    r = resp.text
-                    if "503" in r:
-                        time.sleep(5.0)
-                        solution = self.query(entity, schema)
-                        return solution
-                    elif "429" in r:  # only handles per-second rate limit (not daily rate limit)
-                        time.sleep(0.2)
-                        solution = self.query(entity, schema)
-                        return solution
-                    else:
-                        print("[GraphEnricher-OpenAlex]:" + repr(ex1) + "__" + query + "__" + r)
-                else:
-                    print("[GraphEnricher-OpenAlex]:" + repr(ex1) + "__" + query + "__" + hdrs["content-type"])
-
-        except Exception as ex0:
-            if "ConnectTimeout" in repr(ex0):
-                print("[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + query)
-                time.sleep(5.0)
-                solution = self.query(entity, schema)
-                return solution
-            if "UnboundLocalError" in repr(ex0):
-                print(
-                    "[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + f"The specified schema '{schema}' is not supported"
-                )
+                response = requests.get(query, headers=self.headers, timeout=60)
+            except ConnectTimeout as error:
+                _log_api_error("[GraphEnricher-OpenAlex]", error, query, "")
+                time.sleep(CROSSREF_RETRY_SECONDS)
+                result = self.query(entity, schema)
             else:
-                print("[GraphEnricher-OpenAlex]:" + repr(ex0) + "__" + query)
+                result = self.__response_results(response, query, entity, schema)
+        return result
+
+    def __response_results(
+        self,
+        response: requests.Response,
+        query: str,
+        entity: str,
+        schema: str,
+    ) -> list[str] | None:
+        try:
+            data = response.json()
+            results = cast("list[JsonDict]", data["results"])
+            if not results:
+                return None
+            return [str(result["id"]).replace("https://openalex.org/", "") for result in results]
+        except (JSONDecodeError, KeyError, TypeError) as error:
+            if _is_text_response(response):
+                if "503" in response.text:
+                    time.sleep(CROSSREF_RETRY_SECONDS)
+                    return self.query(entity, schema)
+                if "429" in response.text:
+                    time.sleep(OPENALEX_RATE_LIMIT_SECONDS)
+                    return self.query(entity, schema)
+                _log_api_error("[GraphEnricher-OpenAlex]", error, query, response.text)
+            elif "content-type" in response.headers:
+                _log_api_error("[GraphEnricher-OpenAlex]", error, query, response.headers["content-type"])
+        return None
+
+    def __query_url(self, entity: str, schema: str) -> str | None:
+        if schema in {"doi", "pmid", "pmcid"}:
+            return f"{self.api_url_works}?filter={schema}:{entity}&select=id"
+        if schema == "issn":
+            return f"{self.api_url_sources}?filter={schema}:{entity}&select=id"
+        return None
