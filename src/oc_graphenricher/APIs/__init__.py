@@ -63,9 +63,12 @@ def _normalize_ascii(value: str) -> str:
 
 
 class QueryInterface(ABC):
-    """This class is a sort of interface that you can implement in your own class."""
-
     def __init__(self) -> None:
+        """
+        Initialize the query interface.
+
+        The interface installs the shared requests cache used by concrete query backends.
+        """
         requests_cache.install_cache("GraphEnricher_cache")
 
     @abstractmethod
@@ -74,9 +77,12 @@ class QueryInterface(ABC):
 
 
 class VIAF(QueryInterface):
-    """This class let you extract the VIAF of an author, by querying the viaf.org API."""
-
     def __init__(self) -> None:
+        """
+        Initialize the VIAF query backend.
+
+        The backend extracts VIAF identifiers for authors by querying viaf.org.
+        """
         super().__init__()
         self.headers = {
             "User-Agent": USER_AGENT,
@@ -88,7 +94,8 @@ class VIAF(QueryInterface):
         )
 
     def query(self, given_name: str, family_name: str, title: str) -> str | None:
-        """Having specified the author's names and the title of a paper, extract a VIAF.
+        """
+        Having specified the author's names and the title of a paper, extract a VIAF.
 
         :param given_name: author's given name
         :param family_name: author's family name
@@ -126,12 +133,12 @@ class VIAF(QueryInterface):
 
 
 class WikiData(QueryInterface):
-    """This class let you query WikiData by means of another identifier.
-
-    It checks the existence of a related entity on WikiData.
-    """
-
     def __init__(self) -> None:
+        """
+        Initialize the WikiData query backend.
+
+        The backend queries WikiData by means of another identifier and checks whether a related entity exists.
+        """
         super().__init__()
         self.headers = {
             "User-Agent": USER_AGENT,
@@ -154,7 +161,8 @@ class WikiData(QueryInterface):
         }
 
     def query(self, entity: str, schema: str) -> str | None:
-        """Method to query WikiData, given the literal of an identifier and its schema.
+        """
+        Query WikiData, given the literal of an identifier and its schema.
 
         :param entity: the literal of the given identifier
         :param schema: the schema of the given identifier
@@ -189,8 +197,6 @@ class WikiData(QueryInterface):
 
 
 class Crossref(QueryInterface):
-    """This class let you query Crossref in order to extract DOIs, ISSNs and publishers' IDs."""
-
     def __init__(
         self,
         crossref_min_similarity_score: float = 0.95,
@@ -198,8 +204,14 @@ class Crossref(QueryInterface):
         sec_to_wait: int = 10,
         headers: dict[str, str] | None = None,
         timeout: int = 30,
+        *,
         is_json: bool = True,
     ) -> None:
+        """
+        Initialize the Crossref query backend.
+
+        The backend extracts DOIs, ISSNs, and publisher IDs.
+        """
         super().__init__()
 
         self.max_iteration = max_iteration
@@ -216,7 +228,8 @@ class Crossref(QueryInterface):
             self.stoplist = {line.strip() for line in stopwords_file}
 
     def _cleaning_title(self, title: str) -> str:
-        """Clean a given title, filtering the words according to a stoplist.
+        """
+        Clean a given title, filtering the words according to a stoplist.
 
         :param title: the title string
         :return: the cleaned title
@@ -226,7 +239,8 @@ class Crossref(QueryInterface):
 
     @staticmethod
     def _cleaning_name(name_raw: str) -> str:
-        """Clean the name of an author.
+        """
+        Clean the name of an author.
 
         :param name_raw: the name string
         :return: the cleaned name
@@ -237,7 +251,8 @@ class Crossref(QueryInterface):
         return re.sub(r"[^\w\d\s]", "", name_clean.lower())
 
     def query_journal(self, issn: str) -> list[str] | None:
-        """Query Crossref to get a list of other ISSNs for an ISSN.
+        """
+        Query Crossref to get a list of other ISSNs for an ISSN.
 
         :param issn: the ISSN of the bibliographic entity
         :return: a list that contains any other ISSN found, otherwise an empty list
@@ -270,7 +285,8 @@ class Crossref(QueryInterface):
         return None
 
     def query_publisher(self, doi: str) -> str | None:
-        """Method to extract the identifier of a publisher starting from a given DOI.
+        """
+        Extract the identifier of a publisher starting from a given DOI.
 
         :param doi: the DOI of the paper
         :return: a string representing the ID of the publisher, otherwise None
@@ -298,7 +314,8 @@ class Crossref(QueryInterface):
         return None
 
     def query(self, fullnames: list[tuple[str | None, str | None]], title: str, year: str | None) -> str | None:
-        """Method to extract the DOI, given authors, title and year of publication.
+        """
+        Extract the DOI, given authors, title and year of publication.
 
         :param fullnames: a list composed of a tuple of <name, family_name> (e.g.: [ ("Gabriele", "Pisciotta") ]
         :param title: the title of the paper
@@ -319,7 +336,7 @@ class Crossref(QueryInterface):
 
         try:
             data = response.json()
-            return self.__best_doi(data, title, year, exist_author, name, surname)
+            return self.__best_doi(data, title, year, exist_author=exist_author, name=name, surname=surname)
         except (JSONDecodeError, KeyError, TypeError, ValueError) as error:
             if _is_text_response(response):
                 if "503" in response.text:
@@ -352,6 +369,7 @@ class Crossref(QueryInterface):
         data: JsonDict,
         title: str,
         year: str | None,
+        *,
         exist_author: bool,
         name: str,
         surname: str,
@@ -363,7 +381,17 @@ class Crossref(QueryInterface):
                 items = cast("list[JsonDict]", message["items"])
                 if items:
                     possible = [
-                        (*self.__score_crossref_item(item, title, year, exist_author, name, surname), item)
+                        (
+                            *self.__score_crossref_item(
+                                item,
+                                title,
+                                year,
+                                exist_author=exist_author,
+                                name=name,
+                                surname=surname,
+                            ),
+                            item,
+                        )
                         for item in items
                     ]
                     best_title, best_authors, _best_year, best_item = sorted(possible, key=lambda item: item[:3])[-1]
@@ -380,12 +408,13 @@ class Crossref(QueryInterface):
         item: JsonDict,
         title: str,
         year: str | None,
+        *,
         exist_author: bool,
         name: str,
         surname: str,
     ) -> tuple[float, int, int]:
         point_year = self.__year_score(item, year)
-        point_authors = self.__author_score(item, exist_author, name, surname)
+        point_authors = self.__author_score(item, exist_author=exist_author, name=name, surname=surname)
         point_title = self.__title_score(item, title)
         return point_title, point_authors, point_year
 
@@ -412,7 +441,7 @@ class Crossref(QueryInterface):
                     break
         return int(year_string)
 
-    def __author_score(self, item: JsonDict, exist_author: bool, name: str, surname: str) -> int:
+    def __author_score(self, item: JsonDict, *, exist_author: bool, name: str, surname: str) -> int:
         if not exist_author or "author" not in item:
             return 0
         point_authors = 0
@@ -442,8 +471,6 @@ class Crossref(QueryInterface):
 
 
 class ORCID(QueryInterface):
-    """This class let you query ORCID in order to extract ORCID IDs."""
-
     def __init__(
         self,
         max_iteration: int = 6,
@@ -452,8 +479,14 @@ class ORCID(QueryInterface):
         timeout: int = 30,
         repok: object = None,
         reperr: object = None,
+        *,
         is_json: bool = True,
     ) -> None:
+        """
+        Initialize the ORCID query backend.
+
+        The backend extracts ORCID identifiers.
+        """
         del repok, reperr
         super().__init__()
 
@@ -466,7 +499,8 @@ class ORCID(QueryInterface):
         self.__personal_url = "https://pub.orcid.org/v2.1/%s/personal-details"
 
     def query(self, authors: list[AuthorTuple], identifiers: list[IdentifierTuple]) -> list[AuthorTuple] | None:
-        """Given a list of authors and a list of identifiers, returns the ORCIDs in the list of authors.
+        """
+        Given a list of authors and a list of identifiers, returns the ORCIDs in the list of authors.
 
         :param authors: a list of tuples in the following form [ (name, family_name, ORCID, ar_object) ]
         :param identifiers: a list of identifiers of the bibliographic resource
@@ -586,7 +620,8 @@ class ORCID(QueryInterface):
         return {key: value for key, value in data.items() if value is not None}
 
     def __get_data(self, get_url: str) -> JsonDict | str | None:
-        """Method to send requests.
+        """
+        Send requests.
 
         :param get_url: the URL to query
         :return: results if found, otherwise None

@@ -57,12 +57,8 @@ line-length = 120
 select = ["ALL"]
 ignore = [
     "D1",     # pydocstyle missing docstring rules.
-    "D203",   # pydocstyle one blank line before class.
-    "D213",   # pydocstyle summary on second line in multiline docstring.
-    "D401",   # pydocstyle first line should be in imperative mood.
-    "D404",   # pydocstyle first word of docstring should not be "This".
-    "FBT001", # flake8-boolean-trap boolean positional argument type hint.
-    "FBT002", # flake8-boolean-trap boolean positional argument default.
+    "D211",   # pydocstyle no blank line before class.
+    "D212",   # pydocstyle summary on first line in multiline docstring.
     "PLR0913", # Pylint too many arguments in function definition.
 ]
 

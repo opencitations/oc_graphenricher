@@ -1,8 +1,5 @@
 version = 1
 
-# CC0-1.0 — no creative expression (manifests, lock files, generated data,
-# license text)
-
 [[annotations]]
 path = [
     "LICENSE",

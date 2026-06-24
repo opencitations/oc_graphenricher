@@ -39,25 +39,23 @@ SERIALIZE_INTERVAL = 50
 
 
 class GraphEnricher:
-    """The GraphEnricher class is responsible for enriching entities in an OCDM graph set.
-
-    You have to specify in input the graph set, the output file name of the enriched graph and the provenance file
-    name. It's also possible to specify a debug flag to get more details about the enrichment process.
-    """
-
     def __init__(
         self,
         g_set: GraphSet,
         graph_filename: str = "enriched.rdf",
         provenance_filename: str = "provenance.rdf",
         info_dir: str = "",
+        *,
         debug: bool = False,
         serialize_in_the_middle: bool = False,
         use_wikidata: bool = True,
         use_viaf: bool = True,
         use_orcid: bool = True,
     ) -> None:
-        """Initialize the enricher.
+        """
+        Initialize the enricher.
+
+        The enricher adds missing identifiers to entities in an OCDM graph set.
 
         :param g_set: graph set to be enriched.
         :param graph_filename: file name of the enriched graph set that will be serialized
@@ -90,7 +88,8 @@ class GraphEnricher:
         self.use_orcid = use_orcid
 
     def enrich(self) -> None:
-        """The enricher iterates each BR contained in the graph set.
+        """
+        Iterate over each BR contained in the graph set.
 
         For each BR, excluding journal issues and journal volumes, it reads the identifiers already contained in the
         graph set and checks whether the BR already has a DOI, ISSN, Wikidata ID, and OpenAlex ID:
@@ -233,7 +232,11 @@ class GraphEnricher:
             if role == GraphEntity.iri_author:
                 self.__enrich_author(br, ra)
             if role == GraphEntity.iri_publisher:
-                publisher_has_crossrefid = self.__enrich_publisher(ra, has_doi, publisher_has_crossrefid)
+                publisher_has_crossrefid = self.__enrich_publisher(
+                    ra,
+                    has_doi,
+                    publisher_has_crossrefid=publisher_has_crossrefid,
+                )
 
     def __enrich_author(self, br: BibliographicResource, ra: ResponsibleAgent) -> None:
         has_orcid, has_viaf, has_wikidata, author_id_found = self.__author_identifiers(br, ra)
@@ -319,6 +322,7 @@ class GraphEnricher:
         self,
         ra: ResponsibleAgent,
         has_doi: str | None,
+        *,
         publisher_has_crossrefid: bool,
     ) -> bool:
         if publisher_has_crossrefid or has_doi is None:
@@ -349,7 +353,8 @@ class GraphEnricher:
         schema: str,
         by_means_of: str | None = None,
     ) -> None:
-        """Method that let you add a new identifier to an entity.
+        """
+        Add a new identifier to an entity.
 
         :param entity: a bibliographic resource or an agent role
         :param literal: the literal value of the identifier
@@ -401,7 +406,7 @@ class GraphEnricher:
 
     @contextlib.contextmanager
     def __std_out_err_redirect_tqdm(self) -> Iterator[TextIO]:
-        """This method is used to print messages with the TQDM progress bar."""
+        """Redirect stdout and stderr through the TQDM progress bar."""
         orig_out_err = sys.stdout, sys.stderr
         try:
             sys.stdout, sys.stderr = map(DummyTqdmFile, orig_out_err)

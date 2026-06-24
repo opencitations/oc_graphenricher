@@ -27,21 +27,19 @@ NAME_SIMILARITY_THRESHOLD = 0.95
 
 
 class InstanceMatching:
-    """Deduplicate the entities in a graph set compliant with the OpenCitations Data Model.
-
-    You have to specify in input the graph set. It's also possible to specify the output file name of the deduplicated
-    graph, the provenance file name, and a debug flag to get more details about the enrichment process.
-    """
-
     def __init__(
         self,
         g_set: GraphSet,
         graph_filename: str = "matched.rdf",
         provenance_filename: str = "provenance.rdf",
         info_dir: str = "",
+        *,
         debug: bool = False,
     ) -> None:
-        """Initialize the matcher.
+        """
+        Initialize the matcher.
+
+        The matcher deduplicates entities in a graph set compliant with the OpenCitations Data Model.
 
         :param g_set: input graph set
         :param graph_filename: file name of the enriched graph set that will be serialized
@@ -56,7 +54,8 @@ class InstanceMatching:
         self.prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=info_dir)
 
     def match(self) -> GraphSet:
-        """Start the matching process.
+        """
+        Start the matching process.
 
         The process will:
         - match the Responsible Agents (RAs)
@@ -74,7 +73,8 @@ class InstanceMatching:
         return self.g_set
 
     def save(self) -> None:
-        """Serialize the graph set into the specified RDF file.
+        """
+        Serialize the graph set into the specified RDF file.
 
         Serialize the provenance in another specified RDF file.
         """
@@ -85,7 +85,8 @@ class InstanceMatching:
         prov_storer.store_graphs_in_file(self.provenance_filename, "")
 
     def instance_matching_ra(self) -> None:
-        """Discover Responsible Agents (RAs) that share the same identifier literal.
+        """
+        Discover Responsible Agents (RAs) that share the same identifier literal.
 
         The process creates a graph of matching entities, merges each connected component into one RA, updates Agent
         Role references, generates provenance and commits pending changes in the graph set.
@@ -104,7 +105,8 @@ class InstanceMatching:
         self.g_set.commit_changes()
 
     def instance_matching_br(self) -> None:
-        """Discover Bibliographic Resources (BRs) that share the same identifier literal.
+        """
+        Discover Bibliographic Resources (BRs) that share the same identifier literal.
 
         The process creates a graph of matching BRs, merges each connected component into one BR, merges containers and
         publishers where possible, generates provenance and commits pending changes in the graph set.
@@ -120,7 +122,8 @@ class InstanceMatching:
         self.g_set.commit_changes()
 
     def instance_matching_id(self) -> None:
-        """Discover duplicate IDs related to Bibliographic Resources and Responsible Agents.
+        """
+        Discover duplicate IDs related to Bibliographic Resources and Responsible Agents.
 
         IDs are duplicates when they share the same schema and literal. The process merges duplicates into one ID,
         substitutes references with the merged ID, generates provenance and commits pending changes in the graph set.
@@ -379,7 +382,8 @@ class InstanceMatching:
 
     @staticmethod
     def __get_part_of(br: BibliographicResource) -> list[BibliographicResource]:
-        """Given a Bibliographic Resource (BR), walk the full 'part-of' chain.
+        """
+        Given a Bibliographic Resource (BR), walk the full 'part-of' chain.
 
         :param br: a Bibliographic Resource (BR)
         :return partofs: a list that contains the Bibliographic Resources (BRs) of the hierarchy
@@ -406,7 +410,8 @@ class InstanceMatching:
         return None
 
     def __get_association_ar_ra(self) -> dict[ResponsibleAgent, list[AgentRole]]:
-        """Return all the ARs associated to the same RA.
+        """
+        Return all the ARs associated to the same RA.
 
         :return association: a dictionary having Responsible Agent (RA) as key, and a list of Agent Role (AR) as value
         """
@@ -418,7 +423,8 @@ class InstanceMatching:
         return association
 
     def __get_association_ar_br(self) -> dict[AgentRole, list[BibliographicResource]]:
-        """Return all the Bibliographic Resources (BRs) associated to the same AR.
+        """
+        Return all the Bibliographic Resources (BRs) associated to the same AR.
 
         :return association: a dictionary having Agent Role (AR) as key, and a list of Bibliographic Resource (BR)
         """
