@@ -289,14 +289,20 @@ class InstanceMatching:
         already_merged: set[AgentRole],
     ) -> None:
         contributors = set(self.__author_contributors(entity_first)).difference(already_merged)
+        merged_contributors: set[AgentRole] = set()
         for ar1 in contributors:
+            if ar1 in merged_contributors:
+                continue
             ar1_name = self.__agent_name(ar1)
             for ar2 in contributors:
+                if ar1 == ar2 or ar2 in merged_contributors:
+                    continue
                 ar2_name = self.__agent_name(ar2)
                 name_similarity = 1 - Levenshtein.distance(ar1_name, ar2_name)
                 if ar1_name != "" and ar2_name != "" and name_similarity > NAME_SIMILARITY_THRESHOLD:
                     ar1.merge(ar2)
                     entity_first.remove_contributor(ar2)
+                    merged_contributors.add(ar2)
                     self.__debug(
                         "\tRemoving agent role %s from bibliographic resource %s because it merged to %s",
                         ar2,

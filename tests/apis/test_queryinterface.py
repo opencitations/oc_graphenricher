@@ -3,9 +3,21 @@
 #
 # SPDX-License-Identifier: ISC
 
+import pytest
+import requests
 from oc_ocdm.graph.graph_entity import GraphEntity
 
-from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, OpenAlex, WikiData
+from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, JsonDict, OpenAlex, WikiData
+
+
+class JsonResponse:
+    def __init__(self, data: JsonDict) -> None:
+        self.data = data
+        self.headers: dict[str, str] = {}
+        self.text = ""
+
+    def json(self) -> JsonDict:
+        return self.data
 
 
 def test_crossref_doi() -> None:
@@ -24,10 +36,51 @@ def test_crossref_journal() -> None:
     assert Crossref().query_journal("0008-4026") == ["1480-3305"]
 
 
+def test_crossref_publisher(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_get(url: str, headers: dict[str, str], timeout: int) -> JsonResponse:
+        del url, headers, timeout
+        return JsonResponse({"message": {"member": "297"}})
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    assert Crossref().query_publisher("10.1007/978-3-030-00668-6_4") == "297"
+
+
+def test_crossref_selects_best_doi_from_response_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_get(url: str, headers: dict[str, str], timeout: int) -> JsonResponse:
+        del url, headers, timeout
+        return JsonResponse(
+            {
+                "message": {
+                    "items": [
+                        {"title": ["target title"], "author": [{"family": "Doe"}], "issued": {"date-parts": [[2018]]}},
+                        {"title": ["target title"], "author": [{"family": "Other"}], "issued": {}},
+                        {"title": [], "author": [{"given": "J.", "family": "Doe"}], "issued": {"date-parts": [[]]}},
+                        {"author": [{"family": "Doe"}], "issued": {"date-parts": [[2020]]}},
+                        {
+                            "DOI": "10.555/best",
+                            "title": ["target title"],
+                            "author": [{"given": "Jane", "family": "Doe"}],
+                            "issued": {"date-parts": [[2020]]},
+                        },
+                    ],
+                },
+            },
+        )
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    assert Crossref().query([("Jane", "Doe")], "target title", "2019-2020") == "10.555/best"
+
+
 def test_orcid() -> None:
     authors: list[AuthorTuple] = [("Silvio", "Peroni", None, None)]
     identifiers: list[IdentifierTuple] = [(GraphEntity.iri_doi, "10.32388/LAKK5Q")]
     assert ORCID().query(authors, identifiers) == [("Silvio", "Peroni", "0000-0003-0530-4305", None)]
+
+
+def test_orcid_without_identifiers() -> None:
+    assert ORCID().query([], []) is None
 
 
 def test_viaf() -> None:
@@ -59,6 +112,10 @@ def test_wikidata_pmcid() -> None:
     assert WikiData().query("3083595", "pmcid") == "Q54919067"
 
 
+def test_wikidata_unsupported_schema() -> None:
+    assert WikiData().query("literal", "unsupported") is None
+
+
 def test_openalex_doi() -> None:
     assert OpenAlex().query("10.1111/j.1749-6632.1958.tb54685.x", "doi") == ["W1985052597"]
 
@@ -69,3 +126,7 @@ def test_openalex_issn() -> None:
 
 def test_openalex_pmid() -> None:
     assert OpenAlex().query("21603045", "pmid") == ["W2991792334"]
+
+
+def test_openalex_unsupported_schema() -> None:
+    assert OpenAlex().query("literal", "unsupported") is None
