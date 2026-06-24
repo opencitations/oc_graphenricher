@@ -7,7 +7,7 @@ How to install
 ==================
 
 Installing from Pypi
-########
+--------------------
 
 To get the official and updated version of this package, follow these steps:
 
@@ -25,7 +25,7 @@ To get the official and updated version of this package, follow these steps:
 
 
 Installing from the sources
-########
+---------------------------
 It's also possible to build the package from the sources. To do that, follow the following:
 
 1. Having already installed Python, you can also install GraphEnricher via cloning this repository:
@@ -58,7 +58,7 @@ It's also possible to build the package from the sources. To do that, follow the
         pip install ./dist/oc_graphenricher-<VERSION>.tar.gz
 
 Run the tests
-########
+-------------
 To run the tests (from the root of the project):
 
     .. code-block:: bash

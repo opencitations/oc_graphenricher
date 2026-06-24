@@ -11,7 +11,7 @@ import contextlib
 import logging
 import sys
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import requests_cache
 from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from typing import Protocol, TextIO
 
+    from oc_ocdm.abstract_entity import AbstractEntity
+    from oc_ocdm.abstract_set import AbstractSet
     from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
     from oc_ocdm.graph.graph_set import GraphSet
 
@@ -131,7 +133,7 @@ class GraphEnricher:
     def __serialize_intermediate(self, br_counter: int) -> None:
         if br_counter % SERIALIZE_INTERVAL != 0 or not self.serialize_in_the_middle:
             return
-        gs_storer = Storer(self.g_set, output_format="nt11")
+        gs_storer = Storer(cast("AbstractSet[AbstractEntity]", self.g_set), output_format="nt11")
         gs_storer.store_graphs_in_file(self.graph_filename, "")
 
     def __is_journal_issue_or_volume(self, br: BibliographicResource) -> bool:
@@ -337,13 +339,13 @@ class GraphEnricher:
         return False
 
     def __serialize_graphs(self) -> None:
-        gs_storer = Storer(self.g_set, output_format="nt11")
+        gs_storer = Storer(cast("AbstractSet[AbstractEntity]", self.g_set), output_format="nt11")
         gs_storer.store_graphs_in_file(self.graph_filename, "")
 
         prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=self.info_dir)
         prov.generate_provenance()
 
-        prov_storer = Storer(prov, output_format="nquads")
+        prov_storer = Storer(cast("AbstractSet[AbstractEntity]", prov), output_format="nquads")
         prov_storer.store_graphs_in_file(self.provenance_filename, "")
 
     def _add_id(

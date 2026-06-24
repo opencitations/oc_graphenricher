@@ -18,6 +18,7 @@ A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and
    intro.rst
    installing.rst
    tutorial.rst
+   modules/modules.rst
 
 Indices and tables
 ==================

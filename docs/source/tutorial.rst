@@ -21,7 +21,7 @@ To create one:
         entities = reader.import_entities_from_graph(g_set, g, enable_validation=False, resp_agent='https://w3id.org/oc/meta/prov/pa/2')
 
 Enrichment
-########
+----------
 At this point, to run the enrichment phase:
 
     .. code-block:: python
@@ -35,7 +35,7 @@ You'll see the progress bar with an estimate of the time needed and the average 
 for each Bibliographic Resource (BR) enriched.
 
 Deduplication
-########
+-------------
 Then, having serialized the enriched graph set, and having read it again as the
 `g_set` object, to run the deduplication step do:
 

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: ISC
 
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
@@ -12,6 +12,10 @@ from oc_ocdm.graph.entities.bibliographic_entity import BibliographicEntity
 from oc_ocdm.graph.graph_set import GraphSet
 from oc_ocdm.storer import Storer
 from oc_ocdm.support.support import create_date
+
+if TYPE_CHECKING:
+    from oc_ocdm.abstract_entity import AbstractEntity
+    from oc_ocdm.abstract_set import AbstractSet
 
 
 def add_one_author_with_single_id(schema: str, literal: str) -> AgentRole:
@@ -143,5 +147,5 @@ author2 = add_one_author_with_two_id("viaf", "viaf1")
 paper.has_contributor(author1)
 paper.has_contributor(author2)
 gs.commit_changes()
-gs_storer = Storer(gs, output_format="nt11")
+gs_storer = Storer(cast("AbstractSet[AbstractEntity]", gs), output_format="nt11")
 gs_storer.store_graphs_in_file(str(Path(__file__).with_name("test_merge_br.rdf")), "")

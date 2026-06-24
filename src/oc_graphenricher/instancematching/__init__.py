@@ -16,6 +16,8 @@ from oc_ocdm.prov.prov_set import ProvSet
 from oc_ocdm.storer import Storer
 
 if TYPE_CHECKING:
+    from oc_ocdm.abstract_entity import AbstractEntity
+    from oc_ocdm.abstract_set import AbstractSet
     from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
     from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
     from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
@@ -78,10 +80,10 @@ class InstanceMatching:
 
         Serialize the provenance in another specified RDF file.
         """
-        gs_storer = Storer(self.g_set, output_format="nt11")
+        gs_storer = Storer(cast("AbstractSet[AbstractEntity]", self.g_set), output_format="nt11")
         gs_storer.store_graphs_in_file(self.graph_filename, "")
 
-        prov_storer = Storer(self.prov, output_format="nquads")
+        prov_storer = Storer(cast("AbstractSet[AbstractEntity]", self.prov), output_format="nquads")
         prov_storer.store_graphs_in_file(self.provenance_filename, "")
 
     def instance_matching_ra(self) -> None:
