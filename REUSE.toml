@@ -8,6 +8,7 @@ path = [
     "pyproject.toml",
     "uv.lock",
     "src/oc_graphenricher/APIs/stopwords-it.txt",
+    "tests/fixtures/api_responses/queryinterface.json",
     "tests/fixtures/test_merge_br.rdf",
 ]
 SPDX-FileCopyrightText = "NONE"

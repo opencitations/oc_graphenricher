@@ -5,6 +5,8 @@
 
 import json
 from http import HTTPStatus
+from pathlib import Path
+from typing import cast
 
 import pytest
 import requests
@@ -12,21 +14,93 @@ from oc_ocdm.graph.graph_entity import GraphEntity
 from requests.exceptions import ReadTimeout
 
 from oc_graphenricher import APIs
-from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, JsonDict, OpenAlex, WikiData
+from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, OpenAlex, WikiData
+
+Snapshot = dict[str, object]
+SNAPSHOTS = cast(
+    "dict[str, Snapshot]",
+    json.loads(
+        (Path(__file__).parents[1] / "fixtures" / "api_responses" / "queryinterface.json").read_text(
+            encoding="utf-8",
+        ),
+    ),
+)
 
 
 class JsonResponse:
-    def __init__(self, data: JsonDict, status_code: HTTPStatus = HTTPStatus.OK) -> None:
+    def __init__(
+        self,
+        data: object,
+        status_code: HTTPStatus | int = HTTPStatus.OK,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         self.data = data
-        self.status_code = status_code
-        self.headers: dict[str, str] = {}
-        self.text = json.dumps(data)
+        self.status_code = int(status_code)
+        self.headers = headers if headers is not None else {}
+        self.text = data if isinstance(data, str) else json.dumps(data)
 
-    def json(self) -> JsonDict:
+    def json(self) -> object:
         return self.data
 
 
-def test_crossref_doi() -> None:
+def _snapshot_response(snapshot_name: str) -> JsonResponse:
+    snapshot = SNAPSHOTS[snapshot_name]
+    response = cast("Snapshot", snapshot["response"])
+    return JsonResponse(
+        response["body"],
+        cast("int", response["status_code"]),
+        cast("dict[str, str]", response["headers"]),
+    )
+
+
+def _assert_snapshot_request(
+    snapshot_name: str,
+    url: str,
+    headers: dict[str, str],
+    params: dict[str, str] | None,
+) -> None:
+    snapshot = SNAPSHOTS[snapshot_name]
+    request = cast("Snapshot", snapshot["request"])
+
+    assert request["method"] == "GET"
+    assert url == request["url"]
+    assert headers == request["headers"]
+    actual_params = {}
+    if params is not None:
+        actual_params = params
+    assert actual_params == request["params"]
+
+
+def _mock_snapshot_get(monkeypatch: pytest.MonkeyPatch, snapshot_names: list[str]) -> list[str]:
+    pending = snapshot_names.copy()
+
+    def fake_get(
+        url: str,
+        headers: dict[str, str],
+        timeout: float,
+        params: dict[str, str] | None = None,
+    ) -> JsonResponse:
+        del timeout
+        if not pending:
+            message = f"Unexpected HTTP request: {url}"
+            raise AssertionError(message)
+
+        snapshot_name = pending.pop(0)
+        _assert_snapshot_request(snapshot_name, url, headers, params)
+        return _snapshot_response(snapshot_name)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    return pending
+
+
+def test_unmocked_http_request_fails() -> None:
+    with pytest.raises(AssertionError, match="External HTTP request blocked"):
+        requests.get("https://example.org/", timeout=1)
+
+
+def test_crossref_doi(monkeypatch: pytest.MonkeyPatch) -> None:
+    pending = _mock_snapshot_get(monkeypatch, ["crossref_doi"])
+
     assert (
         Crossref().query(
             [("Stacey", "Willcox-Pidgeon")],
@@ -36,20 +110,21 @@ def test_crossref_doi() -> None:
         )
         == "10.1136/injuryprevention-2018-safety.431"
     )
+    assert pending == []
 
 
-def test_crossref_journal() -> None:
+def test_crossref_journal(monkeypatch: pytest.MonkeyPatch) -> None:
+    pending = _mock_snapshot_get(monkeypatch, ["crossref_journal"])
+
     assert Crossref().query_journal("0008-4026") == ["1480-3305"]
+    assert pending == []
 
 
 def test_crossref_publisher(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fake_get(url: str, headers: dict[str, str], timeout: int) -> JsonResponse:
-        del url, headers, timeout
-        return JsonResponse({"message": {"member": "297"}})
-
-    monkeypatch.setattr(requests, "get", fake_get)
+    pending = _mock_snapshot_get(monkeypatch, ["crossref_publisher"])
 
     assert Crossref().query_publisher("10.1007/978-3-030-00668-6_4") == "297"
+    assert pending == []
 
 
 def test_crossref_publisher_retries_service_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -144,10 +219,13 @@ def test_crossref_selects_best_doi_from_response_metadata(monkeypatch: pytest.Mo
     assert Crossref().query([("Jane", "Doe")], "target title", "2019-2020") == "10.555/best"
 
 
-def test_orcid() -> None:
+def test_orcid(monkeypatch: pytest.MonkeyPatch) -> None:
+    pending = _mock_snapshot_get(monkeypatch, ["orcid_search", "orcid_personal_details"])
     authors: list[AuthorTuple] = [("Silvio", "Peroni", None, None)]
     identifiers: list[IdentifierTuple] = [(GraphEntity.iri_doi, "10.32388/LAKK5Q")]
+
     assert ORCID().query(authors, identifiers) == [("Silvio", "Peroni", "0000-0003-0530-4305", None)]
+    assert pending == []
 
 
 def test_orcid_without_identifiers() -> None:
@@ -177,49 +255,61 @@ def test_orcid_returns_unmatched_author_after_timeout(monkeypatch: pytest.Monkey
     assert sleep_values == [1.0, 2.0]
 
 
-def test_viaf() -> None:
+def test_viaf(monkeypatch: pytest.MonkeyPatch) -> None:
+    pending = _mock_snapshot_get(monkeypatch, ["viaf"])
     title = "A Smart City Data Model based on Semantics Best Practice and Principles"
+
     assert VIAF().query("Silvio", "Peroni", title) == "309649450"
+    assert pending == []
 
 
-def test_wikidata_doi() -> None:
-    assert WikiData().query("10.1002/(ISSN)1098-2353", "doi") == "Q59755"
+@pytest.mark.parametrize(
+    ("snapshot_name", "entity", "schema", "expected"),
+    [
+        ("wikidata_doi", "10.1002/(ISSN)1098-2353", "doi", "Q59755"),
+        ("wikidata_issn", "0009-4722", "issn", "Q1119421"),
+        ("wikidata_orcid", "0000-0002-7398-5483", "orcid", "Q5345"),
+        ("wikidata_viaf", "24715915", "viaf", "Q1228"),
+        ("wikidata_pmid", "12344444", "pmid", "Q78273175"),
+        ("wikidata_pmcid", "3083595", "pmcid", "Q54919067"),
+    ],
+)
+def test_wikidata(
+    monkeypatch: pytest.MonkeyPatch,
+    snapshot_name: str,
+    entity: str,
+    schema: str,
+    expected: str,
+) -> None:
+    pending = _mock_snapshot_get(monkeypatch, [snapshot_name])
 
-
-def test_wikidata_issn() -> None:
-    assert WikiData().query("0009-4722", "issn") == "Q1119421"
-
-
-def test_wikidata_orcid() -> None:
-    assert WikiData().query("0000-0002-7398-5483", "orcid") == "Q5345"
-
-
-def test_wikidata_viaf() -> None:
-    assert WikiData().query("24715915", "viaf") == "Q1228"
-
-
-def test_wikidata_pmid() -> None:
-    assert WikiData().query("12344444", "pmid") == "Q78273175"
-
-
-def test_wikidata_pmcid() -> None:
-    assert WikiData().query("3083595", "pmcid") == "Q54919067"
+    assert WikiData().query(entity, schema) == expected
+    assert pending == []
 
 
 def test_wikidata_unsupported_schema() -> None:
     assert WikiData().query("literal", "unsupported") is None
 
 
-def test_openalex_doi() -> None:
-    assert OpenAlex().query("10.1111/j.1749-6632.1958.tb54685.x", "doi") == ["W1985052597"]
+@pytest.mark.parametrize(
+    ("snapshot_name", "entity", "schema", "expected"),
+    [
+        ("openalex_doi", "10.1111/j.1749-6632.1958.tb54685.x", "doi", ["W1985052597"]),
+        ("openalex_issn", "0014-2980", "issn", ["S126191069"]),
+        ("openalex_pmid", "21603045", "pmid", ["W2991792334"]),
+    ],
+)
+def test_openalex(
+    monkeypatch: pytest.MonkeyPatch,
+    snapshot_name: str,
+    entity: str,
+    schema: str,
+    expected: list[str],
+) -> None:
+    pending = _mock_snapshot_get(monkeypatch, [snapshot_name])
 
-
-def test_openalex_issn() -> None:
-    assert OpenAlex().query("0014-2980", "issn") == ["S126191069"]
-
-
-def test_openalex_pmid() -> None:
-    assert OpenAlex().query("21603045", "pmid") == ["W2991792334"]
+    assert OpenAlex().query(entity, schema) == expected
+    assert pending == []
 
 
 @pytest.mark.parametrize(

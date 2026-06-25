@@ -1,0 +1,2426 @@
+{
+  "crossref_doi": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "https://api.crossref.org/works?query.bibliographic=PW 1927 Reviewing the national&query.author=stacey willcox-pidgeon&rows=4&select=DOI,title,author,issued"
+    },
+    "response": {
+      "body": {
+        "message": {
+          "facets": {},
+          "items": [
+            {
+              "DOI": "10.1136/injuryprevention-2018-safety.431",
+              "author": [
+                {
+                  "affiliation": [
+                    {
+                      "name": "Royal Life Saving Society – Australia, Sydney, Australia"
+                    }
+                  ],
+                  "family": "Willcox-Pidgeon",
+                  "given": "Stacey",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "first"
+                },
+                {
+                  "affiliation": [
+                    {
+                      "name": "Royal Life Saving Society – Australia, Sydney, Australia"
+                    }
+                  ],
+                  "family": "Larsen",
+                  "given": "Penny",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "additional"
+                },
+                {
+                  "affiliation": [
+                    {
+                      "name": "Royal Life Saving Society – Australia, Sydney, Australia"
+                    }
+                  ],
+                  "family": "Roberts",
+                  "given": "Craig",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "additional"
+                }
+              ],
+              "issued": {
+                "date-parts": [
+                  [
+                    2018,
+                    9,
+                    20
+                  ]
+                ]
+              },
+              "title": [
+                "PW 1927 Reviewing the national swimming and water safety education framework: a drowning prevention strategy"
+              ]
+            },
+            {
+              "DOI": "10.62977/85208",
+              "author": [
+                {
+                  "affiliation": [],
+                  "family": "Mahony",
+                  "given": "Alison",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "first"
+                },
+                {
+                  "ORCID": "https://orcid.org/0000-0003-0759-0675",
+                  "affiliation": [],
+                  "authenticated-orcid": false,
+                  "family": "Willcox-Pidgeon",
+                  "given": "Stacey",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "additional"
+                }
+              ],
+              "issued": {
+                "date-parts": [
+                  [
+                    2021,
+                    9
+                  ]
+                ]
+              },
+              "title": [
+                "Royal Life Saving National Drowning Report 2021"
+              ]
+            },
+            {
+              "DOI": "10.62977/85204",
+              "author": [
+                {
+                  "affiliation": [],
+                  "family": "Mahony",
+                  "given": "Alison",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "first"
+                },
+                {
+                  "ORCID": "https://orcid.org/0000-0003-0759-0675",
+                  "affiliation": [],
+                  "authenticated-orcid": false,
+                  "family": "Willcox-Pidgeon",
+                  "given": "Stacey",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "additional"
+                },
+                {
+                  "ORCID": "https://orcid.org/0000-0002-1954-971X",
+                  "affiliation": [],
+                  "authenticated-orcid": false,
+                  "family": "Allen",
+                  "given": "Keeley",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "additional"
+                }
+              ],
+              "issued": {
+                "date-parts": [
+                  [
+                    2020,
+                    9
+                  ]
+                ]
+              },
+              "title": [
+                "Royal Life Saving National Drowning Report 2020"
+              ]
+            },
+            {
+              "DOI": "10.62977/85200",
+              "author": [
+                {
+                  "ORCID": "https://orcid.org/0000-0002-6424-1511",
+                  "affiliation": [],
+                  "authenticated-orcid": false,
+                  "family": "Peden",
+                  "given": "Amy",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "first"
+                },
+                {
+                  "ORCID": "https://orcid.org/0000-0003-0759-0675",
+                  "affiliation": [],
+                  "authenticated-orcid": false,
+                  "family": "Willcox-Pidgeon",
+                  "given": "Stacey",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "additional"
+                },
+                {
+                  "ORCID": "https://orcid.org/0000-0002-0259-1479",
+                  "affiliation": [],
+                  "authenticated-orcid": false,
+                  "family": "Taylor",
+                  "given": "Danielle",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "additional"
+                },
+                {
+                  "affiliation": [],
+                  "family": "Mahony",
+                  "given": "Alison",
+                  "role": [
+                    {
+                      "role": "author",
+                      "vocabulary": "crossref"
+                    }
+                  ],
+                  "sequence": "additional"
+                }
+              ],
+              "issued": {
+                "date-parts": [
+                  [
+                    2019,
+                    9
+                  ]
+                ]
+              },
+              "title": [
+                "Royal Life Saving National Drowning Report 2019"
+              ]
+            }
+          ],
+          "items-per-page": 4,
+          "query": {
+            "search-terms": null,
+            "start-index": 0
+          },
+          "total-results": 780
+        },
+        "message-type": "work-list",
+        "message-version": "1.0.0",
+        "status": "ok"
+      },
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "status_code": 200
+    }
+  },
+  "crossref_journal": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "https://api.crossref.org/journals/0008-4026"
+    },
+    "response": {
+      "body": {
+        "message": {
+          "ISSN": [
+            "0008-4026",
+            "1480-3305"
+          ],
+          "breakdowns": {
+            "dois-by-issued-year": [
+              [
+                1998,
+                470
+              ],
+              [
+                1989,
+                445
+              ],
+              [
+                1986,
+                415
+              ],
+              [
+                1983,
+                407
+              ],
+              [
+                1995,
+                406
+              ],
+              [
+                1984,
+                394
+              ],
+              [
+                1978,
+                376
+              ],
+              [
+                2000,
+                375
+              ],
+              [
+                1988,
+                364
+              ],
+              [
+                1987,
+                359
+              ],
+              [
+                1982,
+                359
+              ],
+              [
+                1985,
+                354
+              ],
+              [
+                1999,
+                352
+              ],
+              [
+                1991,
+                351
+              ],
+              [
+                1977,
+                351
+              ],
+              [
+                1990,
+                347
+              ],
+              [
+                1974,
+                345
+              ],
+              [
+                1972,
+                344
+              ],
+              [
+                1970,
+                339
+              ],
+              [
+                1975,
+                336
+              ],
+              [
+                1979,
+                334
+              ],
+              [
+                1973,
+                325
+              ],
+              [
+                1981,
+                324
+              ],
+              [
+                2001,
+                320
+              ],
+              [
+                1976,
+                315
+              ],
+              [
+                1971,
+                315
+              ],
+              [
+                1992,
+                310
+              ],
+              [
+                1969,
+                307
+              ],
+              [
+                1980,
+                303
+              ],
+              [
+                1967,
+                252
+              ],
+              [
+                1996,
+                242
+              ],
+              [
+                1997,
+                233
+              ],
+              [
+                1994,
+                227
+              ],
+              [
+                1968,
+                222
+              ],
+              [
+                1993,
+                203
+              ],
+              [
+                2006,
+                189
+              ],
+              [
+                1966,
+                188
+              ],
+              [
+                2005,
+                184
+              ],
+              [
+                2004,
+                184
+              ],
+              [
+                1965,
+                171
+              ],
+              [
+                1964,
+                170
+              ],
+              [
+                1962,
+                162
+              ],
+              [
+                1961,
+                162
+              ],
+              [
+                1963,
+                155
+              ],
+              [
+                2002,
+                145
+              ],
+              [
+                2003,
+                138
+              ],
+              [
+                2007,
+                134
+              ],
+              [
+                1959,
+                109
+              ],
+              [
+                1960,
+                87
+              ],
+              [
+                1957,
+                78
+              ],
+              [
+                1958,
+                76
+              ],
+              [
+                1956,
+                76
+              ],
+              [
+                1954,
+                70
+              ],
+              [
+                1953,
+                61
+              ],
+              [
+                1952,
+                54
+              ],
+              [
+                1955,
+                50
+              ],
+              [
+                1951,
+                49
+              ]
+            ]
+          },
+          "counts": {
+            "backfile-dois": 14413,
+            "current-dois": 0,
+            "total-dois": 14413
+          },
+          "coverage": {
+            "abstracts-backfile": 0.9188926663428849,
+            "abstracts-current": 0.0,
+            "affiliations-backfile": 0.02900159578158607,
+            "affiliations-current": 0.0,
+            "award-numbers-backfile": 0.0,
+            "award-numbers-current": 0.0,
+            "descriptions-backfile": 0.0,
+            "descriptions-current": 0.0,
+            "funders-backfile": 0.0,
+            "funders-current": 0.0,
+            "licenses-backfile": 0.947824880316381,
+            "licenses-current": 0.0,
+            "orcids-backfile": 0.0,
+            "orcids-current": 0.0,
+            "references-backfile": 0.2809963227641712,
+            "references-current": 0.0,
+            "resource-links-backfile": 0.02463054187192118,
+            "resource-links-current": 0.0,
+            "ror-ids-backfile": 0.0,
+            "ror-ids-current": 0.0,
+            "similarity-checking-backfile": 0.947824880316381,
+            "similarity-checking-current": 0.0,
+            "update-policies-backfile": 0.0,
+            "update-policies-current": 0.0
+          },
+          "coverage-type": {
+            "all": {
+              "abstracts": 0.9188926663428849,
+              "affiliations": 0.02900159578158607,
+              "award-numbers": 0.0,
+              "descriptions": 0.0,
+              "funders": 0.0,
+              "last-status-check-time": 1782179123628,
+              "licenses": 0.947824880316381,
+              "orcids": 0.0,
+              "references": 0.2809963227641712,
+              "resource-links": 0.02463054187192118,
+              "ror-ids": 0.0,
+              "similarity-checking": 0.947824880316381,
+              "update-policies": 0.0
+            },
+            "backfile": {
+              "abstracts": 0.9188926663428849,
+              "affiliations": 0.02900159578158607,
+              "award-numbers": 0.0,
+              "descriptions": 0.0,
+              "funders": 0.0,
+              "last-status-check-time": 1782179123628,
+              "licenses": 0.947824880316381,
+              "orcids": 0.0,
+              "references": 0.2809963227641712,
+              "resource-links": 0.02463054187192118,
+              "ror-ids": 0.0,
+              "similarity-checking": 0.947824880316381,
+              "update-policies": 0.0
+            },
+            "current": {
+              "abstracts": 0.0,
+              "affiliations": 0.0,
+              "award-numbers": 0.0,
+              "descriptions": 0.0,
+              "funders": 0.0,
+              "last-status-check-time": 1782179123628,
+              "licenses": 0.0,
+              "orcids": 0.0,
+              "references": 0.0,
+              "resource-links": 0.0,
+              "ror-ids": 0.0,
+              "similarity-checking": 0.0,
+              "update-policies": 0.0
+            }
+          },
+          "flags": {
+            "deposits": true,
+            "deposits-abstracts-backfile": true,
+            "deposits-abstracts-current": false,
+            "deposits-affiliations-backfile": true,
+            "deposits-affiliations-current": false,
+            "deposits-articles": true,
+            "deposits-award-numbers-backfile": false,
+            "deposits-award-numbers-current": false,
+            "deposits-descriptions-backfile": false,
+            "deposits-descriptions-current": false,
+            "deposits-funders-backfile": false,
+            "deposits-funders-current": false,
+            "deposits-licenses-backfile": true,
+            "deposits-licenses-current": false,
+            "deposits-orcids-backfile": false,
+            "deposits-orcids-current": false,
+            "deposits-references-backfile": true,
+            "deposits-references-current": false,
+            "deposits-resource-links-backfile": true,
+            "deposits-resource-links-current": false,
+            "deposits-ror-ids-backfile": false,
+            "deposits-ror-ids-current": false,
+            "deposits-similarity-checking-backfile": true,
+            "deposits-similarity-checking-current": false,
+            "deposits-update-policies-backfile": false,
+            "deposits-update-policies-current": false
+          },
+          "issn-type": [
+            {
+              "type": "print",
+              "value": "0008-4026"
+            },
+            {
+              "type": "electronic",
+              "value": "1480-3305"
+            }
+          ],
+          "last-status-check-time": 1782179123628,
+          "publisher": "Canadian Science Publishing",
+          "subjects": [],
+          "title": "Canadian Journal of Botany"
+        },
+        "message-type": "journal",
+        "message-version": "1.0.0",
+        "status": "ok"
+      },
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "status_code": 200
+    }
+  },
+  "crossref_publisher": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "https://api.crossref.org/works/10.1007/978-3-030-00668-6_4"
+    },
+    "response": {
+      "body": {
+        "message": {
+          "DOI": "10.1007/978-3-030-00668-6_4",
+          "ISBN": [
+            "9783030006679",
+            "9783030006686"
+          ],
+          "ISSN": [
+            "0302-9743",
+            "1611-3349"
+          ],
+          "URL": "https://doi.org/10.1007/978-3-030-00668-6_4",
+          "assertion": [
+            {
+              "group": {
+                "label": "Chapter History",
+                "name": "ChapterHistory"
+              },
+              "label": "First Online",
+              "name": "first_online",
+              "order": 1,
+              "value": "18 September 2018"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference Acronym",
+              "name": "conference_acronym",
+              "order": 1,
+              "value": "ISWC"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference Name",
+              "name": "conference_name",
+              "order": 2,
+              "value": "International Semantic Web Conference"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference City",
+              "name": "conference_city",
+              "order": 3,
+              "value": "Monterey, CA"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference Country",
+              "name": "conference_country",
+              "order": 4,
+              "value": "USA"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference Year",
+              "name": "conference_year",
+              "order": 5,
+              "value": "2018"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference Start Date",
+              "name": "conference_start_date",
+              "order": 7,
+              "value": "8 October 2018"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference End Date",
+              "name": "conference_end_date",
+              "order": 8,
+              "value": "12 October 2018"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference Number",
+              "name": "conference_number",
+              "order": 9,
+              "value": "17"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference ID",
+              "name": "conference_id",
+              "order": 10,
+              "value": "semweb2018"
+            },
+            {
+              "group": {
+                "label": "Conference Information",
+                "name": "ConferenceInfo"
+              },
+              "label": "Conference URL",
+              "name": "conference_url",
+              "order": 11,
+              "value": "http://iswc2018.semanticweb.org/"
+            },
+            {
+              "label": "Free to read",
+              "name": "free",
+              "value": "This content has been made available to all."
+            }
+          ],
+          "author": [
+            {
+              "affiliation": [],
+              "family": "Dragoni",
+              "given": "Mauro",
+              "role": [
+                {
+                  "role": "author",
+                  "vocabulary": "crossref"
+                }
+              ],
+              "sequence": "first"
+            },
+            {
+              "affiliation": [],
+              "family": "Bailoni",
+              "given": "Tania",
+              "role": [
+                {
+                  "role": "author",
+                  "vocabulary": "crossref"
+                }
+              ],
+              "sequence": "additional"
+            },
+            {
+              "affiliation": [],
+              "family": "Maimone",
+              "given": "Rosa",
+              "role": [
+                {
+                  "role": "author",
+                  "vocabulary": "crossref"
+                }
+              ],
+              "sequence": "additional"
+            },
+            {
+              "affiliation": [],
+              "family": "Eccher",
+              "given": "Claudio",
+              "role": [
+                {
+                  "role": "author",
+                  "vocabulary": "crossref"
+                }
+              ],
+              "sequence": "additional"
+            }
+          ],
+          "container-title": [
+            "Lecture Notes in Computer Science",
+            "The Semantic Web – ISWC 2018"
+          ],
+          "content-domain": {
+            "crossmark-restriction": false,
+            "domain": [
+              "link.springer.com"
+            ]
+          },
+          "created": {
+            "date-parts": [
+              [
+                2018,
+                9,
+                17
+              ]
+            ],
+            "date-time": "2018-09-17T12:04:47Z",
+            "timestamp": 1537185887000
+          },
+          "deposited": {
+            "date-parts": [
+              [
+                2024,
+                3,
+                13
+              ]
+            ],
+            "date-time": "2024-03-13T13:27:16Z",
+            "timestamp": 1710336436000
+          },
+          "indexed": {
+            "date-parts": [
+              [
+                2026,
+                3,
+                3
+              ]
+            ],
+            "date-time": "2026-03-03T06:50:59Z",
+            "timestamp": 1772520659000,
+            "version": "3.50.1"
+          },
+          "is-referenced-by-count": 32,
+          "isbn-type": [
+            {
+              "type": "print",
+              "value": "9783030006679"
+            },
+            {
+              "type": "electronic",
+              "value": "9783030006686"
+            }
+          ],
+          "issn-type": [
+            {
+              "type": "print",
+              "value": "0302-9743"
+            },
+            {
+              "type": "electronic",
+              "value": "1611-3349"
+            }
+          ],
+          "issued": {
+            "date-parts": [
+              [
+                2018
+              ]
+            ]
+          },
+          "language": "en",
+          "license": [
+            {
+              "URL": "https://www.springernature.com/gp/researchers/text-and-data-mining",
+              "content-version": "tdm",
+              "delay-in-days": 0,
+              "start": {
+                "date-parts": [
+                  [
+                    2018,
+                    1,
+                    1
+                  ]
+                ],
+                "date-time": "2018-01-01T00:00:00Z",
+                "timestamp": 1514764800000
+              }
+            },
+            {
+              "URL": "https://www.springernature.com/gp/researchers/text-and-data-mining",
+              "content-version": "vor",
+              "delay-in-days": 0,
+              "start": {
+                "date-parts": [
+                  [
+                    2018,
+                    1,
+                    1
+                  ]
+                ],
+                "date-time": "2018-01-01T00:00:00Z",
+                "timestamp": 1514764800000
+              }
+            }
+          ],
+          "link": [
+            {
+              "URL": "https://link.springer.com/content/pdf/10.1007/978-3-030-00668-6_4",
+              "content-type": "unspecified",
+              "content-version": "vor",
+              "intended-application": "similarity-checking"
+            }
+          ],
+          "member": "297",
+          "original-title": [],
+          "page": "53-69",
+          "prefix": "10.1007",
+          "published": {
+            "date-parts": [
+              [
+                2018
+              ]
+            ]
+          },
+          "published-online": {
+            "date-parts": [
+              [
+                2018,
+                9,
+                18
+              ]
+            ]
+          },
+          "published-print": {
+            "date-parts": [
+              [
+                2018
+              ]
+            ]
+          },
+          "publisher": "Springer International Publishing",
+          "publisher-location": "Cham",
+          "reference": [
+            {
+              "key": "4_CR1",
+              "unstructured": "Grafenauer, S., Tapsell, L., Beck, E.: Beyond nutrients: classification of foods to identify dietary patterns for weight management. In: 16th International congress of Dietetics (2012)"
+            },
+            {
+              "key": "4_CR2",
+              "unstructured": "Cantais, J., Dominguez, D., Gigante, V., Laera, L., Tamma, V.: An example of food ontology for diabetes control. In: Proceedings of the International Semantic Web Conference 2005 Workshop on Ontology Patterns for the Semantic Web (2005)"
+            },
+            {
+              "DOI": "10.1109/DEST.2008.4635195",
+              "doi-asserted-by": "crossref",
+              "key": "4_CR3",
+              "unstructured": "Snae, C., Bruckner, M.: Foods: a food-oriented ontology-driven system, pp. 168–176 (2008)"
+            },
+            {
+              "DOI": "10.1016/j.procs.2015.05.114",
+              "doi-asserted-by": "crossref",
+              "key": "4_CR4",
+              "unstructured": "Helmy, T., Al-Nazer, A., Al-Bukhitan, S., Iqbal, A.: Health, food and user’s profile ontologies for personalized information retrieval. In: Shakshuki, E.M. (ed.) Proceedings of the ANT 2015, London, pp. 1071–1076, 2–5 June 2015"
+            },
+            {
+              "DOI": "10.1007/978-3-319-46547-0_18",
+              "author": "S Peroni",
+              "doi-asserted-by": "publisher",
+              "first-page": "168",
+              "key": "4_CR5",
+              "series-title": "Lecture Notes in Computer Science",
+              "unstructured": "Peroni, S., Lodi, G., Asprino, L., Gangemi, A., Presutti, V.: FOOD: food in open data. In: Groth, P., et al. (eds.) ISWC 2016. LNCS, vol. 9982, pp. 168–176. Springer, Cham (2016). https://doi.org/10.1007/978-3-319-46547-0_18",
+              "volume-title": "The Semantic Web – ISWC 2016",
+              "year": "2016"
+            },
+            {
+              "key": "4_CR6",
+              "unstructured": "Kolchin, M., Zamula, D.: Food product ontology: initial implementation of a vocabulary for describing food products. In: Proceedings of the 14th Conference of Open Innovations Association FRUCT. FRUCT 2014, Helsinki, FRUCT Oy, pp. 191–196 (2013)"
+            },
+            {
+              "DOI": "10.1007/s10916-015-0372-6",
+              "author": "D Çelik Ertuğrul",
+              "doi-asserted-by": "publisher",
+              "first-page": "1",
+              "issue": "2",
+              "journal-title": "J. Med. Syst.",
+              "key": "4_CR7",
+              "unstructured": "Çelik Ertuğrul, D.: FoodWiki: a mobile app examines side effects of food additives via semantic web. J. Med. Syst. 40(2), 1–15 (2016)",
+              "volume": "40",
+              "year": "2016"
+            },
+            {
+              "key": "4_CR8",
+              "unstructured": "Fernández-López, M., Gómez-Pérez, A., Juristo, N.: Methontology: from ontological art towards ontological engineering. In: Proceedings of AAAI-Spring Symposium on Ontological Engineering of AAAI (1997)"
+            },
+            {
+              "key": "4_CR9",
+              "unstructured": "Pinto, H.S., Staab, S., Tempich, C.: DILIGENT: towards a fine-grained methodology for distributed, loosely-controlled and evolving engineering of ontologies. In: de Mántaras, R.L., Saitta, L. (eds.) Proceedings of the 16th Eureopean Conference on Artificial Intelligence, ECAI 2004, Including Prestigious Applicants of Intelligent Systems, PAIS 2004, Valencia, 22–27 August 2004, pp. 393–397. IOS Press (2004)"
+            },
+            {
+              "key": "4_CR10",
+              "unstructured": "Suárez-Figueroa, M.C.: NeOn methodology for building ontology networks: specification, scheduling and reuse. Ph.D. thesis, Technical University of Madrid (2012)"
+            },
+            {
+              "key": "4_CR11",
+              "unstructured": "Turconi, G., Roggi, C.: Atlante fotografico alimentare. Uno strumento per le indagini nutrizionali"
+            },
+            {
+              "key": "4_CR12",
+              "unstructured": "Hitzler, P., Gangemi, A., Janowicz, K., Krisnadhi, A., Presutti, V. (eds.): Ontology Engineering with Ontology Design Patterns - Foundations and Applications. Studies on the Semantic Web, vol. 25. IOS Press (2016)"
+            },
+            {
+              "DOI": "10.1007/3-540-45810-7_18",
+              "author": "A Gangemi",
+              "doi-asserted-by": "publisher",
+              "first-page": "166",
+              "key": "4_CR13",
+              "series-title": "Lecture Notes in Computer Science (Lecture Notes in Artificial Intelligence)",
+              "unstructured": "Gangemi, A., Guarino, N., Masolo, C., Oltramari, A., Schneider, L.: Sweetening ontologies with DOLCE. In: Gómez-Pérez, A., Benjamins, V.R. (eds.) EKAW 2002. LNCS (LNAI), vol. 2473, pp. 166–181. Springer, Heidelberg (2002). https://doi.org/10.1007/3-540-45810-7_18",
+              "volume-title": "Knowledge Engineering and Knowledge Management: Ontologies and the Semantic Web",
+              "year": "2002"
+            },
+            {
+              "key": "4_CR14",
+              "unstructured": "Dragoni, M., Bosca, A., Casu, M., Rexha, A.: Modeling, managing, exposing, and linking ontologies with a wiki-based tool. In: LREC, pp. 1668–1675 (2014)"
+            },
+            {
+              "DOI": "10.1007/978-0-387-48438-9_8",
+              "author": "L Obrst",
+              "doi-asserted-by": "publisher",
+              "first-page": "139",
+              "key": "4_CR15",
+              "unstructured": "Obrst, L., Ceusters, W., Mani, I., Ray, S., Smith, B.: The Evaluation of Ontologies, pp. 139–158. Springer, Boston (2007). https://doi.org/10.1007/978-0-387-48438-9_8",
+              "volume-title": "The Evaluation of Ontologies",
+              "year": "2007"
+            },
+            {
+              "DOI": "10.1007/11762256_13",
+              "author": "A Gangemi",
+              "doi-asserted-by": "publisher",
+              "first-page": "140",
+              "key": "4_CR16",
+              "series-title": "Lecture Notes in Computer Science",
+              "unstructured": "Gangemi, A., Catenacci, C., Ciaramita, M., Lehmann, J.: Modelling ontology evaluation and validation. In: Sure, Y., Domingue, J. (eds.) ESWC 2006. LNCS, vol. 4011, pp. 140–154. Springer, Heidelberg (2006). https://doi.org/10.1007/11762256_13",
+              "volume-title": "The Semantic Web: Research and Applications",
+              "year": "2006"
+            },
+            {
+              "DOI": "10.1007/978-3-540-24750-0_13",
+              "author": "A Gómez-Pérez",
+              "doi-asserted-by": "publisher",
+              "first-page": "251",
+              "key": "4_CR17",
+              "series-title": "International Handbooks on Information Systems",
+              "unstructured": "Gómez-Pérez, A.: Ontology evaluation. In: Staab, S., Studer, R. (eds.) Handbook on Ontologies. International Handbooks on Information Systems, pp. 251–274. Springer, Heidelberg (2004). https://doi.org/10.1007/978-3-540-24750-0_13",
+              "volume-title": "Handbook on Ontologies",
+              "year": "2004"
+            },
+            {
+              "DOI": "10.1006/ijhc.1995.1081",
+              "author": "TR Gruber",
+              "doi-asserted-by": "publisher",
+              "first-page": "907",
+              "issue": "5–6",
+              "journal-title": "Int. J. Hum. Comput. Stud.",
+              "key": "4_CR18",
+              "unstructured": "Gruber, T.R.: Toward principles for the design of ontologies used for knowledge sharing? Int. J. Hum. Comput. Stud. 43(5–6), 907–928 (1995)",
+              "volume": "43",
+              "year": "1995"
+            },
+            {
+              "key": "4_CR19",
+              "unstructured": "Grüninger, M., Fox, M.: Methodology for the design and evaluation of ontologies. In: Workshop on Basic Ontological Issues in Knowledge Sharing, IJCAI 1995, 13 April 1995"
+            },
+            {
+              "DOI": "10.1145/2695664.2695720",
+              "doi-asserted-by": "crossref",
+              "key": "4_CR20",
+              "unstructured": "Corcoglioniti, F., Rospocher, M., Mostarda, M., Amadori, M.: Processing billions of RDF triples on a single machine using streaming and sorting. In: ACM SAC, pp. 368–375 (2015)"
+            }
+          ],
+          "reference-count": 20,
+          "references-count": 20,
+          "relation": {},
+          "resource": {
+            "primary": {
+              "URL": "https://link.springer.com/10.1007/978-3-030-00668-6_4"
+            }
+          },
+          "score": 1,
+          "short-container-title": [],
+          "short-title": [],
+          "source": "Crossref",
+          "subject": [],
+          "subtitle": [],
+          "title": [
+            "HeLiS: An Ontology for Supporting Healthy Lifestyles"
+          ],
+          "type": "book-chapter",
+          "update-policy": "https://doi.org/10.1007/springer_crossmark_policy"
+        },
+        "message-type": "work",
+        "message-version": "1.0.0",
+        "status": "ok"
+      },
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "status_code": 200
+    }
+  },
+  "openalex_doi": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "https://api.openalex.org/works?filter=doi:10.1111/j.1749-6632.1958.tb54685.x&select=id"
+    },
+    "response": {
+      "body": {
+        "group_by": [],
+        "meta": {
+          "cost_usd": 0.0001,
+          "count": 1,
+          "db_response_time_ms": 23,
+          "groups_count": null,
+          "page": 1,
+          "per_page": 25,
+          "x_query": {
+            "oql": "works where DOI is 10.1111/j.1749-6632.1958.tb54685.x return id",
+            "oqo": {
+              "filter_rows": [
+                {
+                  "column_id": "doi",
+                  "value": "10.1111/j.1749-6632.1958.tb54685.x"
+                }
+              ],
+              "get_rows": "works",
+              "select": [
+                "id"
+              ]
+            },
+            "url": "/works?filter=doi:10.1111%2Fj.1749-6632.1958.tb54685.x&select=id"
+          }
+        },
+        "results": [
+          {
+            "id": "https://openalex.org/W1985052597"
+          }
+        ]
+      },
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "status_code": 200
+    }
+  },
+  "openalex_issn": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "https://api.openalex.org/sources?filter=issn:0014-2980&select=id"
+    },
+    "response": {
+      "body": {
+        "group_by": [],
+        "meta": {
+          "cost_usd": 0.0001,
+          "count": 1,
+          "db_response_time_ms": 7,
+          "groups_count": null,
+          "page": 1,
+          "per_page": 25,
+          "x_query": {
+            "oql": "sources where ISSN is 0014-2980 return id",
+            "oqo": {
+              "filter_rows": [
+                {
+                  "column_id": "issn",
+                  "value": "0014-2980"
+                }
+              ],
+              "get_rows": "sources",
+              "select": [
+                "id"
+              ]
+            },
+            "url": "/sources?filter=issn:0014-2980&select=id"
+          }
+        },
+        "results": [
+          {
+            "id": "https://openalex.org/S126191069"
+          }
+        ]
+      },
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "status_code": 200
+    }
+  },
+  "openalex_pmid": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "https://api.openalex.org/works?filter=pmid:21603045&select=id"
+    },
+    "response": {
+      "body": {
+        "group_by": [],
+        "meta": {
+          "cost_usd": 0.0001,
+          "count": 1,
+          "db_response_time_ms": 24,
+          "groups_count": null,
+          "page": 1,
+          "per_page": 25,
+          "x_query": {
+            "oql": "works where PMID is 21603045 return id",
+            "oqo": {
+              "filter_rows": [
+                {
+                  "column_id": "ids.pmid",
+                  "value": "21603045"
+                }
+              ],
+              "get_rows": "works",
+              "select": [
+                "id"
+              ]
+            },
+            "url": "/works?filter=ids.pmid:21603045&select=id"
+          }
+        },
+        "results": [
+          {
+            "id": "https://openalex.org/W2991792334"
+          }
+        ]
+      },
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "status_code": 200
+    }
+  },
+  "orcid_personal_details": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Content-Type": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "https://pub.orcid.org/v2.1/0000-0003-0530-4305/personal-details"
+    },
+    "response": {
+      "body": {
+        "biography": {
+          "content": "I (ORCiD: 0000-0003-0530-4305) hold a Ph.D. degree in Computer Science and I am an Associate Professor at the Department of Classical Philology and Italian Studies, University of Bologna, where I teach Basic Informatics (Bachelor’s degree in Humanities), Computational Thinking and Programming and Open Science (Master’s degree in Digital Humanities and Digital Knowledge).\n\nI am an expert in document markup and semantic descriptions of bibliographic entities using OWL ontologies. I am one of the main developers of the SPAR (Semantic Publishing and Referencing) Ontologies, Director (with David Shotton) of OpenCitations, and founding member of the Initiative for Open Citations (I4OC).\n\nMy work on Semantic Publishing topics has been published by Springer in a book entitled Semantic Web Technologies and Legal Scholarly Publishing. I count several publications international journals – including Semantic Web, Web Semantics, Journal of the Association for Information Science and Technology, PeerJ Computer Science, and Scientometrics – and presentations in important international conferences.\n\nI am an Editorial Board member of Data Science, PeerJ Computer Science, and Research Ideas and Outcomes, and I have been in the Program Committee and in the Organising Committee of the most important international conferences and workshops related to Web and Semantic Web technologies. I am director of the Research Centre for Open Scholarly Metadata, member of the Digital Humanities Advanced Research Centre (/DH.arc), part of the Advisory Board of DBLP and Qeios, Ambassador of Figshare and PeerJ, and member of the Association for Computing Machinery, of the International Society for Scientometrics and Informetrics, and of the Associazione per l’Informatica Umanistica e la Cultura Digitale.\n\nAmong my research interests are Semantic Web technologies, markup languages for complex documents, design patterns for digital documents and ontology modelling, and automatic processes of analysis and segmentation of documents. In particular, my recent works concern the empirical analysis of the nature of scholarly citations, bibliometrics and scientometrics studies, visualisation and browsing interfaces for semantic data, and the development of ontologies to manage, integrate and query bibliographic information.",
+          "created-date": {
+            "value": 1460763119198
+          },
+          "last-modified-date": {
+            "value": 1614608838783
+          },
+          "path": "/0000-0003-0530-4305/biography",
+          "visibility": "PUBLIC"
+        },
+        "last-modified-date": {
+          "value": 1614608838783
+        },
+        "name": {
+          "created-date": {
+            "value": 1460763119195
+          },
+          "credit-name": null,
+          "family-name": {
+            "value": "Peroni"
+          },
+          "given-names": {
+            "value": "Silvio"
+          },
+          "last-modified-date": {
+            "value": 1460763119195
+          },
+          "path": "0000-0003-0530-4305",
+          "source": null,
+          "visibility": "PUBLIC"
+        },
+        "other-names": {
+          "last-modified-date": {
+            "value": 1474442894497
+          },
+          "other-name": [
+            {
+              "content": "S.",
+              "created-date": {
+                "value": 1462426142226
+              },
+              "display-index": 2,
+              "last-modified-date": {
+                "value": 1474442894494
+              },
+              "path": "/0000-0003-0530-4305/other-names/735430",
+              "put-code": 735430,
+              "source": {
+                "source-client-id": null,
+                "source-name": {
+                  "value": "Silvio Peroni"
+                },
+                "source-orcid": {
+                  "host": "orcid.org",
+                  "path": "0000-0003-0530-4305",
+                  "uri": "https://orcid.org/0000-0003-0530-4305"
+                }
+              },
+              "visibility": "PUBLIC"
+            },
+            {
+              "content": "essepuntato",
+              "created-date": {
+                "value": 1462426142241
+              },
+              "display-index": 1,
+              "last-modified-date": {
+                "value": 1474442894497
+              },
+              "path": "/0000-0003-0530-4305/other-names/735431",
+              "put-code": 735431,
+              "source": {
+                "source-client-id": null,
+                "source-name": {
+                  "value": "Silvio Peroni"
+                },
+                "source-orcid": {
+                  "host": "orcid.org",
+                  "path": "0000-0003-0530-4305",
+                  "uri": "https://orcid.org/0000-0003-0530-4305"
+                }
+              },
+              "visibility": "PUBLIC"
+            }
+          ],
+          "path": "/0000-0003-0530-4305/other-names"
+        },
+        "path": "/0000-0003-0530-4305/personal-details"
+      },
+      "headers": {
+        "Content-Type": "application/json;charset=UTF-8"
+      },
+      "status_code": 200
+    }
+  },
+  "orcid_search": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Content-Type": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "https://pub.orcid.org/v2.1/search?q=%28doi-self%3A%2210.32388/LAKK5Q%22%20OR%20doi-self%3A%2210.32388/lakk5q%22%29%20AND%20%28family-name%3A%22Peroni%22%20AND%20given-names%3A%22Silvio%22%29"
+    },
+    "response": {
+      "body": {
+        "num-found": 1,
+        "result": [
+          {
+            "orcid-identifier": {
+              "host": "orcid.org",
+              "path": "0000-0003-0530-4305",
+              "uri": "https://orcid.org/0000-0003-0530-4305"
+            }
+          }
+        ]
+      },
+      "headers": {
+        "Content-Type": "application/json;charset=UTF-8"
+      },
+      "status_code": 200
+    }
+  },
+  "viaf": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {},
+      "url": "http://www.viaf.org/viaf/search?local.title+all+\"A%20Smart%20City%20Data%20Model%20based%20on%20Semantics%20Best%20Practice%20and%20Principles\"&query=local.names+all+\"Silvio%20Peroni\"&sortKeys=holdingscount&recordSchema=BriefVIAF"
+    },
+    "response": {
+      "body": {
+        "searchRetrieveResponse": {
+          "echoedSearchRetrieveRequest": {
+            "query": {
+              "content": "local.names all \"Silvio Peroni\"",
+              "xsi:type": "xsd:string"
+            },
+            "recordPacking": {
+              "content": "xml",
+              "xsi:type": "xsd:string"
+            },
+            "recordSchema": {
+              "content": "BriefVIAF",
+              "xsi:type": "xsd:string"
+            },
+            "sortKeys": {
+              "content": "holdingscount",
+              "xsi:type": "xsd:string"
+            },
+            "version": {
+              "content": 1.1,
+              "xsi:type": "xsd:string"
+            },
+            "xQuery": {
+              "ns3:searchClause": {
+                "ns3:index": {
+                  "content": "local.names",
+                  "xsi:type": "xsd:string"
+                },
+                "ns3:relation": {
+                  "ns3:value": {
+                    "content": "all",
+                    "xsi:type": "xsd:string"
+                  },
+                  "xsi:type": "ns3:relationType"
+                },
+                "ns3:term": {
+                  "content": "Silvio Peroni",
+                  "xsi:type": "xsd:string"
+                },
+                "xmlns:ns3": "http://www.loc.gov/zing/cql/xcql/",
+                "xsi:type": "ns3:searchClauseType"
+              }
+            },
+            "xmlns:ns2": "http://www.loc.gov/zing/srw/",
+            "xsi:type": "ns2:echoedSearchRetrieveRequestType"
+          },
+          "extraResponseData": {
+            "ns5:extraData": {
+              "ns5:databaseTitle": "VIAF: The Virtual International Authority File",
+              "xmlns": "http://oclc.org/srw/extraData",
+              "xmlns:ns5": "http://oclc.org/srw/extraData"
+            },
+            "xmlns:ns4": "http://www.loc.gov/zing/srw/",
+            "xsi:type": "ns4:extraDataType"
+          },
+          "numberOfRecords": {
+            "content": 1,
+            "xsi:type": "xsd:nonNegativeInteger"
+          },
+          "records": {
+            "record": {
+              "recordData": {
+                "v:VIAFCluster": {
+                  "v:mainHeadings": {
+                    "v:data": [
+                      {
+                        "v:sources": {
+                          "v:s": [
+                            "CAOONL",
+                            "SUDOC",
+                            "KRNLK",
+                            "LC",
+                            "SZ",
+                            "DNB",
+                            "J9U",
+                            "ISNI"
+                          ],
+                          "v:sid": [
+                            "CAOONL|ncf11873992",
+                            "SUDOC|188223371",
+                            "KRNLK|KAC202325888",
+                            "LC|no2014111866",
+                            "SZ|105432011X",
+                            "DNB|105432011X",
+                            "J9U|987007379236905171",
+                            "ISNI|0000000435629976"
+                          ]
+                        },
+                        "v:text": "Peroni, Silvio",
+                        "xmlns": "http://viaf.org/viaf/terms#",
+                        "xmlns:foaf": "http://xmlns.com/foaf/0.1/",
+                        "xmlns:owl": "http://www.w3.org/2002/07/owl#",
+                        "xmlns:rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                        "xmlns:void": "http://rdfs.org/ns/void#"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:text": "Silvio Peroni Italian computer scientist",
+                        "xmlns": "http://viaf.org/viaf/terms#",
+                        "xmlns:foaf": "http://xmlns.com/foaf/0.1/",
+                        "xmlns:owl": "http://www.w3.org/2002/07/owl#",
+                        "xmlns:rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                        "xmlns:void": "http://rdfs.org/ns/void#"
+                      }
+                    ]
+                  },
+                  "v:nameType": {
+                    "content": "Personal",
+                    "xmlns": "http://viaf.org/viaf/terms#",
+                    "xmlns:foaf": "http://xmlns.com/foaf/0.1/",
+                    "xmlns:owl": "http://www.w3.org/2002/07/owl#",
+                    "xmlns:rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                    "xmlns:void": "http://rdfs.org/ns/void#"
+                  },
+                  "v:titles": {
+                    "v:work": [
+                      {
+                        "v:sources": {
+                          "v:s": "SUDOC",
+                          "v:sid": "SUDOC|188223371"
+                        },
+                        "v:title": "Dalmazia nostra ..."
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "DiTTO: Diagrams Transformation inTo OWL"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Do altmetrics work for assessing research quality?"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The Document Components Ontology (DoCO)"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Documents as Timed Abstract Objects"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Embedding semantic annotations within texts"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "DNB",
+                          "v:sid": "DNB|105432011X"
+                        },
+                        "v:title": "Enabling Multiple Voices in the Museum: Challenges and Approaches"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Enhancing Semantic Expressivity in the Cultural Heritage Domain"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Evaluating Citation Functions in CiTO: Cognitive Issues"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Exploring Scholarly Papers Through Citations"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Extracting knowledge from text using SHELDON, a Semantic Holistic framEwork for LinkeD ONtology data"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "FaBiO and CiTO: Ontologies for describing bibliographic resources and citations"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Faceted documents"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "FOOD: FOod in Open Data"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "FRBR-aligned Bibliographic Ontology"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Handling Markup Overlaps Using OWL"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Identifying and correcting invalid citations due to DOI errors in Crossref data"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Identifying Functions of Citations with CiTalO"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Identifying Key Concepts in an Ontology, through the Integration of Cognitive Principles with Statistical and Topological Measures"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Integrating Citizen Experiences in Cultural Heritage Archives: Requirements, State of the Art, and Challenges"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Interfacing fast-fashion design industries with Semantic Web technologies"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Introduction"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Investigating Facets to Characterise Citations for Scholars"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Jailbreaking your Reference Lists: the OpenCitations Project Strikes Again"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "SUDOC",
+                          "v:sid": "SUDOC|188223371"
+                        },
+                        "v:title": "Knowledge Graphs : Semantics, Machine Learning, and Languages : Proceedings of the 19th International Conference on Semantic Systems, 20-22 September 2023, Leipzig, Germany"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Latest Developments to LODE"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "MACJa: Metadata and Citations Jailbreaker"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Managing semantics in XML vocabularies: an experience in the legal and legislative domain"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "A map of Digital Humanities research across bibliographic data sources"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Methodology data of \"A qualitative and quantitative citation analysis toward retracted articles: a case of study\""
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "A methodology for gathering and annotating the raw-data/characteristics of the documents citing a retracted article v1"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Multi-layer Markup and Ontological Structures in Akoma Ntoso"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Of mice and terms"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Ontology-driven generation of wiki content and interfaces"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Open bibliographic data and the Italian National Scientific Qualification: Measuring coverage of academic fields"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Open Infrastructure Matters: Supporting Scholar-Led and Community-Driven Services to Advance Open Access"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The OpenCitations Index"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "OSCAR: A Customisable Tool for Free-Text Search over SPARQL Endpoints"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Overlapproaches in documents: a definitive classification (in OWL, 2!)"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "OWiki: Enabling an Ontology-Led Creation of Semantic Data"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Political Roles Ontology (PRoles): Enhancing Archival Authority Records through Semantic Web Technologies"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The practice of self-citations: a longitudinal study"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Predicting the results of evaluation procedures of academics"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Producing Linked Data for Smart Cities: The Case of Catania"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "A protocol to gather, characterize and analyze incoming citations of retracted articles"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The Publishing Workflow Ontology (PWO)"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Ranging the Description Ontology Design Pattern with Literal Values"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The RASH Framework: Enabling HTML+RDF Submissions in Scholarly Venues"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The RASH JavaScript Editor (RAJE)"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Recognising document components in XML-based academic articles"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Referencing behaviours across disciplines: publication types and common metadata for defining bibliographic references"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Reflecting on the Europeana Data Model"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Research Articles in Simplified HTML: a Web-first format for HTML-based scholarly articles"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Review of: \"Comparison of self-citation patterns in WoS and Scopus databases based on national scientific production in Slovenia (1996-2020)\""
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Review of: \"Finding citations for PubMed: A large-scale comparison between five open access data sources\""
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Review of: \"Reflections on the Misuses of ORCID iDs\""
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The Role of Ontology Design Patterns in Linked Data Projects"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Semantic Annotation of Scholarly Documents and Citations"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The Semantic Lancet Project: A Linked Open Dataset for Scholarly Publishing"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Semantic Lenses as Exploration Method for Scholarly Articles"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Semantic Web for the Legal Domain: The next step"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": [
+                            "CAOONL",
+                            "SUDOC",
+                            "KRNLK",
+                            "WKP",
+                            "LC",
+                            "SZ",
+                            "DNB"
+                          ],
+                          "v:sid": [
+                            "CAOONL|ncf11873992",
+                            "SUDOC|188223371",
+                            "KRNLK|KAC202325888",
+                            "WKP|Q30536251",
+                            "LC|no2014111866",
+                            "SZ|105432011X",
+                            "DNB|105432011X"
+                          ]
+                        },
+                        "v:title": "Semantic Web Technologies and Legal Scholarly Publishing"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": [
+                            "LC",
+                            "SUDOC",
+                            "SZ",
+                            "DNB"
+                          ],
+                          "v:sid": [
+                            "LC|no2014111866",
+                            "SUDOC|188223371",
+                            "SZ|105432011X",
+                            "DNB|105432011X"
+                          ]
+                        },
+                        "v:title": "Semantics, Analytics, Visualization. Enhancing Scholarly Data Second International Workshop, SAVE-SD 2016, Montreal, QC, Canada, April 11, 2016, Revised Selected Papers"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Setting our bibliographic references free: towards open citation data"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Setting the Course of Emergency Vehicle Routing Using Geolinked Open Data for the Municipality of Catania"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "A Smart City Data Model based on Semantics Best Practice and Principles"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "The SPAR Ontologies"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Structured references from PDF articles: assessing the tools for bibliographic reference extraction and parsing"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Templating the Semantic Web via RSLT"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Tools for the Automatic Generation of Ontology Documentation"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Topical tags vs non-topical tags: Towards a bipartite classification?"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Towards accessible graphs in HTML-based scientific articles"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Towards markup support for full GODDAGs and beyond: the EARMARK approach"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "UNDO: The United Nations System Document Ontology"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Visualizing and Navigating Ontologies with KC-Viz"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "Zeri e LODE. Extracting the Zeri photo archive to linked open data: formalizing the conceptual model"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "бібліяграфічная анталёгія, упарадкаваная ФПБЗ"
+                      },
+                      {
+                        "v:sources": {
+                          "v:s": "WKP",
+                          "v:sid": "WKP|Q30536251"
+                        },
+                        "v:title": "ভূমিকা"
+                      }
+                    ],
+                    "xmlns": "http://viaf.org/viaf/terms#",
+                    "xmlns:foaf": "http://xmlns.com/foaf/0.1/",
+                    "xmlns:owl": "http://www.w3.org/2002/07/owl#",
+                    "xmlns:rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                    "xmlns:void": "http://rdfs.org/ns/void#"
+                  },
+                  "v:viafID": {
+                    "content": 309649450,
+                    "xmlns": "http://viaf.org/viaf/terms#",
+                    "xmlns:foaf": "http://xmlns.com/foaf/0.1/",
+                    "xmlns:owl": "http://www.w3.org/2002/07/owl#",
+                    "xmlns:rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                    "xmlns:void": "http://rdfs.org/ns/void#"
+                  },
+                  "xmlns:mx": "http://www.loc.gov/MARC21/slim",
+                  "xmlns:srw": "http://www.loc.gov/zing/srw/",
+                  "xmlns:v": "http://viaf.org/viaf/terms#"
+                },
+                "xsi:type": "ns1:stringOrXmlFragment"
+              },
+              "recordPacking": {
+                "content": "xml",
+                "xsi:type": "xsd:string"
+              },
+              "recordPosition": {
+                "content": 1,
+                "xsi:type": "xsd:positiveInteger"
+              },
+              "recordSchema": {
+                "content": "http://viaf.org/BriefVIAFCluster",
+                "xsi:type": "xsd:string"
+              },
+              "xsi:type": "ns1:recordType"
+            },
+            "xmlns:ns1": "http://www.loc.gov/zing/srw/",
+            "xsi:type": "ns1:recordsType"
+          },
+          "resultSetIdleTime": {
+            "content": 1,
+            "xsi:type": "xsd:positiveInteger"
+          },
+          "version": {
+            "content": 1.1,
+            "xsi:type": "xsd:string"
+          },
+          "xmlns": "http://www.loc.gov/zing/srw/",
+          "xmlns:xsd": "http://www.w3.org/2001/XMLSchema",
+          "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+          "xsi:schemaLocation": "http://www.loc.gov/zing/srw/ http://www.loc.gov/standards/sru/sru1-1archive/xml-files/srw-types.xsd"
+        }
+      },
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "status_code": 200
+    }
+  },
+  "wikidata_doi": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {
+        "format": "json",
+        "query": "\n        SELECT ?item WHERE {\n              ?item p:P356 ?x.\n              ?x ps:P356 \"10.1002/(ISSN)1098-2353\".\n        } LIMIT 1\n        "
+      },
+      "url": "https://query.wikidata.org/sparql"
+    },
+    "response": {
+      "body": {
+        "head": {
+          "vars": [
+            "item"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "item": {
+                "type": "uri",
+                "value": "http://www.wikidata.org/entity/Q59755"
+              }
+            }
+          ]
+        }
+      },
+      "headers": {
+        "content-type": "application/sparql-results+json;charset=utf-8"
+      },
+      "status_code": 200
+    }
+  },
+  "wikidata_issn": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {
+        "format": "json",
+        "query": "\n        SELECT ?item WHERE {\n              ?item p:P236 ?x.\n              ?x ps:P236 \"0009-4722\".\n        } LIMIT 1\n        "
+      },
+      "url": "https://query.wikidata.org/sparql"
+    },
+    "response": {
+      "body": {
+        "head": {
+          "vars": [
+            "item"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "item": {
+                "type": "uri",
+                "value": "http://www.wikidata.org/entity/Q1119421"
+              }
+            }
+          ]
+        }
+      },
+      "headers": {
+        "content-type": "application/sparql-results+json;charset=utf-8"
+      },
+      "status_code": 200
+    }
+  },
+  "wikidata_orcid": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {
+        "format": "json",
+        "query": "\n        SELECT ?item WHERE {\n              ?item p:P496 ?x.\n              ?x ps:P496 \"0000-0002-7398-5483\".\n        } LIMIT 1\n        "
+      },
+      "url": "https://query.wikidata.org/sparql"
+    },
+    "response": {
+      "body": {
+        "head": {
+          "vars": [
+            "item"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "item": {
+                "type": "uri",
+                "value": "http://www.wikidata.org/entity/Q5345"
+              }
+            }
+          ]
+        }
+      },
+      "headers": {
+        "content-type": "application/sparql-results+json;charset=utf-8"
+      },
+      "status_code": 200
+    }
+  },
+  "wikidata_pmcid": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {
+        "format": "json",
+        "query": "\n        SELECT ?item WHERE {\n              ?item p:P932 ?x.\n              ?x ps:P932 \"3083595\".\n        } LIMIT 1\n        "
+      },
+      "url": "https://query.wikidata.org/sparql"
+    },
+    "response": {
+      "body": {
+        "head": {
+          "vars": [
+            "item"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "item": {
+                "type": "uri",
+                "value": "http://www.wikidata.org/entity/Q54919067"
+              }
+            }
+          ]
+        }
+      },
+      "headers": {
+        "content-type": "application/sparql-results+json;charset=utf-8"
+      },
+      "status_code": 200
+    }
+  },
+  "wikidata_pmid": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {
+        "format": "json",
+        "query": "\n        SELECT ?item WHERE {\n              ?item p:P698 ?x.\n              ?x ps:P698 \"12344444\".\n        } LIMIT 1\n        "
+      },
+      "url": "https://query.wikidata.org/sparql"
+    },
+    "response": {
+      "body": {
+        "head": {
+          "vars": [
+            "item"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "item": {
+                "type": "uri",
+                "value": "http://www.wikidata.org/entity/Q78273175"
+              }
+            }
+          ]
+        }
+      },
+      "headers": {
+        "content-type": "application/sparql-results+json;charset=utf-8"
+      },
+      "status_code": 200
+    }
+  },
+  "wikidata_viaf": {
+    "recorded_at": "2026-06-25",
+    "request": {
+      "headers": {
+        "Accept": "application/json",
+        "User-Agent": "GraphEnricher (via OpenCitations - http://opencitations.net; mailto:contact@opencitations.net)"
+      },
+      "method": "GET",
+      "params": {
+        "format": "json",
+        "query": "\n        SELECT ?item WHERE {\n              ?item p:P214 ?x.\n              ?x ps:P214 \"24715915\".\n        } LIMIT 1\n        "
+      },
+      "url": "https://query.wikidata.org/sparql"
+    },
+    "response": {
+      "body": {
+        "head": {
+          "vars": [
+            "item"
+          ]
+        },
+        "results": {
+          "bindings": [
+            {
+              "item": {
+                "type": "uri",
+                "value": "http://www.wikidata.org/entity/Q1228"
+              }
+            }
+          ]
+        }
+      },
+      "headers": {
+        "content-type": "application/sparql-results+json;charset=utf-8"
+      },
+      "status_code": 200
+    }
+  }
+}
