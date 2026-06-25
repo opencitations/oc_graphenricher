@@ -10,4 +10,3 @@ parts:
     chapters:
       - file: installing
       - file: usage
-      - file: api-guide

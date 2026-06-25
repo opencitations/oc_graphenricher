@@ -10,6 +10,7 @@ from oc_ocdm.graph.graph_set import GraphSet
 
 from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, OpenAlex, WikiData
 from oc_graphenricher.enricher import GraphEnricher
+from oc_graphenricher.storage import single_file_storage
 from tests.helpers import BASE_IRI, RESP_AGENT, add_id, load_graph_set
 
 if TYPE_CHECKING:
@@ -210,8 +211,12 @@ def test_enrich_does_not_query_when_identifiers_are_already_present(tmp_path: Pa
 def _enricher(tmp_path: Path, graph_set: GraphSet, *, debug: bool = False) -> GraphEnricher:
     return GraphEnricher(
         graph_set,
-        graph_filename=str(tmp_path / "enriched.rdf"),
-        provenance_filename=str(tmp_path / "provenance.rdf"),
+        single_file_storage(
+            tmp_path / "enriched.rdf",
+            tmp_path / "provenance.rdf",
+            output_format="nt11",
+            zip_output=False,
+        ),
         debug=debug,
     )
 

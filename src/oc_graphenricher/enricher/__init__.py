@@ -31,6 +31,8 @@ if TYPE_CHECKING:
     from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
     from oc_ocdm.graph.graph_set import GraphSet
 
+    from oc_graphenricher.storage import Storage
+
     class IdentifierLike(Protocol):
         def get_literal_value(self) -> str | None: ...
 
@@ -43,10 +45,9 @@ class GraphEnricher:
     def __init__(
         self,
         g_set: GraphSet,
-        graph_filename: str = "enriched.rdf",
-        provenance_filename: str = "provenance.rdf",
-        info_dir: str = "",
+        storage: Storage,
         *,
+        info_dir: str = "",
         debug: bool = False,
         serialize_in_the_middle: bool = False,
         use_wikidata: bool = True,
@@ -59,8 +60,7 @@ class GraphEnricher:
         The enricher adds missing identifiers to entities in an OCDM graph set.
 
         :param g_set: graph set to be enriched.
-        :param graph_filename: file name of the enriched graph set that will be serialized
-        :param provenance_filename: file name of the provenance that will be serialized
+        :param storage: output storage configuration
         :param info_dir: the path to the counters directory
         :param debug: a bool flag to enable richer output
         :param serialize_in_the_middle: a bool flag to enable the serialization each 50 Bibliographic Resources (BRs)
@@ -80,8 +80,7 @@ class GraphEnricher:
         self.g_set = g_set
         self.debug = debug
         self.new_id_found = 0
-        self.graph_filename = graph_filename
-        self.provenance_filename = provenance_filename
+        self.storage = storage
         self.info_dir = info_dir
         self.serialize_in_the_middle = serialize_in_the_middle
         self.use_wikidata = use_wikidata
@@ -132,7 +131,7 @@ class GraphEnricher:
     def __serialize_intermediate(self, br_counter: int) -> None:
         if br_counter % SERIALIZE_INTERVAL != 0 or not self.serialize_in_the_middle:
             return
-        store_graph_set(self.g_set, self.graph_filename)
+        store_graph_set(self.g_set, self.storage)
 
     def __is_journal_issue_or_volume(self, br: BibliographicResource) -> bool:
         return GraphEntity.iri_journal_issue in br.get_types() or GraphEntity.iri_journal_volume in br.get_types()
@@ -315,10 +314,10 @@ class GraphEnricher:
         return False
 
     def __serialize_graphs(self) -> None:
-        store_graph_set(self.g_set, self.graph_filename)
+        store_graph_set(self.g_set, self.storage)
         prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=self.info_dir)
         prov.generate_provenance()
-        store_provenance(prov, self.provenance_filename)
+        store_provenance(prov, self.storage)
 
     def _add_id(
         self,

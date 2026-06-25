@@ -7,7 +7,7 @@ SPDX-License-Identifier: ISC
 
 # OC GraphEnricher
 
-OC GraphEnricher enriches OpenCitations Data Model (OCDM) compliant knowledge graphs by finding missing identifiers and deduplicating entities.
+OC GraphEnricher enriches [OpenCitations Data Model (OCDM)](https://doi.org/10.6084/m9.figshare.3443876) compliant knowledge graphs by finding missing identifiers and deduplicating entities.
 
 The package works with `GraphSet` objects from `oc_ocdm`. The current package metadata does not expose a command-line interface, so usage starts from Python code.
 

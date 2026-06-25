@@ -12,6 +12,7 @@ from oc_ocdm.graph.graph_set import GraphSet
 from oc_ocdm.support.support import create_date
 
 from oc_graphenricher._storage import store_graph_set
+from oc_graphenricher.storage import single_file_storage
 from tests.helpers import add_id
 
 
@@ -126,4 +127,12 @@ author2 = add_one_author_with_two_id("viaf", "viaf1")
 paper.has_contributor(author1)
 paper.has_contributor(author2)
 gs.commit_changes()
-store_graph_set(gs, str(Path(__file__).with_name("test_merge_br.rdf")))
+store_graph_set(
+    gs,
+    single_file_storage(
+        Path(__file__).with_name("test_merge_br.rdf"),
+        "",
+        output_format="nt11",
+        zip_output=False,
+    ),
+)

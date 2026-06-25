@@ -8,6 +8,7 @@ import pytest
 from oc_ocdm.graph.graph_set import GraphSet
 
 from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.storage import single_file_storage
 from tests.helpers import load_graph_set
 
 TEST_DATA_DIR = Path(__file__).parent / "fixtures"
@@ -17,8 +18,12 @@ TEST_DATA_DIR = Path(__file__).parent / "fixtures"
 def matched_graph_set(tmp_path: Path) -> GraphSet:
     matcher = InstanceMatching(
         load_graph_set(TEST_DATA_DIR / "test_merge_br.rdf"),
-        graph_filename=str(tmp_path / "matched.rdf"),
-        provenance_filename=str(tmp_path / "provenance.rdf"),
+        single_file_storage(
+            tmp_path / "matched.rdf",
+            tmp_path / "provenance.rdf",
+            output_format="nt11",
+            zip_output=False,
+        ),
         debug=True,
     )
     matcher.match()

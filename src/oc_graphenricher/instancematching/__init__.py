@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     from oc_ocdm.graph.entities.identifier import Identifier
     from oc_ocdm.graph.graph_set import GraphSet
 
+    from oc_graphenricher.storage import Storage
+
 LOGGER = logging.getLogger(__name__)
 NAME_SIMILARITY_THRESHOLD = 0.95
 
@@ -33,10 +35,9 @@ class InstanceMatching:
     def __init__(
         self,
         g_set: GraphSet,
-        graph_filename: str = "matched.rdf",
-        provenance_filename: str = "provenance.rdf",
-        info_dir: str = "",
+        storage: Storage,
         *,
+        info_dir: str = "",
         debug: bool = False,
     ) -> None:
         """
@@ -45,14 +46,12 @@ class InstanceMatching:
         The matcher deduplicates entities in a graph set compliant with the OpenCitations Data Model.
 
         :param g_set: input graph set
-        :param graph_filename: file name of the enriched graph set that will be serialized
-        :param provenance_filename: file name of the provenance that will be serialized
+        :param storage: output storage configuration
         :param info_dir: the path to the counters directory
         :param debug: a bool flag to enable richer output
         """
         self.g_set = g_set
-        self.graph_filename = graph_filename
-        self.provenance_filename = provenance_filename
+        self.storage = storage
         self.debug = debug
         self.prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=info_dir)
 
@@ -66,8 +65,8 @@ class InstanceMatching:
         - match the IDs.
 
         In the end, this process will produce:
-            - `matched.rdf` that will contain the graph set specified previously without the duplicates.
-            - `provenance.rdf` that will contain the provenance, tracking record of all the changes done.
+            - the configured graph output without the duplicates.
+            - the configured provenance output tracking the changes done.
         """
         self.instance_matching_ra()
         self.instance_matching_br()
@@ -81,8 +80,8 @@ class InstanceMatching:
 
         Serialize the provenance in another specified RDF file.
         """
-        store_graph_set(self.g_set, self.graph_filename)
-        store_provenance(self.prov, self.provenance_filename)
+        store_graph_set(self.g_set, self.storage)
+        store_provenance(self.prov, self.storage)
 
     def instance_matching_ra(self) -> None:
         """

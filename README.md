@@ -16,7 +16,7 @@ SPDX-License-Identifier: ISC
 
 # OC GraphEnricher
 
-OC GraphEnricher enriches OpenCitations Data Model (OCDM) compliant knowledge graphs by finding missing identifiers and deduplicating entities.
+OC GraphEnricher enriches [OpenCitations Data Model (OCDM)](https://doi.org/10.6084/m9.figshare.3443876) compliant knowledge graphs by finding missing identifiers and deduplicating entities.
 
 Documentation: <https://opencitations.github.io/oc_graphenricher/>
 
@@ -33,6 +33,7 @@ from rdflib import Graph
 
 from oc_graphenricher.enricher import GraphEnricher
 from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.storage import single_file_storage
 
 graph = Graph().parse("data/input.nt", format="nt11")
 
@@ -45,12 +46,24 @@ reader.import_entities_from_graph(
     resp_agent="https://w3id.org/oc/meta/prov/pa/2",
 )
 
-GraphEnricher(graph_set).enrich()
-InstanceMatching(graph_set).match()
+GraphEnricher(
+    g_set=graph_set,
+    storage=single_file_storage(
+        graph_path="enriched.json",
+        provenance_path="provenance.json",
+    ),
+).enrich()
+InstanceMatching(
+    g_set=graph_set,
+    storage=single_file_storage(
+        graph_path="matched.json",
+        provenance_path="provenance.json",
+    ),
+).match()
 ```
 
 For configuration options and usage details, see the documentation.
 
 ## License
 
-Distributed under the ISC License. See `LICENSE`.
+Distributed under the ISC License. See [LICENSE](LICENSE).

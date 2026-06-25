@@ -8,6 +8,7 @@ from oc_ocdm.reader import Reader
 from rdflib import Graph
 
 from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.storage import single_file_storage
 
 g = Graph()
 g = g.parse("tests/fixtures/test_merge_br.rdf", format="nt11")
@@ -21,5 +22,12 @@ entities = reader.import_entities_from_graph(
     resp_agent="https://w3id.org/oc/meta/prov/pa/2",
 )
 
-matcher = InstanceMatching(g_set, debug=True)
+matcher = InstanceMatching(
+    g_set=g_set,
+    storage=single_file_storage(
+        graph_path="matched.json",
+        provenance_path="provenance.json",
+    ),
+    debug=True,
+)
 matcher.match()

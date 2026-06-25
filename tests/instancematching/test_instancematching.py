@@ -10,6 +10,7 @@ from oc_ocdm.graph.entities.identifier import Identifier
 from oc_ocdm.graph.graph_set import GraphSet
 
 from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.storage import single_file_storage
 from tests.helpers import BASE_IRI, RESP_AGENT, add_id, load_graph_set
 
 EXPECTED_BR_CONTRIBUTOR_COUNTS = {
@@ -103,8 +104,12 @@ def test_matching_keeps_one_named_author_when_duplicate_brs_merge(tmp_path: Path
 
     matcher = InstanceMatching(
         graph_set,
-        graph_filename=str(tmp_path / "matched.rdf"),
-        provenance_filename=str(tmp_path / "provenance.rdf"),
+        single_file_storage(
+            tmp_path / "matched.rdf",
+            tmp_path / "provenance.rdf",
+            output_format="nt11",
+            zip_output=False,
+        ),
         debug=True,
     )
     matcher.match()
