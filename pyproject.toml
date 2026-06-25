@@ -1,6 +1,6 @@
 [project]
 name = "oc-graphenricher"
-version = "0.2.5"
+version = "1.0.0"
 description = "A tool to enrich any OCDM compliant Knowledge Graph, finding new identifiers and deduplicating entities"
 authors = [
     { name = "Gabriele Pisciotta", email = "ga.pisciotta@gmail.com" },
