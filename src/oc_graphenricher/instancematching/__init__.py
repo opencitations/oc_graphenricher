@@ -13,11 +13,12 @@ import Levenshtein
 import networkx as nx
 from oc_ocdm.graph.graph_entity import GraphEntity
 from oc_ocdm.prov.prov_set import ProvSet
-from oc_ocdm.storer import Storer
+
+from oc_graphenricher._storage import store_graph_set, store_provenance
 
 if TYPE_CHECKING:
-    from oc_ocdm.abstract_entity import AbstractEntity
-    from oc_ocdm.abstract_set import AbstractSet
+    from collections.abc import Iterable
+
     from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
     from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
     from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
@@ -80,11 +81,8 @@ class InstanceMatching:
 
         Serialize the provenance in another specified RDF file.
         """
-        gs_storer = Storer(cast("AbstractSet[AbstractEntity]", self.g_set), output_format="nt11")
-        gs_storer.store_graphs_in_file(self.graph_filename, "")
-
-        prov_storer = Storer(cast("AbstractSet[AbstractEntity]", self.prov), output_format="nquads")
-        prov_storer.store_graphs_in_file(self.provenance_filename, "")
+        store_graph_set(self.g_set, self.graph_filename)
+        store_provenance(self.prov, self.provenance_filename)
 
     def instance_matching_ra(self) -> None:
         """
@@ -94,7 +92,9 @@ class InstanceMatching:
         Role references, generates provenance and commits pending changes in the graph set.
         """
         associated_ar_ra = self.__get_association_ar_ra()
-        clusters = self.__sorted_clusters(self.__ra_merge_graph())
+        clusters = self.__sorted_clusters(
+            self.__merge_graph(self.g_set.get_ra(), "[IM-RA] Will merge %s and %s due to %s:%s in common"),
+        )
         LOGGER.info("[IM-RA] Number of clusters: %s", len(clusters))
 
         for cluster_index, cluster in enumerate(clusters):
@@ -113,7 +113,9 @@ class InstanceMatching:
         The process creates a graph of matching BRs, merges each connected component into one BR, merges containers and
         publishers where possible, generates provenance and commits pending changes in the graph set.
         """
-        clusters = self.__sorted_clusters(self.__br_merge_graph())
+        clusters = self.__sorted_clusters(
+            self.__merge_graph(self.g_set.get_br(), "[IM-BR] Will merge %s into %s due to %s:%s in common"),
+        )
         LOGGER.info("[IM-BR] Number of clusters: %s", len(clusters))
 
         for cluster_index, cluster in enumerate(clusters):
@@ -138,49 +140,29 @@ class InstanceMatching:
         self.prov.generate_provenance()
         self.g_set.commit_changes()
 
-    def __ra_merge_graph(self) -> nx.Graph:
+    def __merge_graph(
+        self,
+        entities: Iterable[ResponsibleAgent | BibliographicResource],
+        debug_message: str,
+    ) -> nx.Graph:
         merge_graph: nx.Graph = nx.Graph()
-        identifiers: dict[str, dict[str, ResponsibleAgent]] = {}
-        for ra in self.g_set.get_ra():
-            for identifier in ra.get_identifiers():
+        identifiers: dict[str, dict[str, ResponsibleAgent | BibliographicResource]] = {}
+        for entity in entities:
+            for identifier in entity.get_identifiers():
                 scheme = identifier.get_scheme()
                 literal_value = identifier.get_literal_value()
                 if scheme is None or literal_value is None:
                     continue
                 identifiers.setdefault(scheme, {})
-                ra_first = identifiers[scheme].get(literal_value)
-                if ra_first is None:
-                    identifiers[scheme][literal_value] = ra
+                entity_first = identifiers[scheme].get(literal_value)
+                if entity_first is None:
+                    identifiers[scheme][literal_value] = entity
                 else:
-                    merge_graph.add_edge(ra_first, ra)
+                    merge_graph.add_edge(entity_first, entity)
                     self.__debug(
-                        "[IM-RA] Will merge %s and %s due to %s:%s in common",
-                        ra.res,
-                        ra_first.res,
-                        scheme.split("/")[-1],
-                        literal_value,
-                    )
-        return merge_graph
-
-    def __br_merge_graph(self) -> nx.Graph:
-        merge_graph: nx.Graph = nx.Graph()
-        identifiers: dict[str, dict[str, BibliographicResource]] = {}
-        for br in self.g_set.get_br():
-            for identifier in br.get_identifiers():
-                scheme = identifier.get_scheme()
-                literal_value = identifier.get_literal_value()
-                if scheme is None or literal_value is None:
-                    continue
-                identifiers.setdefault(scheme, {})
-                br_first = identifiers[scheme].get(literal_value)
-                if br_first is None:
-                    identifiers[scheme][literal_value] = br
-                else:
-                    merge_graph.add_edge(br_first, br)
-                    self.__debug(
-                        "[IM-BR] Will merge %s into %s due to %s:%s in common",
-                        br.res,
-                        br_first.res,
+                        debug_message,
+                        entity.res,
+                        entity_first.res,
                         scheme.split("/")[-1],
                         literal_value,
                     )

@@ -7,21 +7,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from oc_ocdm.graph.graph_set import GraphSet
-from oc_ocdm.reader import Reader
-from rdflib import Graph
 
 from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, OpenAlex, WikiData
 from oc_graphenricher.enricher import GraphEnricher
+from tests.helpers import BASE_IRI, RESP_AGENT, add_id, load_graph_set
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
     from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
-    from oc_ocdm.graph.entities.bibliographic_entity import BibliographicEntity
 
-BASE_IRI = "https://w3id.org/oc/meta/"
-RESP_AGENT = "https://w3id.org/oc/meta/prov/pa/2"
 EXPECTED_ADDED_IDENTIFIERS = 8
 EXPECTED_BR_COUNT_WITH_SKIPPED_TYPES = 3
 
@@ -150,7 +146,7 @@ def test_enrich_adds_missing_identifiers_and_serializes_graphs(tmp_path: Path) -
 
     enricher.enrich()
 
-    enriched_graph_set = _load_graph_set(tmp_path / "enriched.rdf")
+    enriched_graph_set = load_graph_set(tmp_path / "enriched.rdf")
 
     assert enricher.new_id_found == EXPECTED_ADDED_IDENTIFIERS
     assert (tmp_path / "enriched.rdf").exists() is True
@@ -176,7 +172,7 @@ def test_enrich_leaves_graph_unchanged_when_metadata_and_apis_do_not_resolve(tmp
 
     enricher.enrich()
 
-    enriched_graph_set = _load_graph_set(tmp_path / "enriched.rdf")
+    enriched_graph_set = load_graph_set(tmp_path / "enriched.rdf")
 
     assert enricher.new_id_found == 0
     assert _br_identifiers_by_title(enriched_graph_set) == {
@@ -199,7 +195,7 @@ def test_enrich_does_not_query_when_identifiers_are_already_present(tmp_path: Pa
 
     enricher.enrich()
 
-    enriched_graph_set = _load_graph_set(tmp_path / "enriched.rdf")
+    enriched_graph_set = load_graph_set(tmp_path / "enriched.rdf")
 
     assert enricher.new_id_found == 0
     assert _br_identifiers_by_title(enriched_graph_set) == {
@@ -233,7 +229,7 @@ def _graph_set_with_missing_identifiers() -> GraphSet:
     article.create_journal_article()
     article.has_title("A deterministic enrichment test")
     article.has_pub_date("2020")
-    _add_id(article, "1111-1111", "issn", graph_set)
+    add_id(article, "1111-1111", "issn", graph_set)
 
     author = graph_set.add_ra(RESP_AGENT)
     author.has_given_name("Ada")
@@ -261,7 +257,7 @@ def _graph_set_without_resolvable_metadata() -> GraphSet:
     article.create_journal_article()
     article.has_title("No DOI result")
     article.has_pub_date("2020")
-    _add_id(article, "3333-3333", "issn", graph_set)
+    add_id(article, "3333-3333", "issn", graph_set)
 
     author = graph_set.add_ra(RESP_AGENT)
     author_role = graph_set.add_ar(RESP_AGENT)
@@ -291,16 +287,16 @@ def _graph_set_with_existing_identifiers() -> GraphSet:
     article.create_journal_article()
     article.has_title("Already enriched")
     article.has_pub_date("2020")
-    _add_id(article, "10.555/existing", "doi", graph_set)
-    _add_id(article, "QEXISTING", "wikidata", graph_set)
-    _add_id(article, "WEXISTING", "openalex", graph_set)
+    add_id(article, "10.555/existing", "doi", graph_set)
+    add_id(article, "QEXISTING", "wikidata", graph_set)
+    add_id(article, "WEXISTING", "openalex", graph_set)
 
     author = graph_set.add_ra(RESP_AGENT)
     author.has_given_name("Ada")
     author.has_family_name("Lovelace")
-    _add_id(author, "0000-0001-2345-6789", "orcid", graph_set)
-    _add_id(author, "123456", "viaf", graph_set)
-    _add_id(author, "QRA", "wikidata", graph_set)
+    add_id(author, "0000-0001-2345-6789", "orcid", graph_set)
+    add_id(author, "123456", "viaf", graph_set)
+    add_id(author, "QRA", "wikidata", graph_set)
     author_role = graph_set.add_ar(RESP_AGENT)
     author_role.create_author()
     author_role.is_held_by(author)
@@ -308,47 +304,13 @@ def _graph_set_with_existing_identifiers() -> GraphSet:
 
     publisher = graph_set.add_ra(RESP_AGENT)
     publisher.has_name("Test Publisher")
-    _add_id(publisher, "9999", "crossref", graph_set)
+    add_id(publisher, "9999", "crossref", graph_set)
     publisher_role = graph_set.add_ar(RESP_AGENT)
     publisher_role.create_publisher()
     publisher_role.is_held_by(publisher)
     article.has_contributor(publisher_role)
 
     graph_set.commit_changes()
-    return graph_set
-
-
-def _add_id(entity: BibliographicEntity, literal: str, schema: str, graph_set: GraphSet) -> None:
-    identifier = graph_set.add_id(RESP_AGENT)
-    if schema == "issn":
-        identifier.create_issn(literal)
-    elif schema == "doi":
-        identifier.create_doi(literal)
-    elif schema == "orcid":
-        identifier.create_orcid(literal)
-    elif schema == "viaf":
-        identifier.create_viaf(literal)
-    elif schema == "crossref":
-        identifier.create_crossref(literal)
-    elif schema == "wikidata":
-        identifier.create_wikidata(literal)
-    elif schema == "openalex":
-        identifier.create_openalex(literal)
-    entity.has_identifier(identifier)
-
-
-def _load_graph_set(rdf_path: Path) -> GraphSet:
-    graph = Graph()
-    graph.parse(rdf_path, format="nt11")
-
-    reader = Reader()
-    graph_set = GraphSet(base_iri=BASE_IRI)
-    reader.import_entities_from_graph(
-        graph_set,
-        graph,
-        enable_validation=False,
-        resp_agent=RESP_AGENT,
-    )
     return graph_set
 
 

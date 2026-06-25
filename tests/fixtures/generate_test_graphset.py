@@ -4,18 +4,15 @@
 # SPDX-License-Identifier: ISC
 
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
-from oc_ocdm.graph.entities.bibliographic_entity import BibliographicEntity
 from oc_ocdm.graph.graph_set import GraphSet
-from oc_ocdm.storer import Storer
 from oc_ocdm.support.support import create_date
 
-if TYPE_CHECKING:
-    from oc_ocdm.abstract_entity import AbstractEntity
-    from oc_ocdm.abstract_set import AbstractSet
+from oc_graphenricher._storage import store_graph_set
+from tests.helpers import add_id
 
 
 def add_one_author_with_single_id(schema: str, literal: str) -> AgentRole:
@@ -26,7 +23,7 @@ def add_one_author_with_single_id(schema: str, literal: str) -> AgentRole:
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
 
-    add_id(sp, literal, schema, gs)
+    add_id(sp, literal, schema, gs, resp_agent=ra)
     sp_author.create_author()
     return sp_author
 
@@ -39,8 +36,8 @@ def add_one_author_with_two_id(schema: str, literal: str) -> AgentRole:
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
 
-    add_id(sp, "orcid_author_1", "orcid", gs)
-    add_id(sp, literal, schema, gs)
+    add_id(sp, "orcid_author_1", "orcid", gs, resp_agent=ra)
+    add_id(sp, literal, schema, gs, resp_agent=ra)
 
     sp_author.create_author()
 
@@ -53,7 +50,7 @@ def add_article() -> BibliographicResource:
     my_paper.has_pub_date("2020")
     iso_date_string = cast("str", create_date([2020, 5, 1]))
     my_paper.has_pub_date(iso_date_string)
-    add_id(my_paper, "doi4", "doi", gs)
+    add_id(my_paper, "doi4", "doi", gs, resp_agent=ra)
     my_paper.create_journal_article()
     return my_paper
 
@@ -68,7 +65,7 @@ def add_br_with_one_author(name: str) -> None:
     sp_author = gs.add_ar(ra)
     sp_author.is_held_by(sp)
     sp_author.create_author()
-    add_id(sp, "orcid1", "orcid", gs)
+    add_id(sp, "orcid1", "orcid", gs, resp_agent=ra)
     #####
 
     ####
@@ -80,7 +77,7 @@ def add_br_with_one_author(name: str) -> None:
     sp_pub.is_held_by(sp)
     sp_pub.create_publisher()
 
-    add_id(sp, "pub1", "crossref", gs)
+    add_id(sp, "pub1", "crossref", gs, resp_agent=ra)
     #####
 
     ####
@@ -89,7 +86,7 @@ def add_br_with_one_author(name: str) -> None:
     my_volume = gs.add_br(ra)
     my_volume.has_title(name + "_volume")
     my_volume.has_pub_date("2020")
-    add_id(my_volume, name + "_volume_doi", "doi", gs)
+    add_id(my_volume, name + "_volume_doi", "doi", gs, resp_agent=ra)
     my_volume.create_volume()
 
     ####
@@ -97,7 +94,7 @@ def add_br_with_one_author(name: str) -> None:
     ####
     my_issue = gs.add_br(ra)
     my_issue.has_title(name + "_issue")
-    add_id(my_issue, name + "_issue_doi", "doi", gs)
+    add_id(my_issue, name + "_issue_doi", "doi", gs, resp_agent=ra)
     my_issue.is_part_of(my_volume)
     my_issue.create_issue()
 
@@ -112,27 +109,9 @@ def add_br_with_one_author(name: str) -> None:
     my_paper.is_part_of(my_issue)
     iso_date_string = cast("str", create_date([2020, 5, 1]))
     my_paper.has_pub_date(iso_date_string)
-    add_id(my_paper, "doi1", "doi", gs)
+    add_id(my_paper, "doi1", "doi", gs, resp_agent=ra)
     my_paper.create_journal_article()
     #####
-
-
-def add_id(entity: BibliographicEntity, literal: str, schema: str, g_set: GraphSet) -> None:
-    new_id = g_set.add_id("http://responsible_agent/")
-    if schema == "issn":
-        new_id.create_issn(literal)
-    elif schema == "doi":
-        new_id.create_doi(literal)
-    elif schema == "orcid":
-        new_id.create_orcid(literal)
-    elif schema == "viaf":
-        new_id.create_viaf(literal)
-    elif schema == "crossref":
-        new_id.create_crossref(literal)
-    elif schema == "wikidata":
-        new_id.create_wikidata(literal)
-
-    entity.has_identifier(new_id)
 
 
 ra = "http://responsible_agent/"
@@ -147,5 +126,4 @@ author2 = add_one_author_with_two_id("viaf", "viaf1")
 paper.has_contributor(author1)
 paper.has_contributor(author2)
 gs.commit_changes()
-gs_storer = Storer(cast("AbstractSet[AbstractEntity]", gs), output_format="nt11")
-gs_storer.store_graphs_in_file(str(Path(__file__).with_name("test_merge_br.rdf")), "")
+store_graph_set(gs, str(Path(__file__).with_name("test_merge_br.rdf")))

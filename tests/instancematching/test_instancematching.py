@@ -8,13 +8,10 @@ from pathlib import Path
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
 from oc_ocdm.graph.entities.identifier import Identifier
 from oc_ocdm.graph.graph_set import GraphSet
-from oc_ocdm.reader import Reader
-from rdflib import Graph
 
 from oc_graphenricher.instancematching import InstanceMatching
+from tests.helpers import BASE_IRI, RESP_AGENT, add_id, load_graph_set
 
-BASE_IRI = "https://w3id.org/oc/meta/"
-RESP_AGENT = "https://w3id.org/oc/meta/prov/pa/2"
 EXPECTED_BR_CONTRIBUTOR_COUNTS = {
     "http://example.com/br/1": 0,
     "http://example.com/br/2": 0,
@@ -112,7 +109,7 @@ def test_matching_keeps_one_named_author_when_duplicate_brs_merge(tmp_path: Path
     )
     matcher.match()
 
-    matched_graph_set = _load_graph_set(tmp_path / "matched.rdf")
+    matched_graph_set = load_graph_set(tmp_path / "matched.rdf")
 
     assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
     assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace"]]
@@ -122,9 +119,7 @@ def _add_article_with_shared_doi(graph_set: GraphSet, title: str) -> Bibliograph
     br = graph_set.add_br(RESP_AGENT)
     br.create_journal_article()
     br.has_title(title)
-    identifier = graph_set.add_id(RESP_AGENT)
-    identifier.create_doi("10.555/shared")
-    br.has_identifier(identifier)
+    add_id(br, "10.555/shared", "doi", graph_set)
     return br
 
 
@@ -136,21 +131,6 @@ def _add_author(graph_set: GraphSet, br: BibliographicResource) -> None:
     author.create_author()
     author.is_held_by(responsible_agent)
     br.has_contributor(author)
-
-
-def _load_graph_set(rdf_path: Path) -> GraphSet:
-    graph = Graph()
-    graph.parse(rdf_path, format="nt11")
-
-    reader = Reader()
-    graph_set = GraphSet(base_iri=BASE_IRI)
-    reader.import_entities_from_graph(
-        graph_set,
-        graph,
-        enable_validation=False,
-        resp_agent=RESP_AGENT,
-    )
-    return graph_set
 
 
 def _author_names(br: BibliographicResource) -> list[str]:

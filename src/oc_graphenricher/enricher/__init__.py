@@ -11,24 +11,23 @@ import contextlib
 import logging
 import sys
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import requests_cache
 from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
 from oc_ocdm.graph.graph_entity import GraphEntity
 from oc_ocdm.prov.prov_set import ProvSet
-from oc_ocdm.storer import Storer
 from tqdm import tqdm
 from tqdm.contrib import DummyTqdmFile
 
+from oc_graphenricher._identifiers import supported_br_identifiers
+from oc_graphenricher._storage import store_graph_set, store_provenance
 from oc_graphenricher.APIs import ORCID, VIAF, Crossref, OpenAlex, WikiData
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from typing import Protocol, TextIO
 
-    from oc_ocdm.abstract_entity import AbstractEntity
-    from oc_ocdm.abstract_set import AbstractSet
     from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
     from oc_ocdm.graph.graph_set import GraphSet
 
@@ -133,8 +132,7 @@ class GraphEnricher:
     def __serialize_intermediate(self, br_counter: int) -> None:
         if br_counter % SERIALIZE_INTERVAL != 0 or not self.serialize_in_the_middle:
             return
-        gs_storer = Storer(cast("AbstractSet[AbstractEntity]", self.g_set), output_format="nt11")
-        gs_storer.store_graphs_in_file(self.graph_filename, "")
+        store_graph_set(self.g_set, self.graph_filename)
 
     def __is_journal_issue_or_volume(self, br: BibliographicResource) -> bool:
         return GraphEntity.iri_journal_issue in br.get_types() or GraphEntity.iri_journal_volume in br.get_types()
@@ -189,36 +187,14 @@ class GraphEnricher:
         return has_doi
 
     def __add_wikidata_to_br(self, br: BibliographicResource) -> None:
-        schema_by_iri = {
-            br.iri_doi: "doi",
-            br.iri_issn: "issn",
-            br.iri_pmid: "pmid",
-            br.iri_pmcid: "pmcid",
-        }
-        for identifier in br.get_identifiers():
-            literal = identifier.get_literal_value()
-            scheme = identifier.get_scheme()
-            if literal is None or scheme not in schema_by_iri:
-                continue
-            schema = schema_by_iri[scheme]
+        for schema, literal in supported_br_identifiers(br):
             result = self.wikidata_api.query(literal, schema)
             if result:
                 self._add_id(br, result, "wikidata", f"its {schema.upper()} {literal}")
                 break
 
     def __add_openalex_to_br(self, br: BibliographicResource) -> None:
-        schema_by_iri = {
-            br.iri_issn: "issn",
-            br.iri_doi: "doi",
-            br.iri_pmid: "pmid",
-            br.iri_pmcid: "pmcid",
-        }
-        for identifier in br.get_identifiers():
-            literal = identifier.get_literal_value()
-            scheme = identifier.get_scheme()
-            if literal is None or scheme not in schema_by_iri:
-                continue
-            schema = schema_by_iri[scheme]
+        for schema, literal in supported_br_identifiers(br):
             result = self.openalex_api.query(literal, schema)
             if result:
                 for openalex_id in result:
@@ -339,14 +315,10 @@ class GraphEnricher:
         return False
 
     def __serialize_graphs(self) -> None:
-        gs_storer = Storer(cast("AbstractSet[AbstractEntity]", self.g_set), output_format="nt11")
-        gs_storer.store_graphs_in_file(self.graph_filename, "")
-
+        store_graph_set(self.g_set, self.graph_filename)
         prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=self.info_dir)
         prov.generate_provenance()
-
-        prov_storer = Storer(cast("AbstractSet[AbstractEntity]", prov), output_format="nquads")
-        prov_storer.store_graphs_in_file(self.provenance_filename, "")
+        store_provenance(prov, self.provenance_filename)
 
     def _add_id(
         self,
