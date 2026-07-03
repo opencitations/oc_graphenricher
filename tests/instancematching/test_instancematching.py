@@ -6,6 +6,7 @@
 from pathlib import Path
 
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
+from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
 from oc_ocdm.graph.entities.identifier import Identifier
 from oc_ocdm.graph.graph_set import GraphSet
 
@@ -102,6 +103,56 @@ def test_matching_keeps_one_named_author_when_duplicate_brs_merge(tmp_path: Path
     second_br.has_contributor(orphan_author)
     graph_set.commit_changes()
 
+    matched_graph_set = _match_graph_set(graph_set, tmp_path)
+
+    assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
+    assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace"]]
+    assert _dangling_agent_role_uris_from_brs(matched_graph_set) == []
+
+
+def test_matching_keeps_valid_agent_role_when_duplicate_brs_share_responsible_agent(tmp_path: Path) -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = _add_article_with_shared_doi(graph_set, "First")
+    second_br = _add_article_with_shared_doi(graph_set, "Second")
+    responsible_agent = graph_set.add_ra(RESP_AGENT)
+    responsible_agent.has_given_name("Ada")
+    responsible_agent.has_family_name("Lovelace")
+    _add_author_with_responsible_agent(graph_set, first_br, responsible_agent)
+    _add_author_with_responsible_agent(graph_set, second_br, responsible_agent)
+    graph_set.commit_changes()
+
+    matched_graph_set = _match_graph_set(graph_set, tmp_path)
+
+    assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
+    assert _agent_role_uris(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
+    assert _agent_role_uris_from_brs(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
+    assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace"]]
+
+
+def test_matching_merges_case_insensitive_named_contributors(tmp_path: Path) -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = _add_article_with_shared_doi(graph_set, "First")
+    second_br = _add_article_with_shared_doi(graph_set, "Second")
+    _add_author(graph_set, first_br, "Ada", "Lovelace")
+    _add_author(graph_set, second_br, "ada", "lovelace")
+    graph_set.commit_changes()
+
+    matched_graph_set = _match_graph_set(graph_set, tmp_path)
+
+    assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
+    assert _agent_role_uris(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
+    assert _agent_role_uris_from_brs(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
+
+
+def _add_article_with_shared_doi(graph_set: GraphSet, title: str) -> BibliographicResource:
+    br = graph_set.add_br(RESP_AGENT)
+    br.create_journal_article()
+    br.has_title(title)
+    add_id(br, "10.555/shared", "doi", graph_set)
+    return br
+
+
+def _match_graph_set(graph_set: GraphSet, tmp_path: Path) -> GraphSet:
     matcher = InstanceMatching(
         graph_set,
         single_file_storage(
@@ -113,25 +164,26 @@ def test_matching_keeps_one_named_author_when_duplicate_brs_merge(tmp_path: Path
         debug=True,
     )
     matcher.match()
-
-    matched_graph_set = load_graph_set(tmp_path / "matched.rdf")
-
-    assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
-    assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace"]]
+    return load_graph_set(tmp_path / "matched.rdf")
 
 
-def _add_article_with_shared_doi(graph_set: GraphSet, title: str) -> BibliographicResource:
-    br = graph_set.add_br(RESP_AGENT)
-    br.create_journal_article()
-    br.has_title(title)
-    add_id(br, "10.555/shared", "doi", graph_set)
-    return br
-
-
-def _add_author(graph_set: GraphSet, br: BibliographicResource) -> None:
+def _add_author(
+    graph_set: GraphSet,
+    br: BibliographicResource,
+    given_name: str = "Ada",
+    family_name: str = "Lovelace",
+) -> None:
     responsible_agent = graph_set.add_ra(RESP_AGENT)
-    responsible_agent.has_given_name("Ada")
-    responsible_agent.has_family_name("Lovelace")
+    responsible_agent.has_given_name(given_name)
+    responsible_agent.has_family_name(family_name)
+    _add_author_with_responsible_agent(graph_set, br, responsible_agent)
+
+
+def _add_author_with_responsible_agent(
+    graph_set: GraphSet,
+    br: BibliographicResource,
+    responsible_agent: ResponsibleAgent,
+) -> None:
     author = graph_set.add_ar(RESP_AGENT)
     author.create_author()
     author.is_held_by(responsible_agent)
@@ -145,3 +197,16 @@ def _author_names(br: BibliographicResource) -> list[str]:
         if responsible_agent is not None:
             names.append(f"{responsible_agent.get_given_name()} {responsible_agent.get_family_name()}")
     return sorted(names)
+
+
+def _agent_role_uris(graph_set: GraphSet) -> list[str]:
+    return sorted(str(ar) for ar in graph_set.get_ar())
+
+
+def _agent_role_uris_from_brs(graph_set: GraphSet) -> list[str]:
+    return sorted(str(ar) for br in graph_set.get_br() for ar in br.get_contributors())
+
+
+def _dangling_agent_role_uris_from_brs(graph_set: GraphSet) -> list[str]:
+    agent_role_uris = set(_agent_role_uris(graph_set))
+    return sorted(uri for uri in _agent_role_uris_from_brs(graph_set) if uri not in agent_role_uris)

@@ -240,50 +240,54 @@ class InstanceMatching:
             self.__debug("\tMerging publisher %s in publisher %s", publisher, publisher_first)
 
     def __merge_same_ra_contributors(self, entity_first: BibliographicResource) -> set[AgentRole]:
-        contributors = self.__author_contributors(entity_first)
-        already_merged: set[AgentRole] = set()
-        for ar1 in contributors:
-            for ar2 in contributors:
-                if self.__same_responsible_agent(ar1, ar2):
-                    self.__debug(
-                        "\tRemoving agent role %s from bibliographic resource %s because both point to the same RA",
-                        ar2,
-                        entity_first,
-                    )
-                    ar1.merge(ar2)
-                    entity_first.remove_contributor(ar2)
-                    already_merged.add(ar1)
-                    already_merged.add(ar2)
-        return already_merged
+        contributors_by_agent_role: dict[tuple[str, str], list[AgentRole]] = {}
+        for contributor in self.__author_contributors(entity_first):
+            responsible_agent = contributor.get_is_held_by()
+            role_type = contributor.get_role_type()
+            if responsible_agent is None or role_type is None:
+                continue
+            key = (str(responsible_agent.res), role_type)
+            contributors_by_agent_role.setdefault(key, []).append(contributor)
 
-    def __same_responsible_agent(self, ar1: AgentRole, ar2: AgentRole) -> bool:
-        return (
-            ar1 != ar2
-            and ar1.get_is_held_by() is not None
-            and ar2.get_is_held_by() is not None
-            and ar1.get_is_held_by() == ar2.get_is_held_by()
-        )
+        already_merged: set[AgentRole] = set()
+        for contributors in contributors_by_agent_role.values():
+            ordered_contributors = sorted(contributors, key=str)
+            surviving_contributor = ordered_contributors[0]
+            for merged_contributor in ordered_contributors[1:]:
+                self.__debug(
+                    "\tRemoving agent role %s from bibliographic resource %s because both point to the same RA",
+                    merged_contributor,
+                    entity_first,
+                )
+                self.__merge_contributor(entity_first, surviving_contributor, merged_contributor)
+                already_merged.add(surviving_contributor)
+                already_merged.add(merged_contributor)
+        return already_merged
 
     def __merge_similar_named_contributors(
         self,
         entity_first: BibliographicResource,
         already_merged: set[AgentRole],
     ) -> None:
-        contributors = set(self.__author_contributors(entity_first)).difference(already_merged)
-        merged_contributors: set[AgentRole] = set()
-        for ar1 in contributors:
-            if ar1 in merged_contributors:
+        already_merged_uris = {str(contributor.res) for contributor in already_merged}
+        contributors = [
+            contributor
+            for contributor in sorted(self.__author_contributors(entity_first), key=str)
+            if str(contributor.res) not in already_merged_uris and contributor.get_role_type() is not None
+        ]
+        merged_contributor_uris: set[str] = set()
+        for ar1_index, ar1 in enumerate(contributors):
+            if str(ar1.res) in merged_contributor_uris:
                 continue
             ar1_name = self.__agent_name(ar1)
-            for ar2 in contributors:
-                if ar1 == ar2 or ar2 in merged_contributors:
+            for ar2 in contributors[ar1_index + 1 :]:
+                if str(ar2.res) in merged_contributor_uris or ar1.get_role_type() != ar2.get_role_type():
                     continue
                 ar2_name = self.__agent_name(ar2)
-                name_similarity = 1 - Levenshtein.distance(ar1_name, ar2_name)
-                if ar1_name != "" and ar2_name != "" and name_similarity > NAME_SIMILARITY_THRESHOLD:
-                    ar1.merge(ar2)
-                    entity_first.remove_contributor(ar2)
-                    merged_contributors.add(ar2)
+                name_similarity = self.__name_similarity(ar1_name, ar2_name)
+                if name_similarity > NAME_SIMILARITY_THRESHOLD:
+                    self.__merge_contributor(entity_first, ar1, ar2)
+                    merged_contributor_uris.add(str(ar2.res))
                     self.__debug(
                         "\tRemoving agent role %s from bibliographic resource %s because it merged to %s",
                         ar2,
@@ -293,8 +297,22 @@ class InstanceMatching:
 
     def __remove_contributors_without_ra(self, entity_first: BibliographicResource) -> None:
         for ar in self.__author_contributors(entity_first):
-            if ar.get_is_held_by() is None:
+            if ar.to_be_deleted or ar.get_is_held_by() is None:
                 entity_first.remove_contributor(ar)
+
+    def __merge_contributor(
+        self,
+        entity_first: BibliographicResource,
+        surviving_contributor: AgentRole,
+        merged_contributor: AgentRole,
+    ) -> None:
+        surviving_responsible_agent = surviving_contributor.get_is_held_by()
+        surviving_contributor.merge(merged_contributor)
+        if surviving_responsible_agent is not None:
+            surviving_contributor.is_held_by(surviving_responsible_agent)
+        entity_first.remove_contributor(merged_contributor)
+        if str(surviving_contributor.res) not in {str(ar.res) for ar in entity_first.get_contributors()}:
+            entity_first.has_contributor(surviving_contributor)
 
     def __author_contributors(self, br: BibliographicResource) -> list[AgentRole]:
         return [
@@ -315,6 +333,15 @@ class InstanceMatching:
         if family_name is not None:
             name_parts.append(family_name)
         return " ".join(name_parts)
+
+    @staticmethod
+    def __name_similarity(left: str, right: str) -> float:
+        left_normalized = " ".join(left.casefold().split())
+        right_normalized = " ".join(right.casefold().split())
+        if left_normalized == "" or right_normalized == "":
+            return 0.0
+        max_length = max(len(left_normalized), len(right_normalized))
+        return 1 - Levenshtein.distance(left_normalized, right_normalized) / max_length
 
     def __id_maps(
         self,
