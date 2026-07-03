@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/opencitations/oc_graphenricher/compare/v1.0.0...v1.0.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* **instancematching:** disable name-based contributor merging by default ([cb61db3](https://github.com/opencitations/oc_graphenricher/commit/cb61db3c069e25ff45bbdcf32f4879473e9e46ad))
+* **instancematching:** preserve contributor roles during br merges ([e0a9e75](https://github.com/opencitations/oc_graphenricher/commit/e0a9e7538939917a5d1d37ee84fd6c81ec4ba4b7))
+
 # 1.0.0 (2026-06-25)
 
 
