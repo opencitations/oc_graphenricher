@@ -39,6 +39,7 @@ class InstanceMatching:
         *,
         info_dir: str = "",
         debug: bool = False,
+        merge_similar_named_contributors: bool = False,
     ) -> None:
         """
         Initialize the matcher.
@@ -49,10 +50,12 @@ class InstanceMatching:
         :param storage: output storage configuration
         :param info_dir: the path to the counters directory
         :param debug: a bool flag to enable richer output
+        :param merge_similar_named_contributors: merge contributor roles with similar author names within merged BRs
         """
         self.g_set = g_set
         self.storage = storage
         self.debug = debug
+        self.merge_similar_named_contributors = merge_similar_named_contributors
         self.prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=info_dir)
 
     def match(self) -> GraphSet:
@@ -209,7 +212,8 @@ class InstanceMatching:
             self.__merge_publisher(publisher_first, other_entity)
             entity_first.merge(other_entity)
             already_merged = self.__merge_same_ra_contributors(entity_first)
-            self.__merge_similar_named_contributors(entity_first, already_merged)
+            if self.merge_similar_named_contributors:
+                self.__merge_similar_named_contributors(entity_first, already_merged)
             self.__remove_contributors_without_ra(entity_first)
 
     def __merge_containers(

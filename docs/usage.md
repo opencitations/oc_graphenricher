@@ -143,8 +143,8 @@ matched_graph_set = InstanceMatching(g_set=graph_set, storage=storage).match()
 2. Bibliographic resource matching. It matches only bibliographic resources that share the same identifier scheme and literal. After two BRs are merged, it also updates data attached to those BRs:
    - it compares the `is_part_of` chains of the two BRs and merges container BRs from those chains when their RDF types overlap after excluding the generic expression type;
    - if both BRs have a publisher role, it merges the two publisher `AgentRole` objects;
-   - among the contributors of the merged BR, it removes duplicated contributor roles. Roles pointing to the same responsible agent are merged. Among the remaining roles, roles with the same non-empty author name are merged.
+   - among the contributors of the merged BR, it removes duplicated contributor roles. Roles with the same role type pointing to the same responsible agent are merged. Name-based contributor merging is disabled by default and can be enabled with `merge_similar_named_contributors=True`.
 3. Identifier matching. It finds identifier entities attached to bibliographic resources or responsible agents that share the same scheme and literal, merges them and rewrites entity references to the kept identifier.
 4. Serialization. It writes the matched graph and provenance to the configured output files.
 
-The name check is local to the contributors of a BR that has already been merged by identifier. It does not start a responsible-agent match and it does not compare BR titles. In the current implementation, the check uses raw Levenshtein distance, so only identical non-empty author names pass.
+The name check is local to the contributors of a BR that has already been merged by identifier. It does not start a responsible-agent match and it does not compare BR titles.

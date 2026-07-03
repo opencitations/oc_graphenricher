@@ -92,7 +92,7 @@ def test_brs_have_only_one_list_of_authors(matched_graph_set: GraphSet) -> None:
     assert contributor_counts_by_br == EXPECTED_BR_CONTRIBUTOR_COUNTS
 
 
-def test_matching_keeps_one_named_author_when_duplicate_brs_merge(tmp_path: Path) -> None:
+def test_matching_keeps_distinct_named_authors_by_default_when_duplicate_brs_merge(tmp_path: Path) -> None:
     graph_set = GraphSet(BASE_IRI)
     first_br = _add_article_with_shared_doi(graph_set, "First")
     second_br = _add_article_with_shared_doi(graph_set, "Second")
@@ -106,7 +106,11 @@ def test_matching_keeps_one_named_author_when_duplicate_brs_merge(tmp_path: Path
     matched_graph_set = _match_graph_set(graph_set, tmp_path)
 
     assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
-    assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace"]]
+    assert _agent_role_uris_from_brs(matched_graph_set) == [
+        "https://w3id.org/oc/meta/ar/1",
+        "https://w3id.org/oc/meta/ar/2",
+    ]
+    assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace", "Ada Lovelace"]]
     assert _dangling_agent_role_uris_from_brs(matched_graph_set) == []
 
 
@@ -129,7 +133,7 @@ def test_matching_keeps_valid_agent_role_when_duplicate_brs_share_responsible_ag
     assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace"]]
 
 
-def test_matching_merges_case_insensitive_named_contributors(tmp_path: Path) -> None:
+def test_matching_merges_case_insensitive_named_contributors_when_enabled(tmp_path: Path) -> None:
     graph_set = GraphSet(BASE_IRI)
     first_br = _add_article_with_shared_doi(graph_set, "First")
     second_br = _add_article_with_shared_doi(graph_set, "Second")
@@ -137,7 +141,7 @@ def test_matching_merges_case_insensitive_named_contributors(tmp_path: Path) -> 
     _add_author(graph_set, second_br, "ada", "lovelace")
     graph_set.commit_changes()
 
-    matched_graph_set = _match_graph_set(graph_set, tmp_path)
+    matched_graph_set = _match_graph_set(graph_set, tmp_path, merge_similar_named_contributors=True)
 
     assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
     assert _agent_role_uris(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
@@ -152,7 +156,12 @@ def _add_article_with_shared_doi(graph_set: GraphSet, title: str) -> Bibliograph
     return br
 
 
-def _match_graph_set(graph_set: GraphSet, tmp_path: Path) -> GraphSet:
+def _match_graph_set(
+    graph_set: GraphSet,
+    tmp_path: Path,
+    *,
+    merge_similar_named_contributors: bool = False,
+) -> GraphSet:
     matcher = InstanceMatching(
         graph_set,
         single_file_storage(
@@ -162,6 +171,7 @@ def _match_graph_set(graph_set: GraphSet, tmp_path: Path) -> GraphSet:
             zip_output=False,
         ),
         debug=True,
+        merge_similar_named_contributors=merge_similar_named_contributors,
     )
     matcher.match()
     return load_graph_set(tmp_path / "matched.rdf")

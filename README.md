@@ -62,6 +62,9 @@ InstanceMatching(
 ).match()
 ```
 
+By default, `InstanceMatching` does not merge contributor roles only because author names are similar. To enable that
+opt-in behavior, pass `merge_similar_named_contributors=True`.
+
 For configuration options and usage details, see the documentation.
 
 ## License
