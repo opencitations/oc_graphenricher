@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/opencitations/oc_graphenricher/compare/v2.0.0...v2.1.0) (2026-07-04)
+
+
+### Features
+
+* **deduplication:** add guided merge clusters [release] ([fcccca2](https://github.com/opencitations/oc_graphenricher/commit/fcccca2ecaead6755914729c6e2945eb55a078ed))
+
 # [2.0.0](https://github.com/opencitations/oc_graphenricher/compare/v1.0.1...v2.0.0) (2026-07-04)
 
 
