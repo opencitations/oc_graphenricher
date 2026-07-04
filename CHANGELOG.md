@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/opencitations/oc_graphenricher/compare/v2.1.0...v2.1.1) (2026-07-04)
+
+
+### Bug Fixes
+
+* **deduplication:** remove deleted entities from directory output [release] ([e7a351e](https://github.com/opencitations/oc_graphenricher/commit/e7a351e17363d5482e939889ca1dd27a644a422b))
+
 # [2.1.0](https://github.com/opencitations/oc_graphenricher/compare/v2.0.0...v2.1.0) (2026-07-04)
 
 
