@@ -32,6 +32,7 @@ LOGGER = logging.getLogger(__name__)
 NAME_SIMILARITY_THRESHOLD = 0.95
 Entity = TypeVar("Entity")
 ManualMergeEntity: TypeAlias = BibliographicResource | ResponsibleAgent | Identifier
+IdentifierSignature: TypeAlias = tuple[str, str]
 
 
 class GraphDeduplicator:
@@ -101,6 +102,7 @@ class GraphDeduplicator:
         if not normalized_clusters:
             return
 
+        self.__validate_identifier_clusters(normalized_clusters)
         associated_ar_ra = self.__get_association_ar_ra()
         _, id_to_resources = self.__id_maps()
 
@@ -276,6 +278,35 @@ class GraphDeduplicator:
 
         return normalized_clusters
 
+    def __validate_identifier_clusters(
+        self,
+        normalized_clusters: Iterable[tuple[ManualMergeEntity, list[ManualMergeEntity]]],
+    ) -> None:
+        for surviving_entity, merged_entities in normalized_clusters:
+            if not isinstance(surviving_entity, Identifier):
+                continue
+
+            surviving_signature = self.__identifier_signature(surviving_entity)
+            for merged_entity in merged_entities:
+                merged_identifier = self.__as_identifier(merged_entity)
+                merged_signature = self.__identifier_signature(merged_identifier)
+                if merged_signature != surviving_signature:
+                    message = (
+                        "Cannot merge identifiers with different scheme/literal: "
+                        f"{surviving_entity.res} has {surviving_signature[0]}#{surviving_signature[1]}, "
+                        f"{merged_identifier.res} has {merged_signature[0]}#{merged_signature[1]}."
+                    )
+                    raise ValueError(message)
+
+    @staticmethod
+    def __identifier_signature(identifier: Identifier) -> IdentifierSignature:
+        scheme = identifier.get_scheme()
+        literal = identifier.get_literal_value()
+        if scheme is None or literal is None:
+            message = f"Cannot merge identifier {identifier.res} without scheme or literal."
+            raise ValueError(message)
+        return scheme, literal
+
     def __manual_survivor(
         self,
         survivor_uri: str,
@@ -351,13 +382,15 @@ class GraphDeduplicator:
         associated_ar_ra: dict[ResponsibleAgent, list[AgentRole]],
     ) -> None:
         self.__debug("\tMerging responsible agent %s in responsible agent %s", other_entity, entity_first)
-        entity_first.merge(other_entity)
-        associated_ars = associated_ar_ra.get(other_entity)
-        if associated_ars is not None:
-            for ar in associated_ars:
-                ar.is_held_by(entity_first)
-                self.__debug("\tUnset %s as helded by of %s", other_entity, ar)
-                self.__debug("\tSet %s as helded by of %s", entity_first, ar)
+        entity_first.merge(other_entity, prefer_self=True)
+        associated_ars = associated_ar_ra.get(other_entity, [])
+        for ar in associated_ars:
+            ar.is_held_by(entity_first)
+            self.__debug("\tUnset %s as helded by of %s", other_entity, ar)
+            self.__debug("\tSet %s as helded by of %s", entity_first, ar)
+        self.__deduplicate_contributors_for_bibliographic_resources(
+            self.__bibliographic_resources_for_contributors(associated_ars),
+        )
         self.__debug("\tMarking to delete: %s", other_entity)
 
     def __merge_br_cluster(self, cluster: set[ResponsibleAgent | BibliographicResource]) -> None:
@@ -378,11 +411,8 @@ class GraphDeduplicator:
         for other_entity in other_entities:
             self.__merge_containers(entity_first_partofs, self.__get_part_of(other_entity))
             self.__merge_publisher(publisher_first, other_entity)
-            entity_first.merge(other_entity)
-            already_merged = self.__merge_same_ra_contributors(entity_first)
-            if self.merge_similar_named_contributors:
-                self.__merge_similar_named_contributors(entity_first, already_merged)
-            self.__remove_contributors_without_ra(entity_first)
+            entity_first.merge(other_entity, prefer_self=True)
+            self.__deduplicate_contributors_for_bibliographic_resources([entity_first])
 
     def __merge_containers(
         self,
@@ -397,7 +427,7 @@ class GraphDeduplicator:
                 second_types.remove(GraphEntity.iri_expression)
                 intersection_of_types = set(second_types).intersection(set(first_types))
                 if intersection_of_types:
-                    first_partof.merge(second_partof)
+                    first_partof.merge(second_partof, prefer_self=True)
                     self.__debug(
                         "\tMerging container %s in container %s (%s)",
                         second_partof,
@@ -410,6 +440,29 @@ class GraphDeduplicator:
         if publisher is not None and publisher_first is not None and publisher != publisher_first:
             publisher_first.merge(publisher)
             self.__debug("\tMerging publisher %s in publisher %s", publisher, publisher_first)
+
+    def __bibliographic_resources_for_contributors(
+        self,
+        contributors: Iterable[AgentRole],
+    ) -> list[BibliographicResource]:
+        contributor_uris = {str(contributor.res) for contributor in contributors}
+        if not contributor_uris:
+            return []
+        return [
+            br
+            for br in sorted(self.graph_set.get_br(), key=str)
+            if any(str(contributor.res) in contributor_uris for contributor in br.get_contributors())
+        ]
+
+    def __deduplicate_contributors_for_bibliographic_resources(
+        self,
+        bibliographic_resources: Iterable[BibliographicResource],
+    ) -> None:
+        for bibliographic_resource in bibliographic_resources:
+            already_merged = self.__merge_same_ra_contributors(bibliographic_resource)
+            if self.merge_similar_named_contributors:
+                self.__merge_similar_named_contributors(bibliographic_resource, already_merged)
+            self.__remove_contributors_without_ra(bibliographic_resource)
 
     def __merge_same_ra_contributors(self, entity_first: BibliographicResource) -> set[AgentRole]:
         contributors_by_agent_role: dict[tuple[str, str], list[AgentRole]] = {}

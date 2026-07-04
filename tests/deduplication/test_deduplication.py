@@ -9,6 +9,7 @@ from pathlib import Path
 import orjson
 import pytest
 from oc_ocdm.counter_handler import CounterHandler
+from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
 from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
 from oc_ocdm.graph.entities.identifier import Identifier
@@ -22,7 +23,7 @@ EXPECTED_BR_CONTRIBUTOR_COUNTS = {
     "http://example.com/br/1": 0,
     "http://example.com/br/2": 0,
     "http://example.com/br/3": 2,
-    "http://example.com/br/7": 2,
+    "http://example.com/br/7": 1,
 }
 
 EXPECTED_IDS = [
@@ -268,7 +269,52 @@ def test_merge_clusters_merges_responsible_agents_with_distinct_identifiers() ->
         "http://purl.org/spar/datacite/orcid0000-0002-1825-0097",
         "http://purl.org/spar/datacite/viaf123456",
     ]
+    assert first_ra.get_name() == "Ada Lovelace"
     assert [str(author_role.get_is_held_by())] == [str(first_ra)]
+
+
+def test_merge_clusters_preserves_responsible_agent_functional_values_and_fills_missing_values() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_ra = graph_set.add_ra(RESP_AGENT)
+    first_ra.has_name("Ada Lovelace")
+    first_ra.has_given_name("Augusta")
+    second_ra = graph_set.add_ra(RESP_AGENT)
+    second_ra.has_name("A. Lovelace")
+    second_ra.has_given_name("Ada")
+    second_ra.has_family_name("Lovelace")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_ra): [str(second_ra)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ra()) == [str(first_ra)]
+    assert first_ra.get_name() == "Ada Lovelace"
+    assert first_ra.get_given_name() == "Augusta"
+    assert first_ra.get_family_name() == "Lovelace"
+
+
+def test_deduplicate_responsible_agents_merges_duplicate_contributors_after_ra_merge() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = graph_set.add_br(RESP_AGENT)
+    br.create_journal_article()
+    br.has_title("Paper")
+    first_ra = _add_responsible_agent_with_orcid(graph_set, "Ada", "Lovelace")
+    second_ra = _add_responsible_agent_with_orcid(graph_set, "A.", "Lovelace")
+    first_author_role = graph_set.add_ar(RESP_AGENT)
+    first_author_role.create_author()
+    first_author_role.is_held_by(first_ra)
+    br.has_contributor(first_author_role)
+    second_author_role = graph_set.add_ar(RESP_AGENT)
+    second_author_role.create_author()
+    second_author_role.is_held_by(second_ra)
+    br.has_contributor(second_author_role)
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).deduplicate_responsible_agents()
+
+    assert _entity_uris_with_triples(graph_set.get_ra()) == [str(first_ra)]
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(first_author_role)]
+    assert _agent_role_uris_from_brs(graph_set) == [str(first_author_role)]
+    assert [str(first_author_role.get_is_held_by())] == [str(first_ra)]
 
 
 def test_merge_clusters_merges_only_requested_bibliographic_resources() -> None:
@@ -298,6 +344,49 @@ def test_merge_clusters_merges_only_requested_bibliographic_resources() -> None:
     ]
 
 
+def test_merge_clusters_preserves_bibliographic_resource_functional_values_and_fills_missing_values() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_container = graph_set.add_br(RESP_AGENT)
+    surviving_container.create_issue()
+    merged_container = graph_set.add_br(RESP_AGENT)
+    merged_container.create_volume()
+    first_br = graph_set.add_br(RESP_AGENT)
+    first_br.create_journal_article()
+    first_br.has_title("Surviving title")
+    first_br.has_pub_date("2020")
+    first_br.has_number("S1")
+    first_br.is_part_of(surviving_container)
+    add_id(first_br, "10.555/first", "doi", graph_set)
+    second_br = graph_set.add_br(RESP_AGENT)
+    second_br.create_journal_article()
+    second_br.has_title("Merged title")
+    second_br.has_subtitle("Merged subtitle")
+    second_br.has_pub_date("2021")
+    second_br.has_number("M1")
+    second_br.has_edition("2")
+    second_br.is_part_of(merged_container)
+    add_id(second_br, "10.555/second", "doi", graph_set)
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [
+        str(surviving_container),
+        str(merged_container),
+        str(first_br),
+    ]
+    assert first_br.get_title() == "Surviving title"
+    assert first_br.get_subtitle() == "Merged subtitle"
+    assert str(first_br.get_is_part_of()) == str(surviving_container)
+    assert first_br.get_pub_date() == "2020"
+    assert first_br.get_number() == "S1"
+    assert first_br.get_edition() == "2"
+    assert sorted(identifier_key(identifier) for identifier in first_br.get_identifiers()) == [
+        "http://purl.org/spar/datacite/doi10.555/first",
+        "http://purl.org/spar/datacite/doi10.555/second",
+    ]
+
+
 def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:
     graph_set = GraphSet(BASE_IRI)
     br = graph_set.add_br(RESP_AGENT)
@@ -306,7 +395,7 @@ def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:
     surviving_identifier.create_doi("10.555/first")
     br.has_identifier(surviving_identifier)
     merged_identifier = graph_set.add_id(RESP_AGENT)
-    merged_identifier.create_doi("10.555/second")
+    merged_identifier.create_doi("10.555/first")
     br.has_identifier(merged_identifier)
     graph_set.commit_changes()
 
@@ -314,6 +403,31 @@ def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:
 
     assert _entity_uris_with_triples(graph_set.get_id()) == [str(surviving_identifier)]
     assert [str(identifier) for identifier in br.get_identifiers()] == [str(surviving_identifier)]
+    assert surviving_identifier.get_literal_value() == "10.555/first"
+
+
+def test_merge_clusters_rejects_identifier_cluster_with_different_signature_before_mutation() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = graph_set.add_br(RESP_AGENT)
+    br.create_journal_article()
+    surviving_identifier = graph_set.add_id(RESP_AGENT)
+    surviving_identifier.create_doi("10.555/first")
+    br.has_identifier(surviving_identifier)
+    merged_identifier = graph_set.add_id(RESP_AGENT)
+    merged_identifier.create_viaf("10.555/first")
+    br.has_identifier(merged_identifier)
+    graph_set.commit_changes()
+
+    with pytest.raises(ValueError, match="different scheme/literal"):
+        GraphDeduplicator(graph_set).merge_clusters({str(surviving_identifier): [str(merged_identifier)]})
+
+    assert _entity_uris_with_triples(graph_set.get_id()) == [str(surviving_identifier), str(merged_identifier)]
+    assert sorted(str(identifier) for identifier in br.get_identifiers()) == [
+        str(surviving_identifier),
+        str(merged_identifier),
+    ]
+    assert surviving_identifier.get_literal_value() == "10.555/first"
+    assert merged_identifier.get_literal_value() == "10.555/first"
 
 
 def test_merge_clusters_and_save_writes_graph_and_provenance(tmp_path: Path) -> None:
@@ -557,7 +671,7 @@ def _dangling_agent_role_uris_from_brs(graph_set: GraphSet) -> list[str]:
 
 
 def _entity_uris_with_triples(
-    entities: Iterable[BibliographicResource | ResponsibleAgent | Identifier],
+    entities: Iterable[BibliographicResource | ResponsibleAgent | Identifier | AgentRole],
 ) -> list[str]:
     return sorted(str(entity) for entity in entities if list(entity.g.triples((None, None, None))))
 

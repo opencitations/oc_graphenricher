@@ -168,10 +168,14 @@ deduplicated_graph_set = GraphDeduplicator(graph_set=graph_set, storage=storage)
    - among the contributors of the merged BR, it removes duplicated contributor roles. Roles with the same role type pointing to the same responsible agent are merged. Name-based contributor merging is disabled by default and can be enabled with `merge_similar_named_contributors=True`.
 3. Identifier deduplication. It finds identifier entities attached to bibliographic resources or responsible agents that share the same scheme and literal, merges them and rewrites entity references to the kept identifier.
 
+Responsible agent and bibliographic resource merges keep functional values already present on the surviving entity. Missing survivor values can still be filled from merged entities. For responsible agents this applies to `name`, `given_name` and `family_name`. For bibliographic resources this applies to `title`, `subtitle`, `is_part_of`, `pub_date`, `number` and `edition`.
+
 `deduplicate_and_save()` calls `deduplicate()` and then writes the deduplicated graph and provenance to the configured
 output files. Calling `deduplicate_and_save()` or `save()` without storage raises `ValueError`.
 
 The name check is local to the contributors of a BR that has already been merged by identifier. It does not start responsible-agent deduplication and it does not compare BR titles.
+
+`GraphDeduplicator` rewrites references inside the supplied `GraphSet`. If the graph set is only a slice of a larger dataset, references outside that slice are not rewritten automatically. Callers should load the entities that can refer to the resources being merged, including containers, publishers and agent roles that may be affected by BR merges.
 
 Use `preferred_survivors` when a caller must preserve selected entity URIs:
 
@@ -204,5 +208,7 @@ deduplicator.merge_clusters(
 `merge_clusters()` uses the mapping keys as surviving entity URIs and merges only the values listed for each key. It
 does not discover additional duplicate clusters. Use `merge_clusters_and_save()` to run the same caller-provided merge
 and then write the graph and provenance through the configured storage.
+
+Manual clusters can contain responsible agents, bibliographic resources or identifiers, but each cluster must contain only one entity type. Identifier clusters are accepted only when every merged identifier has the same scheme and literal as the survivor. Otherwise `merge_clusters()` raises `ValueError` before changing the graph.
 
 For provenance generated during deduplication, use the same storage options used for enrichment.
