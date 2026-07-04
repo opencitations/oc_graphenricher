@@ -1,3 +1,10 @@
+## [2.1.2](https://github.com/opencitations/oc_graphenricher/compare/v2.1.1...v2.1.2) (2026-07-04)
+
+
+### Bug Fixes
+
+* **deduplication:** harden manual and agent merges [release] ([acd2392](https://github.com/opencitations/oc_graphenricher/commit/acd2392231f3234681fa1eadc38925d9fc6d2c7b))
+
 ## [2.1.1](https://github.com/opencitations/oc_graphenricher/compare/v2.1.0...v2.1.1) (2026-07-04)
 
 
