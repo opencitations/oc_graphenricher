@@ -14,7 +14,7 @@ from oc_ocdm.graph.graph_entity import GraphEntity
 from requests.exceptions import ReadTimeout
 
 from oc_graphenricher import APIs
-from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, OpenAlex, WikiData
+from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, OpenAlex, Wikidata
 
 Snapshot = dict[str, object]
 SNAPSHOTS = cast(
@@ -283,12 +283,12 @@ def test_wikidata(
 ) -> None:
     pending = _mock_snapshot_get(monkeypatch, [snapshot_name])
 
-    assert WikiData().query(entity, schema) == expected
+    assert Wikidata().query(entity, schema) == expected
     assert pending == []
 
 
 def test_wikidata_unsupported_schema() -> None:
-    assert WikiData().query("literal", "unsupported") is None
+    assert Wikidata().query("literal", "unsupported") is None
 
 
 @pytest.mark.parametrize(

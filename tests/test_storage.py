@@ -9,24 +9,24 @@ from oc_ocdm.graph.graph_set import GraphSet
 from oc_ocdm.prov.prov_set import ProvSet
 
 from oc_graphenricher._storage import store_graph_set, store_provenance
+from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.enricher import GraphEnricher
-from oc_graphenricher.instancematching import InstanceMatching
 from oc_graphenricher.storage import directory_storage
 from tests.helpers import BASE_IRI, RESP_AGENT
 
 
 def test_public_entry_points_read_provenance_configuration_from_storage_only() -> None:
     assert list(signature(GraphEnricher).parameters) == [
-        "g_set",
+        "graph_set",
         "storage",
         "debug",
-        "serialize_in_the_middle",
+        "checkpoint_interval",
         "use_wikidata",
         "use_viaf",
         "use_orcid",
     ]
-    assert list(signature(InstanceMatching).parameters) == [
-        "g_set",
+    assert list(signature(GraphDeduplicator).parameters) == [
+        "graph_set",
         "storage",
         "debug",
         "merge_similar_named_contributors",

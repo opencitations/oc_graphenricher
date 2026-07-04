@@ -32,7 +32,7 @@ from oc_ocdm.reader import Reader
 from rdflib import Graph
 
 from oc_graphenricher.enricher import GraphEnricher
-from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.storage import single_file_storage
 
 graph = Graph().parse("data/input.nt", format="nt11")
@@ -47,25 +47,26 @@ reader.import_entities_from_graph(
 )
 
 GraphEnricher(
-    g_set=graph_set,
+    graph_set=graph_set,
     storage=single_file_storage(
         graph_path="enriched.json",
         provenance_path="provenance.json",
     ),
 ).enrich()
-InstanceMatching(
-    g_set=graph_set,
+GraphDeduplicator(
+    graph_set=graph_set,
     storage=single_file_storage(
-        graph_path="matched.json",
+        graph_path="deduplicated.json",
         provenance_path="provenance.json",
     ),
-).match()
+).deduplicate_and_save()
 ```
 
-By default, `InstanceMatching` does not merge contributor roles only because author names are similar. To enable that
+By default, `GraphDeduplicator` does not merge contributor roles only because author names are similar. To enable that
 opt-in behavior, pass `merge_similar_named_contributors=True`.
 
-Use `deduplicate()` instead of `match()` when another application needs to manage storage or provenance output itself.
+Use `deduplicate()` instead of `deduplicate_and_save()` when another application needs to manage storage or provenance
+output itself.
 Use `preferred_survivors` with a set of entity URIs to keep selected entities when duplicate clusters are merged.
 
 For configuration options and usage details, see the documentation.

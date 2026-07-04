@@ -13,16 +13,16 @@ g = Graph()
 g = g.parse("../data/test_dump.ttl", format="nt11")
 
 reader = Reader()
-g_set = GraphSet(base_iri="https://w3id.org/oc/meta/")
+graph_set = GraphSet(base_iri="https://w3id.org/oc/meta/")
 entities = reader.import_entities_from_graph(
-    g_set,
+    graph_set,
     g,
     enable_validation=False,
     resp_agent="https://w3id.org/oc/meta/prov/pa/2",
 )
 
 enricher = GraphEnricher(
-    g_set=g_set,
+    graph_set=graph_set,
     storage=single_file_storage(
         graph_path="enriched.json",
         provenance_path="provenance.json",

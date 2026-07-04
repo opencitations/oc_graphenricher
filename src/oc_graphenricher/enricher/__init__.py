@@ -22,7 +22,7 @@ from tqdm.contrib import DummyTqdmFile
 
 from oc_graphenricher._identifiers import supported_br_identifiers
 from oc_graphenricher._storage import store_graph_set, store_provenance
-from oc_graphenricher.APIs import ORCID, VIAF, Crossref, OpenAlex, WikiData
+from oc_graphenricher.APIs import ORCID, VIAF, Crossref, OpenAlex, Wikidata
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -38,17 +38,16 @@ if TYPE_CHECKING:
 
 
 LOGGER = logging.getLogger(__name__)
-SERIALIZE_INTERVAL = 50
 
 
 class GraphEnricher:
     def __init__(
         self,
-        g_set: GraphSet,
+        graph_set: GraphSet,
         storage: Storage,
         *,
         debug: bool = False,
-        serialize_in_the_middle: bool = False,
+        checkpoint_interval: int | None = None,
         use_wikidata: bool = True,
         use_viaf: bool = True,
         use_orcid: bool = True,
@@ -58,28 +57,31 @@ class GraphEnricher:
 
         The enricher adds missing identifiers to entities in an OCDM graph set.
 
-        :param g_set: graph set to be enriched.
+        :param graph_set: graph set to be enriched.
         :param storage: output storage configuration
         :param debug: a bool flag to enable richer output
-        :param serialize_in_the_middle: a bool flag to enable the serialization each 50 Bibliographic Resources (BRs)
-        processed (the resulting file will be always overwritten, this may slow the whole process)
+        :param checkpoint_interval: save the graph every N processed Bibliographic Resources (BRs)
         :param use_wikidata: a bool flag to enable or disable Wikidata queries (default: True)
         :param use_viaf: a bool flag to enable or disable VIAF queries (default: True)
         :param use_orcid: a bool flag to enable or disable ORCID queries (default: True)
         """
+        if checkpoint_interval is not None and checkpoint_interval <= 0:
+            message = "checkpoint_interval must be greater than 0."
+            raise ValueError(message)
+
         requests_cache.install_cache("GraphEnricher_cache")
 
         self.resp_agent = "https://w3id.org/oc/meta/prov/pa/2"
         self.crossref_api = Crossref()
         self.orcid_api = ORCID()
         self.viaf_api = VIAF()
-        self.wikidata_api = WikiData()
+        self.wikidata_api = Wikidata()
         self.openalex_api = OpenAlex()
-        self.g_set = g_set
+        self.graph_set = graph_set
         self.debug = debug
-        self.new_id_found = 0
+        self.added_identifier_count = 0
         self.storage = storage
-        self.serialize_in_the_middle = serialize_in_the_middle
+        self.checkpoint_interval = checkpoint_interval
         self.use_wikidata = use_wikidata
         self.use_viaf = use_viaf
         self.use_orcid = use_orcid
@@ -111,12 +113,12 @@ class GraphEnricher:
 
         NB: Even if it's not possible to have an identifier duplicated for the same entity, it's possible that in
         the whole graph set you could find different identifiers that share the same schema and literal. For this
-        purpose, you should use the `instancematching` module after that you've enriched the graph set.
+        purpose, you should use the `deduplication` module after you've enriched the graph set.
         """
         with self.__std_out_err_redirect_tqdm() as orig_stdout:
-            progress_bar = tqdm(self.g_set.get_br(), file=orig_stdout, dynamic_ncols=True)
+            progress_bar = tqdm(self.graph_set.get_br(), file=orig_stdout, dynamic_ncols=True)
             for br_counter, br in enumerate(progress_bar, start=1):
-                progress_bar.set_description(desc=f"New ID found: {self.new_id_found}")
+                progress_bar.set_description(desc=f"Added identifiers: {self.added_identifier_count}")
                 self.__serialize_intermediate(br_counter)
                 if self.__is_journal_issue_or_volume(br):
                     continue
@@ -126,9 +128,9 @@ class GraphEnricher:
             self.__serialize_graphs()
 
     def __serialize_intermediate(self, br_counter: int) -> None:
-        if br_counter % SERIALIZE_INTERVAL != 0 or not self.serialize_in_the_middle:
+        if self.checkpoint_interval is None or br_counter % self.checkpoint_interval != 0:
             return
-        store_graph_set(self.g_set, self.storage)
+        store_graph_set(self.graph_set, self.storage)
 
     def __is_journal_issue_or_volume(self, br: BibliographicResource) -> bool:
         return GraphEntity.iri_journal_issue in br.get_types() or GraphEntity.iri_journal_volume in br.get_types()
@@ -311,15 +313,15 @@ class GraphEnricher:
         return False
 
     def __serialize_graphs(self) -> None:
-        store_graph_set(self.g_set, self.storage)
+        store_graph_set(self.graph_set, self.storage)
         prov = self.__provenance()
         prov.generate_provenance()
         store_provenance(prov, self.storage)
 
     def __provenance(self) -> ProvSet:
         return ProvSet(
-            self.g_set,
-            self.g_set.base_iri,
+            self.graph_set,
+            self.graph_set.base_iri,
             info_dir=self.storage.info_dir,
             wanted_label=self.storage.wanted_label,
             custom_counter_handler=self.storage.counter_handler,
@@ -347,9 +349,9 @@ class GraphEnricher:
                 LOGGER.debug("Identifier %s already present", literal)
             return
 
-        self.new_id_found += 1
+        self.added_identifier_count += 1
 
-        new_id = self.g_set.add_id(self.resp_agent)
+        new_id = self.graph_set.add_id(self.resp_agent)
         create_identifier = {
             "issn": new_id.create_issn,
             "doi": new_id.create_doi,

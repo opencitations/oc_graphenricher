@@ -13,7 +13,7 @@ from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAg
 from oc_ocdm.graph.entities.identifier import Identifier
 from oc_ocdm.graph.graph_set import GraphSet
 
-from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.storage import single_file_storage
 from tests.helpers import BASE_IRI, RESP_AGENT, add_id, load_graph_set
 
@@ -49,39 +49,39 @@ def identifier_key(identifier: Identifier) -> str:
     return f"{identifier.get_scheme()}{identifier.get_literal_value()}"
 
 
-def test_ras_merged(matched_graph_set: GraphSet) -> None:
+def test_ras_merged(deduplicated_graph_set: GraphSet) -> None:
     identifiers = sorted(
-        identifier_key(identifier) for ra in matched_graph_set.get_ra() for identifier in ra.get_identifiers()
+        identifier_key(identifier) for ra in deduplicated_graph_set.get_ra() for identifier in ra.get_identifiers()
     )
     assert identifiers == EXPECTED_RA_IDENTIFIERS
 
 
-def test_ids_not_duplicated(matched_graph_set: GraphSet) -> None:
+def test_ids_not_duplicated(deduplicated_graph_set: GraphSet) -> None:
     identifiers = sorted(
         identifier_key(identifier)
-        for identifier in matched_graph_set.get_id()
+        for identifier in deduplicated_graph_set.get_id()
         if identifier_key(identifier) != "NoneNone"
     )
     assert identifiers == EXPECTED_IDS
 
 
-def test_agent_roles_reference_existing_responsible_agents(matched_graph_set: GraphSet) -> None:
-    held_responsible_agents = {ar.get_is_held_by() for ar in matched_graph_set.get_ar()}
-    responsible_agents = set(matched_graph_set.get_ra())
+def test_agent_roles_reference_existing_responsible_agents(deduplicated_graph_set: GraphSet) -> None:
+    held_responsible_agents = {ar.get_is_held_by() for ar in deduplicated_graph_set.get_ar()}
+    responsible_agents = set(deduplicated_graph_set.get_ra())
     orphan_responsible_agents = sorted(str(ra) for ra in held_responsible_agents.difference(responsible_agents))
 
     assert orphan_responsible_agents == []
 
 
-def test_bibliographic_resources_reference_existing_agent_roles(matched_graph_set: GraphSet) -> None:
-    agent_roles_from_brs = sorted(str(ar) for br in matched_graph_set.get_br() for ar in br.get_contributors())
-    agent_roles = sorted(str(ar) for ar in matched_graph_set.get_ar())
+def test_bibliographic_resources_reference_existing_agent_roles(deduplicated_graph_set: GraphSet) -> None:
+    agent_roles_from_brs = sorted(str(ar) for br in deduplicated_graph_set.get_br() for ar in br.get_contributors())
+    agent_roles = sorted(str(ar) for ar in deduplicated_graph_set.get_ar())
 
     assert agent_roles_from_brs == agent_roles
 
 
-def test_brs_merged(matched_graph_set: GraphSet) -> None:
-    bibliographic_resources = sorted(str(br) for br in matched_graph_set.get_br())
+def test_brs_merged(deduplicated_graph_set: GraphSet) -> None:
+    bibliographic_resources = sorted(str(br) for br in deduplicated_graph_set.get_br())
     assert bibliographic_resources == [
         "http://example.com/br/1",
         "http://example.com/br/2",
@@ -90,12 +90,12 @@ def test_brs_merged(matched_graph_set: GraphSet) -> None:
     ]
 
 
-def test_brs_have_only_one_list_of_authors(matched_graph_set: GraphSet) -> None:
-    contributor_counts_by_br = {str(br): len(br.get_contributors()) for br in matched_graph_set.get_br()}
+def test_brs_have_only_one_list_of_authors(deduplicated_graph_set: GraphSet) -> None:
+    contributor_counts_by_br = {str(br): len(br.get_contributors()) for br in deduplicated_graph_set.get_br()}
     assert contributor_counts_by_br == EXPECTED_BR_CONTRIBUTOR_COUNTS
 
 
-def test_matching_keeps_distinct_named_authors_by_default_when_duplicate_brs_merge(tmp_path: Path) -> None:
+def test_deduplication_keeps_distinct_named_authors_by_default_when_duplicate_brs_merge(tmp_path: Path) -> None:
     graph_set = GraphSet(BASE_IRI)
     first_br = _add_article_with_shared_doi(graph_set, "First")
     second_br = _add_article_with_shared_doi(graph_set, "Second")
@@ -106,18 +106,18 @@ def test_matching_keeps_distinct_named_authors_by_default_when_duplicate_brs_mer
     second_br.has_contributor(orphan_author)
     graph_set.commit_changes()
 
-    matched_graph_set = _match_graph_set(graph_set, tmp_path)
+    deduplicated_graph_set = _deduplicate_graph_set(graph_set, tmp_path)
 
-    assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
-    assert _agent_role_uris_from_brs(matched_graph_set) == [
+    assert [str(br) for br in deduplicated_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
+    assert _agent_role_uris_from_brs(deduplicated_graph_set) == [
         "https://w3id.org/oc/meta/ar/1",
         "https://w3id.org/oc/meta/ar/2",
     ]
-    assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace", "Ada Lovelace"]]
-    assert _dangling_agent_role_uris_from_brs(matched_graph_set) == []
+    assert [_author_names(br) for br in deduplicated_graph_set.get_br()] == [["Ada Lovelace", "Ada Lovelace"]]
+    assert _dangling_agent_role_uris_from_brs(deduplicated_graph_set) == []
 
 
-def test_matching_keeps_valid_agent_role_when_duplicate_brs_share_responsible_agent(tmp_path: Path) -> None:
+def test_deduplication_keeps_valid_agent_role_when_duplicate_brs_share_responsible_agent(tmp_path: Path) -> None:
     graph_set = GraphSet(BASE_IRI)
     first_br = _add_article_with_shared_doi(graph_set, "First")
     second_br = _add_article_with_shared_doi(graph_set, "Second")
@@ -128,15 +128,15 @@ def test_matching_keeps_valid_agent_role_when_duplicate_brs_share_responsible_ag
     _add_author_with_responsible_agent(graph_set, second_br, responsible_agent)
     graph_set.commit_changes()
 
-    matched_graph_set = _match_graph_set(graph_set, tmp_path)
+    deduplicated_graph_set = _deduplicate_graph_set(graph_set, tmp_path)
 
-    assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
-    assert _agent_role_uris(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
-    assert _agent_role_uris_from_brs(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
-    assert [_author_names(br) for br in matched_graph_set.get_br()] == [["Ada Lovelace"]]
+    assert [str(br) for br in deduplicated_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
+    assert _agent_role_uris(deduplicated_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
+    assert _agent_role_uris_from_brs(deduplicated_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
+    assert [_author_names(br) for br in deduplicated_graph_set.get_br()] == [["Ada Lovelace"]]
 
 
-def test_matching_merges_case_insensitive_named_contributors_when_enabled(tmp_path: Path) -> None:
+def test_deduplication_merges_case_insensitive_named_contributors_when_enabled(tmp_path: Path) -> None:
     graph_set = GraphSet(BASE_IRI)
     first_br = _add_article_with_shared_doi(graph_set, "First")
     second_br = _add_article_with_shared_doi(graph_set, "Second")
@@ -144,11 +144,11 @@ def test_matching_merges_case_insensitive_named_contributors_when_enabled(tmp_pa
     _add_author(graph_set, second_br, "ada", "lovelace")
     graph_set.commit_changes()
 
-    matched_graph_set = _match_graph_set(graph_set, tmp_path, merge_similar_named_contributors=True)
+    deduplicated_graph_set = _deduplicate_graph_set(graph_set, tmp_path, merge_similar_named_contributors=True)
 
-    assert [str(br) for br in matched_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
-    assert _agent_role_uris(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
-    assert _agent_role_uris_from_brs(matched_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
+    assert [str(br) for br in deduplicated_graph_set.get_br()] == ["https://w3id.org/oc/meta/br/1"]
+    assert _agent_role_uris(deduplicated_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
+    assert _agent_role_uris_from_brs(deduplicated_graph_set) == ["https://w3id.org/oc/meta/ar/1"]
 
 
 def test_deduplicate_runs_without_storage() -> None:
@@ -157,17 +157,17 @@ def test_deduplicate_runs_without_storage() -> None:
     _add_article_with_shared_doi(graph_set, "Second")
     graph_set.commit_changes()
 
-    matched_graph_set = InstanceMatching(graph_set).deduplicate()
+    deduplicated_graph_set = GraphDeduplicator(graph_set).deduplicate()
 
-    assert matched_graph_set is graph_set
-    assert _entity_uris_with_triples(matched_graph_set.get_br()) == [str(first_br)]
+    assert deduplicated_graph_set is graph_set
+    assert _entity_uris_with_triples(deduplicated_graph_set.get_br()) == [str(first_br)]
 
 
 def test_save_without_storage_fails() -> None:
-    matcher = InstanceMatching(GraphSet(BASE_IRI))
+    deduplicator = GraphDeduplicator(GraphSet(BASE_IRI))
 
     with pytest.raises(ValueError, match="storage is required"):
-        matcher.save()
+        deduplicator.save()
 
 
 def test_preferred_survivor_keeps_requested_bibliographic_resource() -> None:
@@ -176,7 +176,7 @@ def test_preferred_survivor_keeps_requested_bibliographic_resource() -> None:
     second_br = _add_article_with_shared_doi(graph_set, "Second")
     graph_set.commit_changes()
 
-    InstanceMatching(
+    GraphDeduplicator(
         graph_set,
         preferred_survivors={str(second_br)},
     ).deduplicate()
@@ -193,13 +193,13 @@ def test_preferred_survivor_keeps_requested_responsible_agent() -> None:
     author_role.is_held_by(first_ra)
     graph_set.commit_changes()
 
-    matched_graph_set = InstanceMatching(
+    deduplicated_graph_set = GraphDeduplicator(
         graph_set,
         preferred_survivors={str(second_ra)},
     ).deduplicate()
 
-    assert _entity_uris_with_triples(matched_graph_set.get_ra()) == [str(second_ra)]
-    assert [str(ar.get_is_held_by()) for ar in matched_graph_set.get_ar()] == [str(second_ra)]
+    assert _entity_uris_with_triples(deduplicated_graph_set.get_ra()) == [str(second_ra)]
+    assert [str(ar.get_is_held_by()) for ar in deduplicated_graph_set.get_ar()] == [str(second_ra)]
 
 
 def test_preferred_survivor_keeps_requested_identifier() -> None:
@@ -209,7 +209,7 @@ def test_preferred_survivor_keeps_requested_identifier() -> None:
     second_identifier = sorted(br.get_identifiers(), key=str)[1]
     graph_set.commit_changes()
 
-    InstanceMatching(
+    GraphDeduplicator(
         graph_set,
         preferred_survivors={str(second_identifier)},
     ).deduplicate()
@@ -224,7 +224,7 @@ def test_preferred_survivor_ignores_uri_outside_cluster() -> None:
     _add_article_with_shared_doi(graph_set, "Second")
     graph_set.commit_changes()
 
-    InstanceMatching(
+    GraphDeduplicator(
         graph_set,
         preferred_survivors={"https://w3id.org/oc/meta/br/999"},
     ).deduplicate()
@@ -238,33 +238,33 @@ def test_preferred_survivor_rejects_conflicting_cluster_preferences() -> None:
     second_br = _add_article_with_shared_doi(graph_set, "Second")
     graph_set.commit_changes()
 
-    matcher = InstanceMatching(
+    deduplicator = GraphDeduplicator(
         graph_set,
         preferred_survivors={str(first_br), str(second_br)},
     )
 
     with pytest.raises(ValueError, match="Conflicting preferred survivors"):
-        matcher.deduplicate()
+        deduplicator.deduplicate()
 
 
 def test_provenance_configuration_is_forwarded_to_prov_set() -> None:
     counter_handler = _CounterHandler()
     storage = single_file_storage(
-        "matched.rdf",
+        "deduplicated.rdf",
         "provenance.rdf",
         supplier_prefix="060",
         wanted_label=False,
         counter_handler=counter_handler,
     )
 
-    matcher = InstanceMatching(
+    deduplicator = GraphDeduplicator(
         GraphSet(BASE_IRI),
         storage=storage,
     )
 
-    assert matcher.prov.supplier_prefix == "060"
-    assert matcher.prov.wanted_label is False
-    assert matcher.prov.counter_handler is counter_handler
+    assert deduplicator.prov.supplier_prefix == "060"
+    assert deduplicator.prov.wanted_label is False
+    assert deduplicator.prov.counter_handler is counter_handler
 
 
 def _add_article_with_shared_doi(graph_set: GraphSet, title: str) -> BibliographicResource:
@@ -275,16 +275,16 @@ def _add_article_with_shared_doi(graph_set: GraphSet, title: str) -> Bibliograph
     return br
 
 
-def _match_graph_set(
+def _deduplicate_graph_set(
     graph_set: GraphSet,
     tmp_path: Path,
     *,
     merge_similar_named_contributors: bool = False,
 ) -> GraphSet:
-    matcher = InstanceMatching(
+    deduplicator = GraphDeduplicator(
         graph_set,
         single_file_storage(
-            tmp_path / "matched.rdf",
+            tmp_path / "deduplicated.rdf",
             tmp_path / "provenance.rdf",
             output_format="nt11",
             zip_output=False,
@@ -292,8 +292,8 @@ def _match_graph_set(
         debug=True,
         merge_similar_named_contributors=merge_similar_named_contributors,
     )
-    matcher.match()
-    return load_graph_set(tmp_path / "matched.rdf")
+    deduplicator.deduplicate_and_save()
+    return load_graph_set(tmp_path / "deduplicated.rdf")
 
 
 def _add_author(

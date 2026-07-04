@@ -33,10 +33,10 @@ NAME_SIMILARITY_THRESHOLD = 0.95
 Entity = TypeVar("Entity")
 
 
-class InstanceMatching:
+class GraphDeduplicator:
     def __init__(
         self,
-        g_set: GraphSet,
+        graph_set: GraphSet,
         storage: Storage | None = None,
         *,
         debug: bool = False,
@@ -44,17 +44,17 @@ class InstanceMatching:
         preferred_survivors: set[str] | None = None,
     ) -> None:
         """
-        Initialize the matcher.
+        Initialize the graph deduplicator.
 
-        The matcher deduplicates entities in a graph set compliant with the OpenCitations Data Model.
+        The deduplicator merges duplicate entities in a graph set compliant with the OpenCitations Data Model.
 
-        :param g_set: input graph set
+        :param graph_set: input graph set
         :param storage: output storage configuration
         :param debug: a bool flag to enable richer output
         :param merge_similar_named_contributors: merge contributor roles with similar author names within merged BRs
         :param preferred_survivors: entity URIs to keep when they appear in duplicate clusters
         """
-        self.g_set = g_set
+        self.graph_set = graph_set
         self.storage = storage
         self.debug = debug
         self.merge_similar_named_contributors = merge_similar_named_contributors
@@ -62,14 +62,14 @@ class InstanceMatching:
         self.modified_entities: set[str] = set()
         self.prov = self.__provenance()
 
-    def match(self) -> GraphSet:
+    def deduplicate_and_save(self) -> GraphSet:
         """
-        Start the matching process.
+        Deduplicate the graph set and save the graph and provenance.
 
         The process will:
-        - match the Responsible Agents (RAs)
-        - match the Bibliographic Resources (BRs)
-        - match the IDs.
+        - deduplicate the Responsible Agents (RAs)
+        - deduplicate the Bibliographic Resources (BRs)
+        - deduplicate the IDs.
 
         In the end, this process will produce:
             - the configured graph output without the duplicates.
@@ -77,14 +77,14 @@ class InstanceMatching:
         """
         self.deduplicate()
         self.save()
-        return self.g_set
+        return self.graph_set
 
     def deduplicate(self) -> GraphSet:
-        """Start the matching process without serializing the graph set or provenance."""
-        self.instance_matching_ra()
-        self.instance_matching_br()
-        self.instance_matching_id()
-        return self.g_set
+        """Deduplicate the graph set without serializing the graph set or provenance."""
+        self.deduplicate_responsible_agents()
+        self.deduplicate_bibliographic_resources()
+        self.deduplicate_identifiers()
+        return self.graph_set
 
     def save(self) -> None:
         """
@@ -93,51 +93,51 @@ class InstanceMatching:
         Serialize the provenance in another specified RDF file.
         """
         storage = self.__storage()
-        store_graph_set(self.g_set, storage)
+        store_graph_set(self.graph_set, storage)
         store_provenance(self.prov, storage)
 
-    def instance_matching_ra(self) -> None:
+    def deduplicate_responsible_agents(self) -> None:
         """
         Discover Responsible Agents (RAs) that share the same identifier literal.
 
-        The process creates a graph of matching entities, merges each connected component into one RA, updates Agent
+        The process creates a graph of duplicate entities, merges each connected component into one RA, updates Agent
         Role references, generates provenance and commits pending changes in the graph set.
         """
         associated_ar_ra = self.__get_association_ar_ra()
         clusters = self.__sorted_clusters(
-            self.__merge_graph(self.g_set.get_ra(), "[IM-RA] Will merge %s and %s due to %s:%s in common"),
+            self.__merge_graph(self.graph_set.get_ra(), "[dedup-RA] Will merge %s and %s due to %s:%s in common"),
         )
-        LOGGER.info("[IM-RA] Number of clusters: %s", len(clusters))
+        LOGGER.info("[dedup-RA] Number of clusters: %s", len(clusters))
 
         for cluster_index, cluster in enumerate(clusters):
             entity_first, other_entities = self.__ordered_entities(cluster)
-            self.__debug("[IM-RA] Merging cluster #%s, with %s entities", cluster_index, len(cluster))
+            self.__debug("[dedup-RA] Merging cluster #%s, with %s entities", cluster_index, len(cluster))
             for other_entity in other_entities:
                 self.__merge_responsible_agent(entity_first, other_entity, associated_ar_ra)
 
         self.modified_entities.update(self.prov.generate_provenance())
-        self.g_set.commit_changes()
+        self.graph_set.commit_changes()
 
-    def instance_matching_br(self) -> None:
+    def deduplicate_bibliographic_resources(self) -> None:
         """
         Discover Bibliographic Resources (BRs) that share the same identifier literal.
 
-        The process creates a graph of matching BRs, merges each connected component into one BR, merges containers and
+        The process creates a graph of duplicate BRs, merges each connected component into one BR, merges containers and
         publishers where possible, generates provenance and commits pending changes in the graph set.
         """
         clusters = self.__sorted_clusters(
-            self.__merge_graph(self.g_set.get_br(), "[IM-BR] Will merge %s into %s due to %s:%s in common"),
+            self.__merge_graph(self.graph_set.get_br(), "[dedup-BR] Will merge %s into %s due to %s:%s in common"),
         )
-        LOGGER.info("[IM-BR] Number of clusters: %s", len(clusters))
+        LOGGER.info("[dedup-BR] Number of clusters: %s", len(clusters))
 
         for cluster_index, cluster in enumerate(clusters):
-            self.__debug("[IM-BR] Merging cluster #%s, with %s entities", cluster_index, len(cluster))
+            self.__debug("[dedup-BR] Merging cluster #%s, with %s entities", cluster_index, len(cluster))
             self.__merge_br_cluster(cluster)
 
         self.modified_entities.update(self.prov.generate_provenance())
-        self.g_set.commit_changes()
+        self.graph_set.commit_changes()
 
-    def instance_matching_id(self) -> None:
+    def deduplicate_identifiers(self) -> None:
         """
         Discover duplicate IDs related to Bibliographic Resources and Responsible Agents.
 
@@ -150,7 +150,7 @@ class InstanceMatching:
                 self.__merge_identifier_group(literal, identifiers, id_to_resources)
 
         self.modified_entities.update(self.prov.generate_provenance())
-        self.g_set.commit_changes()
+        self.graph_set.commit_changes()
 
     def __merge_graph(
         self,
@@ -356,8 +356,8 @@ class InstanceMatching:
     ]:
         literal_to_id: dict[str, list[Identifier]] = {}
         id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]] = {}
-        entities: list[BibliographicResource | ResponsibleAgent] = list(self.g_set.get_br())
-        entities.extend(list(self.g_set.get_ra()))
+        entities: list[BibliographicResource | ResponsibleAgent] = list(self.graph_set.get_br())
+        entities.extend(list(self.graph_set.get_ra()))
 
         for entity in entities:
             for identifier in entity.get_identifiers():
@@ -379,7 +379,7 @@ class InstanceMatching:
         schema, value = literal.split("#", maxsplit=1)
         merged_identifier, other_identifiers = self.__ordered_entities(identifiers)
         self.__debug(
-            "[IM-ID] Will merge %s identifiers into %s because they share literal %s and schema %s",
+            "[dedup-ID] Will merge %s identifiers into %s because they share literal %s and schema %s",
             len(identifiers) - 1,
             merged_identifier,
             value,
@@ -411,7 +411,7 @@ class InstanceMatching:
 
     def __storage(self) -> Storage:
         if self.storage is None:
-            message = "storage is required to save matched graph and provenance."
+            message = "storage is required to save deduplicated graph and provenance."
             raise ValueError(message)
         if self.storage.modified_entities is not None:
             return self.storage
@@ -419,10 +419,10 @@ class InstanceMatching:
 
     def __provenance(self) -> ProvSet:
         if self.storage is None:
-            return ProvSet(self.g_set, self.g_set.base_iri)
+            return ProvSet(self.graph_set, self.graph_set.base_iri)
         return ProvSet(
-            self.g_set,
-            self.g_set.base_iri,
+            self.graph_set,
+            self.graph_set.base_iri,
             info_dir=self.storage.info_dir,
             wanted_label=self.storage.wanted_label,
             custom_counter_handler=self.storage.counter_handler,
@@ -476,7 +476,7 @@ class InstanceMatching:
         :return association: a dictionary having Responsible Agent (RA) as key, and a list of Agent Role (AR) as value
         """
         association: dict[ResponsibleAgent, list[AgentRole]] = {}
-        for ar in self.g_set.get_ar():
+        for ar in self.graph_set.get_ar():
             responsible_agent = ar.get_is_held_by()
             if responsible_agent is not None:
                 association.setdefault(responsible_agent, []).append(ar)
@@ -497,3 +497,8 @@ class InstanceMatching:
         entity: ResponsibleAgent | BibliographicResource,
     ) -> BibliographicResource:
         return cast("BibliographicResource", entity)
+
+
+__all__ = [
+    "GraphDeduplicator",
+]

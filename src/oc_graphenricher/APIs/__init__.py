@@ -143,12 +143,12 @@ class VIAF(QueryInterface):
         return str(record_data["v:VIAFCluster"]["v:viafID"]["content"])
 
 
-class WikiData(QueryInterface):
+class Wikidata(QueryInterface):
     def __init__(self) -> None:
         """
-        Initialize the WikiData query backend.
+        Initialize the Wikidata query backend.
 
-        The backend queries WikiData by means of another identifier and checks whether a related entity exists.
+        The backend queries Wikidata by means of another identifier and checks whether a related entity exists.
         """
         super().__init__()
         self.headers = {
@@ -173,7 +173,7 @@ class WikiData(QueryInterface):
 
     def query(self, entity: str, schema: str) -> str | None:
         """
-        Query WikiData, given the literal of an identifier and its schema.
+        Query Wikidata, given the literal of an identifier and its schema.
 
         :param entity: the literal of the given identifier
         :param schema: the schema of the given identifier
@@ -188,7 +188,7 @@ class WikiData(QueryInterface):
             self.api_url,
             self.headers,
             60,
-            "[GraphEnricher-WikiData]",
+            "[GraphEnricher-Wikidata]",
             params={"format": "json", "query": query},
         )
         if response is None:

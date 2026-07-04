@@ -32,7 +32,7 @@ If new entities need persistent counters, configure `info_dir` on the `GraphSet`
 graph_set = GraphSet(base_iri="https://w3id.org/oc/meta/", info_dir="info")
 ```
 
-For provenance counters created by `GraphEnricher` and `InstanceMatching`, pass `info_dir` to the storage factory.
+For provenance counters created by `GraphEnricher` and `GraphDeduplicator`, pass `info_dir` to the storage factory.
 
 ## Enrichment
 
@@ -48,7 +48,7 @@ storage = single_file_storage(
     info_dir="info",
 )
 enricher = GraphEnricher(
-    g_set=graph_set,
+    graph_set=graph_set,
     storage=storage,
 )
 enricher.enrich()
@@ -73,7 +73,7 @@ storage = directory_storage(
     zip_output=True,
 )
 
-GraphEnricher(g_set=graph_set, storage=storage).enrich()
+GraphEnricher(graph_set=graph_set, storage=storage).enrich()
 ```
 
 This writes graph files and provenance files under the same output root. Provenance is placed in the `prov` subdirectories created by `oc_ocdm`.
@@ -97,7 +97,7 @@ output/
 
 `output_format` applies to both graph and provenance. By default, storage writes JSON-LD and zips the output.
 
-The storage object also carries the provenance settings used when `GraphEnricher` or `InstanceMatching` saves
+The storage object also carries the provenance settings used when `GraphEnricher` or `GraphDeduplicator` saves
 provenance. Use `supplier_prefix`, `info_dir`, `wanted_label` and `counter_handler` on the storage factory when those
 values are needed by `ProvSet`.
 
@@ -105,7 +105,7 @@ Optional switches allow disabling selected external sources:
 
 ```python
 enricher = GraphEnricher(
-    g_set=graph_set,
+    graph_set=graph_set,
     storage=storage,
     use_wikidata=False,
     use_viaf=False,
@@ -113,68 +113,78 @@ enricher = GraphEnricher(
 )
 ```
 
-## Instance matching
-
-After enrichment, run `InstanceMatching` to merge duplicate entities.
+Use `checkpoint_interval` to write the graph after a fixed number of processed bibliographic resources:
 
 ```python
-from oc_graphenricher.instancematching import InstanceMatching
+enricher = GraphEnricher(
+    graph_set=graph_set,
+    storage=storage,
+    checkpoint_interval=50,
+)
+```
+
+## Deduplication
+
+After enrichment, run `GraphDeduplicator` to merge duplicate entities.
+
+```python
+from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.storage import single_file_storage
 
 storage = single_file_storage(
-    graph_path="matched.json",
+    graph_path="deduplicated.json",
     provenance_path="provenance.json",
 )
-matcher = InstanceMatching(
-    g_set=graph_set,
+deduplicator = GraphDeduplicator(
+    graph_set=graph_set,
     storage=storage,
 )
-matched_graph_set = matcher.match()
+deduplicated_graph_set = deduplicator.deduplicate_and_save()
 ```
 
 Use `deduplicate()` when the caller needs to manage serialization separately:
 
 ```python
-matcher = InstanceMatching(g_set=graph_set)
-matched_graph_set = matcher.deduplicate()
+deduplicator = GraphDeduplicator(graph_set=graph_set)
+deduplicated_graph_set = deduplicator.deduplicate()
 ```
 
-The same storage object can be used for instance matching:
+The same storage object can be used for deduplication:
 
 ```python
-from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.storage import directory_storage
 
 storage = directory_storage(output_dir="output")
-matched_graph_set = InstanceMatching(g_set=graph_set, storage=storage).match()
+deduplicated_graph_set = GraphDeduplicator(graph_set=graph_set, storage=storage).deduplicate_and_save()
 ```
 
 `deduplicate()` runs these steps in order:
 
-1. Responsible agent matching. It matches only responsible agents that share the same identifier scheme and literal. It merges each connected cluster and updates agent-role references to point to the kept responsible agent.
-2. Bibliographic resource matching. It matches only bibliographic resources that share the same identifier scheme and literal. After two BRs are merged, it also updates data attached to those BRs:
+1. Responsible agent deduplication. It merges only responsible agents that share the same identifier scheme and literal. It merges each connected cluster and updates agent-role references to point to the kept responsible agent.
+2. Bibliographic resource deduplication. It merges only bibliographic resources that share the same identifier scheme and literal. After two BRs are merged, it also updates data attached to those BRs:
    - it compares the `is_part_of` chains of the two BRs and merges container BRs from those chains when their RDF types overlap after excluding the generic expression type;
    - if both BRs have a publisher role, it merges the two publisher `AgentRole` objects;
    - among the contributors of the merged BR, it removes duplicated contributor roles. Roles with the same role type pointing to the same responsible agent are merged. Name-based contributor merging is disabled by default and can be enabled with `merge_similar_named_contributors=True`.
-3. Identifier matching. It finds identifier entities attached to bibliographic resources or responsible agents that share the same scheme and literal, merges them and rewrites entity references to the kept identifier.
+3. Identifier deduplication. It finds identifier entities attached to bibliographic resources or responsible agents that share the same scheme and literal, merges them and rewrites entity references to the kept identifier.
 
-`match()` calls `deduplicate()` and then writes the matched graph and provenance to the configured output files. Calling
-`match()` or `save()` without storage raises `ValueError`.
+`deduplicate_and_save()` calls `deduplicate()` and then writes the deduplicated graph and provenance to the configured
+output files. Calling `deduplicate_and_save()` or `save()` without storage raises `ValueError`.
 
-The name check is local to the contributors of a BR that has already been merged by identifier. It does not start a responsible-agent match and it does not compare BR titles.
+The name check is local to the contributors of a BR that has already been merged by identifier. It does not start responsible-agent deduplication and it does not compare BR titles.
 
 Use `preferred_survivors` when a caller must preserve selected entity URIs:
 
 ```python
-matched_graph_set = InstanceMatching(
-    g_set=graph_set,
+deduplicated_graph_set = GraphDeduplicator(
+    graph_set=graph_set,
     storage=storage,
     preferred_survivors={"https://w3id.org/oc/meta/br/0602"},
-).match()
+).deduplicate_and_save()
 ```
 
 The set contains entity URIs that must be kept if they appear in duplicate clusters. If exactly one preferred URI appears
-in a cluster, instance matching keeps it. If multiple preferred URIs appear in the same cluster, instance matching raises
-`ValueError`. If none appears, instance matching keeps the first URI in sorted order.
+in a cluster, deduplication keeps it. If multiple preferred URIs appear in the same cluster, deduplication raises
+`ValueError`. If none appears, deduplication keeps the first URI in sorted order.
 
-For provenance generated during matching, use the same storage options used for enrichment.
+For provenance generated during deduplication, use the same storage options used for enrichment.

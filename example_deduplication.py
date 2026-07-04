@@ -7,27 +7,27 @@ from oc_ocdm.graph.graph_set import GraphSet
 from oc_ocdm.reader import Reader
 from rdflib import Graph
 
-from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.storage import single_file_storage
 
 g = Graph()
 g = g.parse("tests/fixtures/test_merge_br.rdf", format="nt11")
 
 reader = Reader()
-g_set = GraphSet(base_iri="https://w3id.org/oc/meta/")
+graph_set = GraphSet(base_iri="https://w3id.org/oc/meta/")
 entities = reader.import_entities_from_graph(
-    g_set,
+    graph_set,
     g,
     enable_validation=False,
     resp_agent="https://w3id.org/oc/meta/prov/pa/2",
 )
 
-matcher = InstanceMatching(
-    g_set=g_set,
+deduplicator = GraphDeduplicator(
+    graph_set=graph_set,
     storage=single_file_storage(
-        graph_path="matched.json",
+        graph_path="deduplicated.json",
         provenance_path="provenance.json",
     ),
     debug=True,
 )
-matcher.match()
+deduplicator.deduplicate_and_save()

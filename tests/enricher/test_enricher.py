@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from oc_ocdm.graph.graph_set import GraphSet
 
-from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, OpenAlex, WikiData
+from oc_graphenricher.APIs import ORCID, VIAF, AuthorTuple, Crossref, IdentifierTuple, OpenAlex, Wikidata
 from oc_graphenricher.enricher import GraphEnricher
 from oc_graphenricher.storage import single_file_storage
 from tests.helpers import BASE_IRI, RESP_AGENT, add_id, load_graph_set
@@ -49,7 +49,7 @@ class EnrichmentVIAF(VIAF):
         return "123456"
 
 
-class EnrichmentWikiData(WikiData):
+class EnrichmentWikidata(Wikidata):
     def query(self, entity: str, schema: str) -> str | None:
         del entity
         if schema == "doi":
@@ -88,7 +88,7 @@ class NoResultVIAF(VIAF):
         del given_name, family_name, title
 
 
-class NoResultWikiData(WikiData):
+class NoResultWikidata(Wikidata):
     def query(self, entity: str, schema: str) -> str | None:
         del entity, schema
 
@@ -124,7 +124,7 @@ class FailingVIAF(VIAF):
         raise AssertionError
 
 
-class FailingWikiData(WikiData):
+class FailingWikidata(Wikidata):
     def query(self, entity: str, schema: str) -> str:
         del entity, schema
         raise AssertionError
@@ -142,14 +142,14 @@ def test_enrich_adds_missing_identifiers_and_serializes_graphs(tmp_path: Path) -
     enricher.crossref_api = EnrichmentCrossref()
     enricher.orcid_api = EnrichmentORCID()
     enricher.viaf_api = EnrichmentVIAF()
-    enricher.wikidata_api = EnrichmentWikiData()
+    enricher.wikidata_api = EnrichmentWikidata()
     enricher.openalex_api = EnrichmentOpenAlex()
 
     enricher.enrich()
 
     enriched_graph_set = load_graph_set(tmp_path / "enriched.rdf")
 
-    assert enricher.new_id_found == EXPECTED_ADDED_IDENTIFIERS
+    assert enricher.added_identifier_count == EXPECTED_ADDED_IDENTIFIERS
     assert (tmp_path / "enriched.rdf").exists() is True
     assert (tmp_path / "provenance.rdf").exists() is True
     assert len(list(enriched_graph_set.get_br())) == EXPECTED_BR_COUNT_WITH_SKIPPED_TYPES
@@ -168,14 +168,14 @@ def test_enrich_leaves_graph_unchanged_when_metadata_and_apis_do_not_resolve(tmp
     enricher.crossref_api = NoResultCrossref()
     enricher.orcid_api = NoResultORCID()
     enricher.viaf_api = NoResultVIAF()
-    enricher.wikidata_api = NoResultWikiData()
+    enricher.wikidata_api = NoResultWikidata()
     enricher.openalex_api = NoResultOpenAlex()
 
     enricher.enrich()
 
     enriched_graph_set = load_graph_set(tmp_path / "enriched.rdf")
 
-    assert enricher.new_id_found == 0
+    assert enricher.added_identifier_count == 0
     assert _br_identifiers_by_title(enriched_graph_set) == {
         "No DOI result": ["3333-3333"],
     }
@@ -191,14 +191,14 @@ def test_enrich_does_not_query_when_identifiers_are_already_present(tmp_path: Pa
     enricher.crossref_api = FailingCrossref()
     enricher.orcid_api = FailingORCID()
     enricher.viaf_api = FailingVIAF()
-    enricher.wikidata_api = FailingWikiData()
+    enricher.wikidata_api = FailingWikidata()
     enricher.openalex_api = FailingOpenAlex()
 
     enricher.enrich()
 
     enriched_graph_set = load_graph_set(tmp_path / "enriched.rdf")
 
-    assert enricher.new_id_found == 0
+    assert enricher.added_identifier_count == 0
     assert _br_identifiers_by_title(enriched_graph_set) == {
         "Already enriched": ["10.555/existing", "QEXISTING", "WEXISTING"],
     }

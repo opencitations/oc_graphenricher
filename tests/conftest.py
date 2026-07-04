@@ -9,7 +9,7 @@ import requests
 import requests_cache
 from oc_ocdm.graph.graph_set import GraphSet
 
-from oc_graphenricher.instancematching import InstanceMatching
+from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.storage import single_file_storage
 from tests.helpers import load_graph_set
 
@@ -33,16 +33,16 @@ def block_external_http(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def matched_graph_set(tmp_path: Path) -> GraphSet:
-    matcher = InstanceMatching(
+def deduplicated_graph_set(tmp_path: Path) -> GraphSet:
+    deduplicator = GraphDeduplicator(
         load_graph_set(TEST_DATA_DIR / "test_merge_br.rdf"),
         single_file_storage(
-            tmp_path / "matched.rdf",
+            tmp_path / "deduplicated.rdf",
             tmp_path / "provenance.rdf",
             output_format="nt11",
             zip_output=False,
         ),
         debug=True,
     )
-    matcher.match()
-    return load_graph_set(tmp_path / "matched.rdf")
+    deduplicator.deduplicate_and_save()
+    return load_graph_set(tmp_path / "deduplicated.rdf")

@@ -15,7 +15,7 @@ The package works with `GraphSet` objects from `oc_ocdm`. The current package me
 
 `GraphEnricher` adds identifiers to bibliographic resources and responsible agents. It can query Crossref, ORCID, VIAF, Wikidata and OpenAlex.
 
-`InstanceMatching` deduplicates responsible agents, bibliographic resources and identifiers that share identifier data.
+`GraphDeduplicator` deduplicates responsible agents, bibliographic resources and identifiers that share identifier data.
 
 ## Identifiers
 
@@ -28,4 +28,4 @@ OC GraphEnricher can add these identifiers when the related external source retu
 
 ## Start here
 
-Use the [installation guide](installing.md) to install the package, then follow the [usage guide](usage.md) to create a graph set, enrich it and run instance matching.
+Use the [installation guide](installing.md) to install the package, then follow the [usage guide](usage.md) to create a graph set, enrich it and run deduplication.
