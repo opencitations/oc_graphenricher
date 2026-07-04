@@ -68,6 +68,9 @@ opt-in behavior, pass `merge_similar_named_contributors=True`.
 Use `deduplicate()` instead of `deduplicate_and_save()` when another application needs to manage storage or provenance
 output itself.
 Use `preferred_survivors` with a set of entity URIs to keep selected entities when duplicate clusters are merged.
+Use `merge_clusters()` when another application has already selected the merge clusters, for example from a reviewed
+CSV. The mapping key is the surviving entity URI and the values are the URIs to merge into it. This method does not
+discover or merge any extra duplicates outside the provided mapping.
 
 For configuration options and usage details, see the documentation.
 

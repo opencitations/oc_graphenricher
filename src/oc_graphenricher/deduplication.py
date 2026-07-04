@@ -8,22 +8,22 @@ from __future__ import annotations
 
 import logging
 from dataclasses import replace
-from typing import TYPE_CHECKING, TypeVar, cast
+from typing import TYPE_CHECKING, TypeAlias, TypeVar, cast
 
 import Levenshtein
 import networkx as nx
+from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
+from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
+from oc_ocdm.graph.entities.identifier import Identifier
 from oc_ocdm.graph.graph_entity import GraphEntity
 from oc_ocdm.prov.prov_set import ProvSet
 
 from oc_graphenricher._storage import store_graph_set, store_provenance
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
-    from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
-    from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
-    from oc_ocdm.graph.entities.identifier import Identifier
     from oc_ocdm.graph.graph_set import GraphSet
 
     from oc_graphenricher.storage import Storage
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 NAME_SIMILARITY_THRESHOLD = 0.95
 Entity = TypeVar("Entity")
+ManualMergeEntity: TypeAlias = BibliographicResource | ResponsibleAgent | Identifier
 
 
 class GraphDeduplicator:
@@ -86,6 +87,43 @@ class GraphDeduplicator:
         self.deduplicate_identifiers()
         return self.graph_set
 
+    def merge_clusters(self, clusters: Mapping[str, Iterable[str]]) -> GraphSet:
+        normalized_clusters = self.__manual_merge_clusters(clusters)
+        if not normalized_clusters:
+            return self.graph_set
+
+        associated_ar_ra = self.__get_association_ar_ra()
+        _, id_to_resources = self.__id_maps()
+
+        for surviving_entity, merged_entities in normalized_clusters:
+            if isinstance(surviving_entity, ResponsibleAgent):
+                for merged_entity in merged_entities:
+                    self.__merge_responsible_agent(
+                        surviving_entity,
+                        self.__as_responsible_agent(merged_entity),
+                        associated_ar_ra,
+                    )
+            elif isinstance(surviving_entity, BibliographicResource):
+                self.__merge_bibliographic_resources(
+                    surviving_entity,
+                    [self.__as_bibliographic_resource(merged_entity) for merged_entity in merged_entities],
+                )
+            else:
+                self.__merge_identifiers(
+                    surviving_entity,
+                    [self.__as_identifier(merged_entity) for merged_entity in merged_entities],
+                    id_to_resources,
+                )
+
+        self.modified_entities.update(self.prov.generate_provenance())
+        self.graph_set.commit_changes()
+        return self.graph_set
+
+    def merge_clusters_and_save(self, clusters: Mapping[str, Iterable[str]]) -> GraphSet:
+        self.merge_clusters(clusters)
+        self.save()
+        return self.graph_set
+
     def save(self) -> None:
         """
         Serialize the graph set into the specified RDF file.
@@ -110,10 +148,15 @@ class GraphDeduplicator:
         LOGGER.info("[dedup-RA] Number of clusters: %s", len(clusters))
 
         for cluster_index, cluster in enumerate(clusters):
-            entity_first, other_entities = self.__ordered_entities(cluster)
+            entity_first_raw, other_entities_raw = self.__ordered_entities(cluster)
+            entity_first = self.__as_responsible_agent(entity_first_raw)
             self.__debug("[dedup-RA] Merging cluster #%s, with %s entities", cluster_index, len(cluster))
-            for other_entity in other_entities:
-                self.__merge_responsible_agent(entity_first, other_entity, associated_ar_ra)
+            for other_entity_raw in other_entities_raw:
+                self.__merge_responsible_agent(
+                    entity_first,
+                    self.__as_responsible_agent(other_entity_raw),
+                    associated_ar_ra,
+                )
 
         self.modified_entities.update(self.prov.generate_provenance())
         self.graph_set.commit_changes()
@@ -183,32 +226,135 @@ class GraphDeduplicator:
     def __sorted_clusters(self, merge_graph: nx.Graph) -> list[set[ResponsibleAgent | BibliographicResource]]:
         return sorted(nx.connected_components(merge_graph), key=len, reverse=True)
 
+    def __manual_merge_clusters(
+        self,
+        clusters: Mapping[str, Iterable[str]],
+    ) -> list[tuple[ManualMergeEntity, list[ManualMergeEntity]]]:
+        normalized_clusters: list[tuple[ManualMergeEntity, list[ManualMergeEntity]]] = []
+        survivors: set[str] = set()
+        merged_to_survivor: dict[str, str] = {}
+
+        for survivor_uri, merged_uris in clusters.items():
+            survivor = self.__manual_survivor(survivor_uri, merged_uris, survivors, merged_to_survivor)
+            survivor_type = self.__merge_entity_type(survivor)
+            merged_entities = [
+                self.__manual_merged_entity(
+                    survivor_uri,
+                    survivor_type,
+                    merged_uri,
+                    survivors,
+                    merged_to_survivor,
+                )
+                for merged_uri in merged_uris
+            ]
+
+            if not merged_entities:
+                message = f"Merge cluster for survivor {survivor_uri} must include at least one merged entity."
+                raise ValueError(message)
+            normalized_clusters.append((survivor, merged_entities))
+
+        return normalized_clusters
+
+    def __manual_survivor(
+        self,
+        survivor_uri: str,
+        merged_uris: Iterable[str],
+        survivors: set[str],
+        merged_to_survivor: dict[str, str],
+    ) -> ManualMergeEntity:
+        if survivor_uri in merged_to_survivor:
+            message = f"Entity {survivor_uri} cannot be both survivor and merged entity."
+            raise ValueError(message)
+        if survivor_uri in survivors:
+            message = f"Duplicate survivor in merge clusters: {survivor_uri}."
+            raise ValueError(message)
+        if isinstance(merged_uris, str):
+            message = f"Merge cluster for survivor {survivor_uri} must be an iterable of entity URIs."
+            raise TypeError(message)
+
+        survivors.add(survivor_uri)
+        return self.__merge_entity(survivor_uri)
+
+    def __manual_merged_entity(
+        self,
+        survivor_uri: str,
+        survivor_type: str,
+        merged_uri: str,
+        survivors: set[str],
+        merged_to_survivor: dict[str, str],
+    ) -> ManualMergeEntity:
+        if merged_uri == survivor_uri:
+            message = f"Entity {survivor_uri} cannot be merged into itself."
+            raise ValueError(message)
+        if merged_uri in survivors:
+            message = f"Entity {merged_uri} cannot be both survivor and merged entity."
+            raise ValueError(message)
+        if merged_uri in merged_to_survivor:
+            message = f"Entity {merged_uri} is already assigned to survivor {merged_to_survivor[merged_uri]}."
+            raise ValueError(message)
+
+        merged_entity = self.__merge_entity(merged_uri)
+        merged_entity_type = self.__merge_entity_type(merged_entity)
+        if merged_entity_type != survivor_type:
+            message = (
+                f"Merge cluster for survivor {survivor_uri} mixes entity types: "
+                f"{survivor_type} and {merged_entity_type}."
+            )
+            raise ValueError(message)
+
+        merged_to_survivor[merged_uri] = survivor_uri
+        return merged_entity
+
+    def __merge_entity(self, uri: str) -> ManualMergeEntity:
+        entity = self.graph_set.get_entity(uri)
+        if entity is None:
+            message = f"Entity not found in GraphSet: {uri}."
+            raise ValueError(message)
+        if isinstance(entity, BibliographicResource | ResponsibleAgent | Identifier):
+            return entity
+        message = f"Entity {uri} has unsupported merge type: {type(entity).__name__}."
+        raise ValueError(message)
+
+    @staticmethod
+    def __merge_entity_type(entity: ManualMergeEntity) -> str:
+        if isinstance(entity, ResponsibleAgent):
+            return "ra"
+        if isinstance(entity, BibliographicResource):
+            return "br"
+        return "id"
+
     def __merge_responsible_agent(
         self,
-        entity_first: ResponsibleAgent | BibliographicResource,
-        other_entity: ResponsibleAgent | BibliographicResource,
+        entity_first: ResponsibleAgent,
+        other_entity: ResponsibleAgent,
         associated_ar_ra: dict[ResponsibleAgent, list[AgentRole]],
     ) -> None:
-        responsible_agent = self.__as_responsible_agent(entity_first)
-        other_responsible_agent = self.__as_responsible_agent(other_entity)
-        self.__debug("\tMerging responsible agent %s in responsible agent %s", other_entity, responsible_agent)
-        responsible_agent.merge(other_responsible_agent)
-        associated_ars = associated_ar_ra.get(other_responsible_agent)
+        self.__debug("\tMerging responsible agent %s in responsible agent %s", other_entity, entity_first)
+        entity_first.merge(other_entity)
+        associated_ars = associated_ar_ra.get(other_entity)
         if associated_ars is not None:
             for ar in associated_ars:
-                ar.is_held_by(responsible_agent)
-                self.__debug("\tUnset %s as helded by of %s", other_responsible_agent, ar)
-                self.__debug("\tSet %s as helded by of %s", responsible_agent, ar)
-        self.__debug("\tMarking to delete: %s", other_responsible_agent)
+                ar.is_held_by(entity_first)
+                self.__debug("\tUnset %s as helded by of %s", other_entity, ar)
+                self.__debug("\tSet %s as helded by of %s", entity_first, ar)
+        self.__debug("\tMarking to delete: %s", other_entity)
 
     def __merge_br_cluster(self, cluster: set[ResponsibleAgent | BibliographicResource]) -> None:
         entity_first_raw, other_entities_raw = self.__ordered_entities(cluster)
-        entity_first = self.__as_bibliographic_resource(entity_first_raw)
+        self.__merge_bibliographic_resources(
+            self.__as_bibliographic_resource(entity_first_raw),
+            [self.__as_bibliographic_resource(other_entity) for other_entity in other_entities_raw],
+        )
+
+    def __merge_bibliographic_resources(
+        self,
+        entity_first: BibliographicResource,
+        other_entities: Iterable[BibliographicResource],
+    ) -> None:
         publisher_first = self.__get_publisher(entity_first)
         entity_first_partofs = self.__get_part_of(entity_first)
 
-        for other_entity_raw in other_entities_raw:
-            other_entity = self.__as_bibliographic_resource(other_entity_raw)
+        for other_entity in other_entities:
             self.__merge_containers(entity_first_partofs, self.__get_part_of(other_entity))
             self.__merge_publisher(publisher_first, other_entity)
             entity_first.merge(other_entity)
@@ -355,7 +501,9 @@ class GraphDeduplicator:
         dict[Identifier, list[BibliographicResource | ResponsibleAgent]],
     ]:
         literal_to_id: dict[str, list[Identifier]] = {}
-        id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]] = {}
+        id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]] = {
+            identifier: [] for identifier in self.graph_set.get_id()
+        }
         entities: list[BibliographicResource | ResponsibleAgent] = list(self.graph_set.get_br())
         entities.extend(list(self.graph_set.get_ra()))
 
@@ -366,7 +514,7 @@ class GraphDeduplicator:
                 if scheme is None or value is None:
                     continue
                 literal = f"{scheme}#{value}"
-                id_to_resources.setdefault(identifier, []).append(entity)
+                id_to_resources[identifier].append(entity)
                 literal_to_id.setdefault(literal, []).append(identifier)
         return literal_to_id, id_to_resources
 
@@ -386,9 +534,26 @@ class GraphDeduplicator:
             schema,
         )
         for actual_id in other_identifiers:
-            merged_identifier.merge(actual_id)
-            self.__replace_identifier(actual_id, merged_identifier, id_to_resources[actual_id])
-            actual_id.mark_as_to_be_deleted()
+            self.__merge_identifier(merged_identifier, actual_id, id_to_resources)
+
+    def __merge_identifiers(
+        self,
+        surviving_identifier: Identifier,
+        merged_identifiers: Iterable[Identifier],
+        id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]],
+    ) -> None:
+        for merged_identifier in merged_identifiers:
+            self.__merge_identifier(surviving_identifier, merged_identifier, id_to_resources)
+
+    def __merge_identifier(
+        self,
+        surviving_identifier: Identifier,
+        merged_identifier: Identifier,
+        id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]],
+    ) -> None:
+        surviving_identifier.merge(merged_identifier)
+        self.__replace_identifier(merged_identifier, surviving_identifier, id_to_resources[merged_identifier])
+        merged_identifier.mark_as_to_be_deleted()
 
     def __ordered_entities(self, entities: Iterable[Entity]) -> tuple[Entity, list[Entity]]:
         entities_by_key = {str(entity): entity for entity in entities}
@@ -488,15 +653,21 @@ class GraphDeduplicator:
 
     def __as_responsible_agent(
         self,
-        entity: ResponsibleAgent | BibliographicResource,
+        entity: ManualMergeEntity,
     ) -> ResponsibleAgent:
         return cast("ResponsibleAgent", entity)
 
     def __as_bibliographic_resource(
         self,
-        entity: ResponsibleAgent | BibliographicResource,
+        entity: ManualMergeEntity,
     ) -> BibliographicResource:
         return cast("BibliographicResource", entity)
+
+    def __as_identifier(
+        self,
+        entity: ManualMergeEntity,
+    ) -> Identifier:
+        return cast("Identifier", entity)
 
 
 __all__ = [

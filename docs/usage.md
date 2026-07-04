@@ -187,4 +187,22 @@ The set contains entity URIs that must be kept if they appear in duplicate clust
 in a cluster, deduplication keeps it. If multiple preferred URIs appear in the same cluster, deduplication raises
 `ValueError`. If none appears, deduplication keeps the first URI in sorted order.
 
+Use `merge_clusters()` when another application has already selected the merge clusters:
+
+```python
+deduplicator = GraphDeduplicator(graph_set=graph_set)
+deduplicator.merge_clusters(
+    {
+        "https://w3id.org/oc/meta/ra/0601": [
+            "https://w3id.org/oc/meta/ra/0602",
+            "https://w3id.org/oc/meta/ra/0603",
+        ],
+    }
+)
+```
+
+`merge_clusters()` uses the mapping keys as surviving entity URIs and merges only the values listed for each key. It
+does not discover additional duplicate clusters. Use `merge_clusters_and_save()` to run the same caller-provided merge
+and then write the graph and provenance through the configured storage.
+
 For provenance generated during deduplication, use the same storage options used for enrichment.

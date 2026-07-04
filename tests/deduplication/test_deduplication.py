@@ -247,6 +247,170 @@ def test_preferred_survivor_rejects_conflicting_cluster_preferences() -> None:
         deduplicator.deduplicate()
 
 
+def test_merge_clusters_merges_responsible_agents_with_distinct_identifiers() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_ra = graph_set.add_ra(RESP_AGENT)
+    first_ra.has_name("Ada Lovelace")
+    add_id(first_ra, "0000-0002-1825-0097", "orcid", graph_set)
+    second_ra = graph_set.add_ra(RESP_AGENT)
+    second_ra.has_name("A. Lovelace")
+    add_id(second_ra, "123456", "viaf", graph_set)
+    author_role = graph_set.add_ar(RESP_AGENT)
+    author_role.create_author()
+    author_role.is_held_by(second_ra)
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_ra): [str(second_ra)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ra()) == [str(first_ra)]
+    assert sorted(identifier_key(identifier) for identifier in first_ra.get_identifiers()) == [
+        "http://purl.org/spar/datacite/orcid0000-0002-1825-0097",
+        "http://purl.org/spar/datacite/viaf123456",
+    ]
+    assert [str(author_role.get_is_held_by())] == [str(first_ra)]
+
+
+def test_merge_clusters_merges_only_requested_bibliographic_resources() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = graph_set.add_br(RESP_AGENT)
+    first_br.create_journal_article()
+    first_br.has_title("First")
+    add_id(first_br, "10.555/first", "doi", graph_set)
+    second_br = graph_set.add_br(RESP_AGENT)
+    second_br.create_journal_article()
+    second_br.has_title("Second")
+    add_id(second_br, "10.555/second", "doi", graph_set)
+    untouched_first_br = _add_article_with_shared_doi(graph_set, "Untouched first")
+    untouched_second_br = _add_article_with_shared_doi(graph_set, "Untouched second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [
+        str(first_br),
+        str(untouched_first_br),
+        str(untouched_second_br),
+    ]
+    assert sorted(identifier_key(identifier) for identifier in first_br.get_identifiers()) == [
+        "http://purl.org/spar/datacite/doi10.555/first",
+        "http://purl.org/spar/datacite/doi10.555/second",
+    ]
+
+
+def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = graph_set.add_br(RESP_AGENT)
+    br.create_journal_article()
+    surviving_identifier = graph_set.add_id(RESP_AGENT)
+    surviving_identifier.create_doi("10.555/first")
+    br.has_identifier(surviving_identifier)
+    merged_identifier = graph_set.add_id(RESP_AGENT)
+    merged_identifier.create_doi("10.555/second")
+    br.has_identifier(merged_identifier)
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_identifier): [str(merged_identifier)]})
+
+    assert _entity_uris_with_triples(graph_set.get_id()) == [str(surviving_identifier)]
+    assert [str(identifier) for identifier in br.get_identifiers()] == [str(surviving_identifier)]
+
+
+def test_merge_clusters_and_save_writes_graph_and_provenance(tmp_path: Path) -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = _add_article_with_shared_doi(graph_set, "First")
+    second_br = _add_article_with_shared_doi(graph_set, "Second")
+    graph_set.commit_changes()
+    graph_path = tmp_path / "merged.rdf"
+    provenance_path = tmp_path / "provenance.rdf"
+
+    GraphDeduplicator(
+        graph_set,
+        single_file_storage(
+            graph_path,
+            provenance_path,
+            output_format="nt11",
+            zip_output=False,
+        ),
+    ).merge_clusters_and_save({str(first_br): [str(second_br)]})
+
+    loaded_graph_set = load_graph_set(graph_path)
+
+    assert graph_path.exists()
+    assert provenance_path.exists()
+    assert _entity_uris_with_triples(loaded_graph_set.get_br()) == [str(first_br)]
+
+
+def test_merge_clusters_rejects_missing_entity_before_mutation() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = _add_article_with_shared_doi(graph_set, "First")
+    graph_set.commit_changes()
+
+    with pytest.raises(ValueError, match="Entity not found"):
+        GraphDeduplicator(graph_set).merge_clusters({str(br): ["https://w3id.org/oc/meta/br/999"]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [str(br)]
+
+
+def test_merge_clusters_rejects_mixed_entity_types_before_mutation() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = _add_article_with_shared_doi(graph_set, "First")
+    ra = _add_responsible_agent_with_orcid(graph_set, "Ada", "Lovelace")
+    graph_set.commit_changes()
+
+    with pytest.raises(ValueError, match="mixes entity types"):
+        GraphDeduplicator(graph_set).merge_clusters({str(br): [str(ra)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [str(br)]
+    assert _entity_uris_with_triples(graph_set.get_ra()) == [str(ra)]
+
+
+def test_merge_clusters_rejects_self_merge_before_mutation() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = _add_article_with_shared_doi(graph_set, "First")
+    graph_set.commit_changes()
+
+    with pytest.raises(ValueError, match="cannot be merged into itself"):
+        GraphDeduplicator(graph_set).merge_clusters({str(br): [str(br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [str(br)]
+
+
+def test_merge_clusters_rejects_entity_assigned_to_multiple_clusters() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_ra = _add_responsible_agent_with_orcid(graph_set, "Ada", "Lovelace")
+    second_ra = _add_responsible_agent_with_orcid(graph_set, "A.", "Lovelace")
+    third_ra = _add_responsible_agent_with_orcid(graph_set, "Augusta", "Lovelace")
+    graph_set.commit_changes()
+
+    with pytest.raises(ValueError, match="already assigned"):
+        GraphDeduplicator(graph_set).merge_clusters(
+            {
+                str(first_ra): [str(second_ra)],
+                str(third_ra): [str(second_ra)],
+            },
+        )
+
+    assert _entity_uris_with_triples(graph_set.get_ra()) == [str(first_ra), str(second_ra), str(third_ra)]
+
+
+def test_merge_clusters_rejects_entity_as_survivor_and_merged_entity() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_ra = _add_responsible_agent_with_orcid(graph_set, "Ada", "Lovelace")
+    second_ra = _add_responsible_agent_with_orcid(graph_set, "A.", "Lovelace")
+    third_ra = _add_responsible_agent_with_orcid(graph_set, "Augusta", "Lovelace")
+    graph_set.commit_changes()
+
+    with pytest.raises(ValueError, match="cannot be both survivor and merged entity"):
+        GraphDeduplicator(graph_set).merge_clusters(
+            {
+                str(first_ra): [str(second_ra)],
+                str(second_ra): [str(third_ra)],
+            },
+        )
+
+    assert _entity_uris_with_triples(graph_set.get_ra()) == [str(first_ra), str(second_ra), str(third_ra)]
+
+
 def test_provenance_configuration_is_forwarded_to_prov_set() -> None:
     counter_handler = _CounterHandler()
     storage = single_file_storage(
