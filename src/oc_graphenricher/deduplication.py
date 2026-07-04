@@ -76,8 +76,12 @@ class GraphDeduplicator:
             - the configured graph output without the duplicates.
             - the configured provenance output tracking the changes done.
         """
-        self.deduplicate()
-        self.save()
+        self.__deduplicate_responsible_agents()
+        self.__save_and_commit()
+        self.__deduplicate_bibliographic_resources()
+        self.__save_and_commit()
+        self.__deduplicate_identifiers()
+        self.__save_and_commit()
         return self.graph_set
 
     def deduplicate(self) -> GraphSet:
@@ -88,9 +92,14 @@ class GraphDeduplicator:
         return self.graph_set
 
     def merge_clusters(self, clusters: Mapping[str, Iterable[str]]) -> GraphSet:
+        self.__merge_clusters(clusters)
+        self.graph_set.commit_changes()
+        return self.graph_set
+
+    def __merge_clusters(self, clusters: Mapping[str, Iterable[str]]) -> None:
         normalized_clusters = self.__manual_merge_clusters(clusters)
         if not normalized_clusters:
-            return self.graph_set
+            return
 
         associated_ar_ra = self.__get_association_ar_ra()
         _, id_to_resources = self.__id_maps()
@@ -116,12 +125,10 @@ class GraphDeduplicator:
                 )
 
         self.modified_entities.update(self.prov.generate_provenance())
-        self.graph_set.commit_changes()
-        return self.graph_set
 
     def merge_clusters_and_save(self, clusters: Mapping[str, Iterable[str]]) -> GraphSet:
-        self.merge_clusters(clusters)
-        self.save()
+        self.__merge_clusters(clusters)
+        self.__save_and_commit()
         return self.graph_set
 
     def save(self) -> None:
@@ -134,6 +141,11 @@ class GraphDeduplicator:
         store_graph_set(self.graph_set, storage)
         store_provenance(self.prov, storage)
 
+    def __save_and_commit(self) -> None:
+        self.save()
+        self.graph_set.commit_changes()
+        self.modified_entities.clear()
+
     def deduplicate_responsible_agents(self) -> None:
         """
         Discover Responsible Agents (RAs) that share the same identifier literal.
@@ -141,6 +153,10 @@ class GraphDeduplicator:
         The process creates a graph of duplicate entities, merges each connected component into one RA, updates Agent
         Role references, generates provenance and commits pending changes in the graph set.
         """
+        self.__deduplicate_responsible_agents()
+        self.graph_set.commit_changes()
+
+    def __deduplicate_responsible_agents(self) -> None:
         associated_ar_ra = self.__get_association_ar_ra()
         clusters = self.__sorted_clusters(
             self.__merge_graph(self.graph_set.get_ra(), "[dedup-RA] Will merge %s and %s due to %s:%s in common"),
@@ -159,7 +175,6 @@ class GraphDeduplicator:
                 )
 
         self.modified_entities.update(self.prov.generate_provenance())
-        self.graph_set.commit_changes()
 
     def deduplicate_bibliographic_resources(self) -> None:
         """
@@ -168,6 +183,10 @@ class GraphDeduplicator:
         The process creates a graph of duplicate BRs, merges each connected component into one BR, merges containers and
         publishers where possible, generates provenance and commits pending changes in the graph set.
         """
+        self.__deduplicate_bibliographic_resources()
+        self.graph_set.commit_changes()
+
+    def __deduplicate_bibliographic_resources(self) -> None:
         clusters = self.__sorted_clusters(
             self.__merge_graph(self.graph_set.get_br(), "[dedup-BR] Will merge %s into %s due to %s:%s in common"),
         )
@@ -178,7 +197,6 @@ class GraphDeduplicator:
             self.__merge_br_cluster(cluster)
 
         self.modified_entities.update(self.prov.generate_provenance())
-        self.graph_set.commit_changes()
 
     def deduplicate_identifiers(self) -> None:
         """
@@ -187,13 +205,16 @@ class GraphDeduplicator:
         IDs are duplicates when they share the same schema and literal. The process merges duplicates into one ID,
         substitutes references with the merged ID, generates provenance and commits pending changes in the graph set.
         """
+        self.__deduplicate_identifiers()
+        self.graph_set.commit_changes()
+
+    def __deduplicate_identifiers(self) -> None:
         literal_to_id, id_to_resources = self.__id_maps()
         for literal, identifiers in literal_to_id.items():
             if len(identifiers) > 1:
                 self.__merge_identifier_group(literal, identifiers, id_to_resources)
 
         self.modified_entities.update(self.prov.generate_provenance())
-        self.graph_set.commit_changes()
 
     def __merge_graph(
         self,

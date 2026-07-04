@@ -5,21 +5,19 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from oc_ocdm.storer import Storer
 
 from oc_graphenricher.storage import DirectoryStorage, Storage
 
 if TYPE_CHECKING:
-    from oc_ocdm.abstract_entity import AbstractEntity
-    from oc_ocdm.abstract_set import AbstractSet
     from oc_ocdm.graph.graph_set import GraphSet
     from oc_ocdm.prov.prov_set import ProvSet
 
 
 def store_graph_set(graph_set: GraphSet, storage: Storage) -> None:
-    storer = _storer(cast("AbstractSet[AbstractEntity]", graph_set), storage)
+    storer = _storer(graph_set, storage)
     if isinstance(storage, DirectoryStorage):
         storer.store_all(
             _directory_output(storage.output_dir),
@@ -32,7 +30,7 @@ def store_graph_set(graph_set: GraphSet, storage: Storage) -> None:
 
 
 def store_provenance(provenance: ProvSet, storage: Storage) -> None:
-    storer = _storer(cast("AbstractSet[AbstractEntity]", provenance), storage)
+    storer = _storer(provenance, storage)
     if isinstance(storage, DirectoryStorage):
         storer.store_all(
             _directory_output(storage.output_dir),
@@ -44,7 +42,7 @@ def store_provenance(provenance: ProvSet, storage: Storage) -> None:
         storer.store_graphs_in_file(storage.provenance_path, storage.context_path)
 
 
-def _storer(entity_set: AbstractSet[AbstractEntity], storage: Storage) -> Storer:
+def _storer(entity_set: GraphSet | ProvSet, storage: Storage) -> Storer:
     if isinstance(storage, DirectoryStorage):
         return Storer(
             entity_set,

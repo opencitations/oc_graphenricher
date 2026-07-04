@@ -6,6 +6,7 @@
 from collections.abc import Iterable
 from pathlib import Path
 
+import orjson
 import pytest
 from oc_ocdm.counter_handler import CounterHandler
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
@@ -14,7 +15,7 @@ from oc_ocdm.graph.entities.identifier import Identifier
 from oc_ocdm.graph.graph_set import GraphSet
 
 from oc_graphenricher.deduplication import GraphDeduplicator
-from oc_graphenricher.storage import single_file_storage
+from oc_graphenricher.storage import directory_storage, single_file_storage
 from tests.helpers import BASE_IRI, RESP_AGENT, add_id, load_graph_set
 
 EXPECTED_BR_CONTRIBUTOR_COUNTS = {
@@ -338,6 +339,44 @@ def test_merge_clusters_and_save_writes_graph_and_provenance(tmp_path: Path) -> 
     assert graph_path.exists()
     assert provenance_path.exists()
     assert _entity_uris_with_triples(loaded_graph_set.get_br()) == [str(first_br)]
+
+
+def test_merge_clusters_and_save_removes_deleted_entities_from_existing_directory_storage(tmp_path: Path) -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = _add_article_with_shared_doi(graph_set, "First")
+    second_br = _add_article_with_shared_doi(graph_set, "Second")
+    graph_set.commit_changes()
+    output_dir = tmp_path / "ocdm"
+    storage = directory_storage(output_dir, supplier_prefix="060", zip_output=False)
+    deduplicator = GraphDeduplicator(graph_set, storage)
+    deduplicator.save()
+
+    deduplicator.merge_clusters_and_save({str(first_br): [str(second_br)]})
+
+    graph_path = output_dir / "br" / "060" / "10000" / "1000.json"
+    data = orjson.loads(graph_path.read_bytes())
+    entity_uris = sorted(entity["@id"] for graph in data for entity in graph.get("@graph", []))
+
+    assert entity_uris == [str(first_br)]
+
+
+def test_deduplicate_and_save_removes_deleted_entities_from_directory_storage(tmp_path: Path) -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = _add_article_with_shared_doi(graph_set, "First")
+    _add_article_with_shared_doi(graph_set, "Second")
+    graph_set.commit_changes()
+    output_dir = tmp_path / "ocdm"
+
+    GraphDeduplicator(
+        graph_set,
+        directory_storage(output_dir, supplier_prefix="060", zip_output=False),
+    ).deduplicate_and_save()
+
+    graph_path = output_dir / "br" / "060" / "10000" / "1000.json"
+    data = orjson.loads(graph_path.read_bytes())
+    entity_uris = sorted(entity["@id"] for graph in data for entity in graph.get("@graph", []))
+
+    assert entity_uris == [str(first_br)]
 
 
 def test_merge_clusters_rejects_missing_entity_before_mutation() -> None:
