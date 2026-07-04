@@ -1,3 +1,18 @@
+# [2.0.0](https://github.com/opencitations/oc_graphenricher/compare/v1.0.1...v2.0.0) (2026-07-04)
+
+
+* feat!: rename instance matching API to deduplication [release] ([535db22](https://github.com/opencitations/oc_graphenricher/commit/535db22f3c556067c6d5d21dc1bc43de236a67c2))
+
+
+### Features
+
+* move provenance settings into storage ([f4084a6](https://github.com/opencitations/oc_graphenricher/commit/f4084a6448c4f2981f30ea0ab7698864b2897db2))
+
+
+### BREAKING CHANGES
+
+* `InstanceMatching` is replaced by `GraphDeduplicator` in `oc_graphenricher.deduplication`. `match()` is replaced by `deduplicate_and_save()`, `GraphEnricher` now takes `graph_set` instead of `g_set`, `serialize_in_the_middle` is replaced by `checkpoint_interval`, and `WikiData` is renamed to `Wikidata`.
+
 ## [1.0.1](https://github.com/opencitations/oc_graphenricher/compare/v1.0.0...v1.0.1) (2026-07-03)
 
 
