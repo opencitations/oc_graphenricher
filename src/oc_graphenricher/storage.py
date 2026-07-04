@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
     from oc_ocdm._types import ContextMap
+    from oc_ocdm.counter_handler import CounterHandler
     from oc_ocdm.support.reporter import Reporter
 
 PathInput: TypeAlias = str | PathLike[str]
@@ -26,6 +27,10 @@ class SingleFileStorage:
     context_map: ContextMap | None = None
     context_path: str | None = None
     modified_entities: set[str] | None = None
+    supplier_prefix: str = ""
+    info_dir: str | None = ""
+    wanted_label: bool = True
+    counter_handler: CounterHandler | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +47,9 @@ class DirectoryStorage:
     context_path: str | None = None
     modified_entities: set[str] | None = None
     process_id: int | str | None = None
+    info_dir: str | None = ""
+    wanted_label: bool = True
+    counter_handler: CounterHandler | None = None
 
 
 Storage: TypeAlias = SingleFileStorage | DirectoryStorage
@@ -58,6 +66,10 @@ def single_file_storage(
     context_map: ContextMap | None = None,
     context_path: str | None = None,
     modified_entities: set[str] | None = None,
+    supplier_prefix: str = "",
+    info_dir: str | None = "",
+    wanted_label: bool = True,
+    counter_handler: CounterHandler | None = None,
 ) -> SingleFileStorage:
     return SingleFileStorage(
         graph_path=fspath(graph_path),
@@ -69,6 +81,10 @@ def single_file_storage(
         context_map=context_map,
         context_path=context_path,
         modified_entities=modified_entities,
+        supplier_prefix=supplier_prefix,
+        info_dir=info_dir,
+        wanted_label=wanted_label,
+        counter_handler=counter_handler,
     )
 
 
@@ -86,6 +102,9 @@ def directory_storage(
     context_path: str | None = None,
     modified_entities: set[str] | None = None,
     process_id: int | str | None = None,
+    info_dir: str | None = "",
+    wanted_label: bool = True,
+    counter_handler: CounterHandler | None = None,
 ) -> DirectoryStorage:
     if items_per_directory < 0:
         message = "items_per_directory must be greater than or equal to 0."
@@ -110,6 +129,9 @@ def directory_storage(
         context_path=context_path,
         modified_entities=modified_entities,
         process_id=process_id,
+        info_dir=info_dir,
+        wanted_label=wanted_label,
+        counter_handler=counter_handler,
     )
 
 

@@ -47,7 +47,6 @@ class GraphEnricher:
         g_set: GraphSet,
         storage: Storage,
         *,
-        info_dir: str = "",
         debug: bool = False,
         serialize_in_the_middle: bool = False,
         use_wikidata: bool = True,
@@ -61,7 +60,6 @@ class GraphEnricher:
 
         :param g_set: graph set to be enriched.
         :param storage: output storage configuration
-        :param info_dir: the path to the counters directory
         :param debug: a bool flag to enable richer output
         :param serialize_in_the_middle: a bool flag to enable the serialization each 50 Bibliographic Resources (BRs)
         processed (the resulting file will be always overwritten, this may slow the whole process)
@@ -81,7 +79,6 @@ class GraphEnricher:
         self.debug = debug
         self.new_id_found = 0
         self.storage = storage
-        self.info_dir = info_dir
         self.serialize_in_the_middle = serialize_in_the_middle
         self.use_wikidata = use_wikidata
         self.use_viaf = use_viaf
@@ -315,9 +312,19 @@ class GraphEnricher:
 
     def __serialize_graphs(self) -> None:
         store_graph_set(self.g_set, self.storage)
-        prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=self.info_dir)
+        prov = self.__provenance()
         prov.generate_provenance()
         store_provenance(prov, self.storage)
+
+    def __provenance(self) -> ProvSet:
+        return ProvSet(
+            self.g_set,
+            self.g_set.base_iri,
+            info_dir=self.storage.info_dir,
+            wanted_label=self.storage.wanted_label,
+            custom_counter_handler=self.storage.counter_handler,
+            supplier_prefix=self.storage.supplier_prefix,
+        )
 
     def _add_id(
         self,

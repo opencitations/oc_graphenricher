@@ -7,7 +7,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from dataclasses import replace
+from typing import TYPE_CHECKING, TypeVar, cast
 
 import Levenshtein
 import networkx as nx
@@ -29,17 +30,18 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 NAME_SIMILARITY_THRESHOLD = 0.95
+Entity = TypeVar("Entity")
 
 
 class InstanceMatching:
     def __init__(
         self,
         g_set: GraphSet,
-        storage: Storage,
+        storage: Storage | None = None,
         *,
-        info_dir: str = "",
         debug: bool = False,
         merge_similar_named_contributors: bool = False,
+        preferred_survivors: set[str] | None = None,
     ) -> None:
         """
         Initialize the matcher.
@@ -48,15 +50,17 @@ class InstanceMatching:
 
         :param g_set: input graph set
         :param storage: output storage configuration
-        :param info_dir: the path to the counters directory
         :param debug: a bool flag to enable richer output
         :param merge_similar_named_contributors: merge contributor roles with similar author names within merged BRs
+        :param preferred_survivors: entity URIs to keep when they appear in duplicate clusters
         """
         self.g_set = g_set
         self.storage = storage
         self.debug = debug
         self.merge_similar_named_contributors = merge_similar_named_contributors
-        self.prov = ProvSet(self.g_set, self.g_set.base_iri, info_dir=info_dir)
+        self.preferred_survivors = preferred_survivors if preferred_survivors is not None else set()
+        self.modified_entities: set[str] = set()
+        self.prov = self.__provenance()
 
     def match(self) -> GraphSet:
         """
@@ -71,10 +75,15 @@ class InstanceMatching:
             - the configured graph output without the duplicates.
             - the configured provenance output tracking the changes done.
         """
+        self.deduplicate()
+        self.save()
+        return self.g_set
+
+    def deduplicate(self) -> GraphSet:
+        """Start the matching process without serializing the graph set or provenance."""
         self.instance_matching_ra()
         self.instance_matching_br()
         self.instance_matching_id()
-        self.save()
         return self.g_set
 
     def save(self) -> None:
@@ -83,8 +92,9 @@ class InstanceMatching:
 
         Serialize the provenance in another specified RDF file.
         """
-        store_graph_set(self.g_set, self.storage)
-        store_provenance(self.prov, self.storage)
+        storage = self.__storage()
+        store_graph_set(self.g_set, storage)
+        store_provenance(self.prov, storage)
 
     def instance_matching_ra(self) -> None:
         """
@@ -100,12 +110,12 @@ class InstanceMatching:
         LOGGER.info("[IM-RA] Number of clusters: %s", len(clusters))
 
         for cluster_index, cluster in enumerate(clusters):
-            entity_first, other_entities = self.__ordered_cluster(cluster)
+            entity_first, other_entities = self.__ordered_entities(cluster)
             self.__debug("[IM-RA] Merging cluster #%s, with %s entities", cluster_index, len(cluster))
             for other_entity in other_entities:
                 self.__merge_responsible_agent(entity_first, other_entity, associated_ar_ra)
 
-        self.prov.generate_provenance()
+        self.modified_entities.update(self.prov.generate_provenance())
         self.g_set.commit_changes()
 
     def instance_matching_br(self) -> None:
@@ -124,7 +134,7 @@ class InstanceMatching:
             self.__debug("[IM-BR] Merging cluster #%s, with %s entities", cluster_index, len(cluster))
             self.__merge_br_cluster(cluster)
 
-        self.prov.generate_provenance()
+        self.modified_entities.update(self.prov.generate_provenance())
         self.g_set.commit_changes()
 
     def instance_matching_id(self) -> None:
@@ -139,7 +149,7 @@ class InstanceMatching:
             if len(identifiers) > 1:
                 self.__merge_identifier_group(literal, identifiers, id_to_resources)
 
-        self.prov.generate_provenance()
+        self.modified_entities.update(self.prov.generate_provenance())
         self.g_set.commit_changes()
 
     def __merge_graph(
@@ -173,15 +183,6 @@ class InstanceMatching:
     def __sorted_clusters(self, merge_graph: nx.Graph) -> list[set[ResponsibleAgent | BibliographicResource]]:
         return sorted(nx.connected_components(merge_graph), key=len, reverse=True)
 
-    def __ordered_cluster(
-        self,
-        cluster: set[ResponsibleAgent | BibliographicResource],
-    ) -> tuple[ResponsibleAgent | BibliographicResource, list[ResponsibleAgent | BibliographicResource]]:
-        entities_by_key = {str(entity): entity for entity in cluster}
-        sorted_keys = sorted(entities_by_key)
-        entity_first = entities_by_key[sorted_keys[0]]
-        return entity_first, [entities_by_key[key] for key in sorted_keys[1:]]
-
     def __merge_responsible_agent(
         self,
         entity_first: ResponsibleAgent | BibliographicResource,
@@ -201,7 +202,7 @@ class InstanceMatching:
         self.__debug("\tMarking to delete: %s", other_responsible_agent)
 
     def __merge_br_cluster(self, cluster: set[ResponsibleAgent | BibliographicResource]) -> None:
-        entity_first_raw, other_entities_raw = self.__ordered_cluster(cluster)
+        entity_first_raw, other_entities_raw = self.__ordered_entities(cluster)
         entity_first = self.__as_bibliographic_resource(entity_first_raw)
         publisher_first = self.__get_publisher(entity_first)
         entity_first_partofs = self.__get_part_of(entity_first)
@@ -376,7 +377,7 @@ class InstanceMatching:
         id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]],
     ) -> None:
         schema, value = literal.split("#", maxsplit=1)
-        merged_identifier = identifiers[0]
+        merged_identifier, other_identifiers = self.__ordered_entities(identifiers)
         self.__debug(
             "[IM-ID] Will merge %s identifiers into %s because they share literal %s and schema %s",
             len(identifiers) - 1,
@@ -384,10 +385,49 @@ class InstanceMatching:
             value,
             schema,
         )
-        for actual_id in identifiers[1:]:
+        for actual_id in other_identifiers:
             merged_identifier.merge(actual_id)
             self.__replace_identifier(actual_id, merged_identifier, id_to_resources[actual_id])
             actual_id.mark_as_to_be_deleted()
+
+    def __ordered_entities(self, entities: Iterable[Entity]) -> tuple[Entity, list[Entity]]:
+        entities_by_key = {str(entity): entity for entity in entities}
+        sorted_keys = sorted(entities_by_key)
+        if not sorted_keys:
+            message = "Cannot order an empty entity group."
+            raise ValueError(message)
+        surviving_key = self.__surviving_key(sorted_keys)
+        return entities_by_key[surviving_key], [entities_by_key[key] for key in sorted_keys if key != surviving_key]
+
+    def __surviving_key(self, sorted_keys: list[str]) -> str:
+        cluster_keys = set(sorted_keys)
+        preferred_keys = sorted(cluster_keys & self.preferred_survivors)
+        if len(preferred_keys) > 1:
+            message = f"Conflicting preferred survivors for merge cluster {sorted_keys}: {preferred_keys}."
+            raise ValueError(message)
+        if preferred_keys:
+            return preferred_keys[0]
+        return sorted_keys[0]
+
+    def __storage(self) -> Storage:
+        if self.storage is None:
+            message = "storage is required to save matched graph and provenance."
+            raise ValueError(message)
+        if self.storage.modified_entities is not None:
+            return self.storage
+        return replace(self.storage, modified_entities=set(self.modified_entities))
+
+    def __provenance(self) -> ProvSet:
+        if self.storage is None:
+            return ProvSet(self.g_set, self.g_set.base_iri)
+        return ProvSet(
+            self.g_set,
+            self.g_set.base_iri,
+            info_dir=self.storage.info_dir,
+            wanted_label=self.storage.wanted_label,
+            custom_counter_handler=self.storage.counter_handler,
+            supplier_prefix=self.storage.supplier_prefix,
+        )
 
     def __replace_identifier(
         self,

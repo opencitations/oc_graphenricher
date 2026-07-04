@@ -63,6 +63,7 @@ def _storer(entity_set: AbstractSet[AbstractEntity], storage: Storage) -> Storer
         repok=storage.repok,
         reperr=storage.reperr,
         context_map=storage.context_map,
+        default_dir=storage.supplier_prefix,
         output_format=storage.output_format,
         zip_output=storage.zip_output,
         modified_entities=storage.modified_entities,

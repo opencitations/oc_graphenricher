@@ -65,6 +65,9 @@ InstanceMatching(
 By default, `InstanceMatching` does not merge contributor roles only because author names are similar. To enable that
 opt-in behavior, pass `merge_similar_named_contributors=True`.
 
+Use `deduplicate()` instead of `match()` when another application needs to manage storage or provenance output itself.
+Use `preferred_survivors` with a set of entity URIs to keep selected entities when duplicate clusters are merged.
+
 For configuration options and usage details, see the documentation.
 
 ## License
