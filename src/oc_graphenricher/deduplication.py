@@ -635,10 +635,10 @@ class GraphDeduplicator:
         if not sorted_keys:
             message = "Cannot order an empty entity group."
             raise ValueError(message)
-        surviving_key = self.__surviving_key(sorted_keys)
+        surviving_key = self.__surviving_key(entities_by_key, sorted_keys)
         return entities_by_key[surviving_key], [entities_by_key[key] for key in sorted_keys if key != surviving_key]
 
-    def __surviving_key(self, sorted_keys: list[str]) -> str:
+    def __surviving_key(self, entities_by_key: Mapping[str, Entity], sorted_keys: list[str]) -> str:
         cluster_keys = set(sorted_keys)
         preferred_keys = sorted(cluster_keys & self.preferred_survivors)
         if len(preferred_keys) > 1:
@@ -646,7 +646,45 @@ class GraphDeduplicator:
             raise ValueError(message)
         if preferred_keys:
             return preferred_keys[0]
-        return sorted_keys[0]
+        return min(
+            sorted_keys,
+            key=lambda key: self.__survivor_sort_key(entities_by_key[key], key),
+        )
+
+    @classmethod
+    def __survivor_sort_key(cls, entity: object, entity_key: str) -> tuple[int | str, ...]:
+        quality = cls.__entity_quality(entity)
+        return (*[-value for value in quality], entity_key)
+
+    @staticmethod
+    def __entity_quality(entity: object) -> tuple[int, ...]:
+        if isinstance(entity, BibliographicResource):
+            pub_date = entity.get_pub_date()
+            return (
+                int(entity.get_title() is not None),
+                len(pub_date) if pub_date is not None else 0,
+                int(entity.get_subtitle() is not None),
+                int(entity.get_is_part_of() is not None),
+                int(entity.get_number() is not None),
+                int(entity.get_edition() is not None),
+                len(entity.get_types()),
+            )
+        if isinstance(entity, ResponsibleAgent):
+            name_parts = [
+                entity.get_name(),
+                entity.get_given_name(),
+                entity.get_family_name(),
+            ]
+            return (
+                sum(name is not None for name in name_parts),
+                sum(len(name) for name in name_parts if name is not None),
+            )
+        if isinstance(entity, Identifier):
+            return (
+                int(entity.get_scheme() is not None),
+                int(entity.get_literal_value() is not None),
+            )
+        return (0,)
 
     def __storage(self) -> Storage:
         if self.storage is None:

@@ -186,6 +186,35 @@ def test_preferred_survivor_keeps_requested_bibliographic_resource() -> None:
     assert _entity_uris_with_triples(graph_set.get_br()) == [str(second_br)]
 
 
+def test_deduplicate_keeps_more_informative_bibliographic_resource_without_preference() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = _add_article_with_shared_doi(graph_set, "Shared title")
+    first_br.has_pub_date("2020")
+    second_br = _add_article_with_shared_doi(graph_set, "Shared title")
+    second_br.has_subtitle("Detailed subtitle")
+    second_br.has_pub_date("2020-05-12")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).deduplicate_bibliographic_resources()
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [str(second_br)]
+    assert second_br.get_pub_date() == "2020-05-12"
+    assert second_br.get_subtitle() == "Detailed subtitle"
+
+
+def test_deduplicate_keeps_more_informative_responsible_agent_without_preference() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    _add_responsible_agent_with_orcid(graph_set, "A.", "Lovelace")
+    second_ra = _add_responsible_agent_with_orcid(graph_set, "Ada", "Lovelace")
+    second_ra.has_name("Ada Lovelace")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).deduplicate_responsible_agents()
+
+    assert _entity_uris_with_triples(graph_set.get_ra()) == [str(second_ra)]
+    assert second_ra.get_name() == "Ada Lovelace"
+
+
 def test_preferred_survivor_keeps_requested_responsible_agent() -> None:
     graph_set = GraphSet(BASE_IRI)
     first_ra = _add_responsible_agent_with_orcid(graph_set, "Ada", "Lovelace")

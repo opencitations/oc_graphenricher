@@ -189,7 +189,7 @@ deduplicated_graph_set = GraphDeduplicator(
 
 The set contains entity URIs that must be kept if they appear in duplicate clusters. If exactly one preferred URI appears
 in a cluster, deduplication keeps it. If multiple preferred URIs appear in the same cluster, deduplication raises
-`ValueError`. If none appears, deduplication keeps the first URI in sorted order.
+`ValueError`. If none appears, deduplication keeps the entity with more functional metadata. Ties use URI order.
 
 Use `merge_clusters()` when another application has already selected the merge clusters:
 
