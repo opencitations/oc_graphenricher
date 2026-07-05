@@ -1,3 +1,10 @@
+## [2.1.3](https://github.com/opencitations/oc_graphenricher/compare/v2.1.2...v2.1.3) (2026-07-05)
+
+
+### Bug Fixes
+
+* **deduplication:** preserve more informative duplicate survivor [release] ([732e864](https://github.com/opencitations/oc_graphenricher/commit/732e8648d4faeb02573211d17520ed2ad0fe1a7f))
+
 ## [2.1.2](https://github.com/opencitations/oc_graphenricher/compare/v2.1.1...v2.1.2) (2026-07-04)
 
 
