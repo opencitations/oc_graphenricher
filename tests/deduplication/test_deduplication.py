@@ -707,6 +707,111 @@ def test_merge_clusters_keeps_survivor_publisher_responsible_agent() -> None:
     assert str(surviving_publisher.get_is_held_by()) == str(surviving_agent)
 
 
+def _journal_with_issn(graph_set: GraphSet, issn: str) -> BibliographicResource:
+    journal = graph_set.add_br(RESP_AGENT)
+    journal.create_journal()
+    add_id(journal, issn, "issn", graph_set)
+    return journal
+
+
+def _add_role_held_by(
+    graph_set: GraphSet,
+    br: BibliographicResource,
+    agent: ResponsibleAgent,
+    *,
+    editor: bool = False,
+) -> AgentRole:
+    role = graph_set.add_ar(RESP_AGENT)
+    if editor:
+        role.create_editor()
+    else:
+        role.create_publisher()
+    role.is_held_by(agent)
+    br.has_contributor(role)
+    return role
+
+
+def test_merge_clusters_merges_cascaded_container_publishers_held_by_the_same_agent() -> None:
+    # The publisher's responsible agent is loaded without a name or identifier, as
+    # happens when the merge closure omits the agent two hops behind the role.
+    graph_set = GraphSet(BASE_IRI)
+    agent = graph_set.add_ra(RESP_AGENT)
+    first_journal = _journal_with_issn(graph_set, "1234-5678")
+    surviving_publisher = _add_role_held_by(graph_set, first_journal, agent)
+    surviving_article = _article_in_container(graph_set, first_journal, "Survivor")
+    second_journal = _journal_with_issn(graph_set, "1234-5678")
+    _add_role_held_by(graph_set, second_journal, agent)
+    merged_article = _article_in_container(graph_set, second_journal, "Merged")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_article): [str(merged_article)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == sorted(
+        [str(surviving_article), str(first_journal)],
+    )
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_publisher)]
+
+
+def test_merge_clusters_merges_cascaded_container_publishers_that_share_an_identifier() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_journal = _journal_with_issn(graph_set, "1234-5678")
+    surviving_publisher = _add_publisher(graph_set, first_journal, identifier="crossref-1")
+    surviving_article = _article_in_container(graph_set, first_journal, "Survivor")
+    second_journal = _journal_with_issn(graph_set, "1234-5678")
+    _add_publisher(graph_set, second_journal, identifier="crossref-1")
+    merged_article = _article_in_container(graph_set, second_journal, "Merged")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_article): [str(merged_article)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_publisher)]
+
+
+def test_merge_clusters_keeps_cascaded_container_publishers_with_conflicting_identifiers() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_journal = _journal_with_issn(graph_set, "1234-5678")
+    surviving_publisher = _add_publisher(graph_set, first_journal, identifier="crossref-1")
+    surviving_article = _article_in_container(graph_set, first_journal, "Survivor")
+    second_journal = _journal_with_issn(graph_set, "1234-5678")
+    merged_publisher = _add_publisher(graph_set, second_journal, identifier="crossref-2")
+    merged_article = _article_in_container(graph_set, second_journal, "Merged")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_article): [str(merged_article)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == sorted(
+        [str(surviving_publisher), str(merged_publisher)],
+    )
+
+
+def test_merge_clusters_merges_cascaded_container_editors_held_by_the_same_agent() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    journal = _journal_with_issn(graph_set, "1234-5678")
+    agent = graph_set.add_ra(RESP_AGENT)
+
+    first_volume = graph_set.add_br(RESP_AGENT)
+    first_volume.create_volume()
+    first_volume.has_number("5")
+    first_volume.is_part_of(journal)
+    surviving_editor = _add_role_held_by(graph_set, first_volume, agent, editor=True)
+    surviving_article = _article_in_container(graph_set, first_volume, "Survivor")
+
+    second_volume = graph_set.add_br(RESP_AGENT)
+    second_volume.create_volume()
+    second_volume.has_number("5")
+    second_volume.is_part_of(journal)
+    _add_role_held_by(graph_set, second_volume, agent, editor=True)
+    merged_article = _article_in_container(graph_set, second_volume, "Merged")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_article): [str(merged_article)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == sorted(
+        [str(surviving_article), str(journal), str(first_volume)],
+    )
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_editor)]
+
+
 def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:
     graph_set = GraphSet(BASE_IRI)
     br = graph_set.add_br(RESP_AGENT)

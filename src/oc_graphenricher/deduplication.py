@@ -463,7 +463,12 @@ class GraphDeduplicator:
             if second_partof is None or first_partof.res == second_partof.res:
                 continue
             if parent_merged and self.__containers_are_equivalent(first_partof, second_partof):
+                # Deduplicate the container's contributors the same way the article
+                # level does: a raw merge would union the merged container's publisher
+                # and editor roles onto the survivor, leaving duplicates behind.
+                self.__merge_publisher(self.__get_publisher(first_partof), second_partof)
                 first_partof.merge(second_partof, prefer_self=True)
+                self.__deduplicate_contributors_for_bibliographic_resources([first_partof])
                 self.__debug("\tMerging container %s in container %s", second_partof, first_partof)
             else:
                 parent_merged = False
@@ -534,6 +539,11 @@ class GraphDeduplicator:
         second_agent = second.get_is_held_by()
         if first_agent is None or second_agent is None:
             return False
+        # The responsible agent behind a publisher role is often outside the loaded
+        # closure, so its identifiers and name are unavailable; two roles held by the
+        # same agent URI are the same publisher regardless of what data is loaded.
+        if str(first_agent.res) == str(second_agent.res):
+            return True
         first_signatures = self.__identifier_signatures(first_agent)
         second_signatures = self.__identifier_signatures(second_agent)
         if first_signatures and second_signatures:
