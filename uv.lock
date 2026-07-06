@@ -1103,7 +1103,7 @@ wheels = [
 
 [[package]]
 name = "oc-graphenricher"
-version = "2.1.5"
+version = "2.1.6"
 source = { editable = "." }
 dependencies = [
     { name = "levenshtein" },

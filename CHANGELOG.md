@@ -1,3 +1,10 @@
+## [2.1.6](https://github.com/opencitations/oc_graphenricher/compare/v2.1.5...v2.1.6) (2026-07-06)
+
+
+### Bug Fixes
+
+* **deduplication:** Reject manual BR merges that would collapse a typed container into an incompatible BR type [release] ([ed7ead3](https://github.com/opencitations/oc_graphenricher/commit/ed7ead33ab5a5b435790e5c84eabb4c29b967203))
+
 ## [2.1.5](https://github.com/opencitations/oc_graphenricher/compare/v2.1.4...v2.1.5) (2026-07-06)
 
 
