@@ -1,3 +1,10 @@
+## [2.1.8](https://github.com/opencitations/oc_graphenricher/compare/v2.1.7...v2.1.8) (2026-07-06)
+
+
+### Bug Fixes
+
+* **deduplication:** splice duplicate contributor out of the author order [release] ([5252604](https://github.com/opencitations/oc_graphenricher/commit/525260410f97bd117cc8c5ac6e944bf7930d8c02))
+
 ## [2.1.7](https://github.com/opencitations/oc_graphenricher/compare/v2.1.6...v2.1.7) (2026-07-06)
 
 
