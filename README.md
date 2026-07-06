@@ -78,3 +78,17 @@ For configuration options and usage details, see the documentation.
 ## License
 
 Distributed under the ISC License. See [LICENSE](LICENSE).
+
+<!-- software-citation-action:start -->
+To cite the latest version of this software (2.1.6), use this BibTeX entry:
+
+```bibtex
+@software{oc-graphenricher-2.1.6,
+author = {Gabriele Pisciotta and Arcangelo Massari and Elia Rizzetto and Arianna Moretti and Ilaria De Dominicis and Silvio Peroni and Simone Persiani and Davide Brembilla},
+title = {oc-graphenricher},
+url = {https://archive.softwareheritage.org/swh:1:snp:7d108c30cd4d74785b209d54752caa3294dc5a9c;origin=https://github.com/opencitations/oc_graphenricher},
+version = {2.1.6},
+year = {2026}
+}
+```
+<!-- software-citation-action:end -->

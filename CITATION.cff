@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using these metadata.
+title: oc-graphenricher
+authors:
+  - name: Gabriele Pisciotta
+  - name: Arcangelo Massari
+  - name: Elia Rizzetto
+  - name: Arianna Moretti
+  - name: Ilaria De Dominicis
+  - name: Silvio Peroni
+  - name: Simone Persiani
+  - name: Davide Brembilla
+version: 2.1.6
+date-released: '2026-07-06'
+url: https://archive.softwareheritage.org/swh:1:snp:7d108c30cd4d74785b209d54752caa3294dc5a9c;origin=https://github.com/opencitations/oc_graphenricher
