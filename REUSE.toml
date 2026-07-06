@@ -3,6 +3,7 @@ version = 1
 [[annotations]]
 path = [
     ".releaserc.json",
+    "CITATION.cff",
     "CHANGELOG.md",
     "LICENSE",
     "pyproject.toml",

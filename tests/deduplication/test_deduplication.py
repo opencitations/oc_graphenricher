@@ -665,6 +665,48 @@ def test_merge_clusters_merges_publishers_with_matching_name() -> None:
     assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_publisher)]
 
 
+def test_merge_clusters_merges_equivalent_containers_when_survivor_starts_without_container() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_article = graph_set.add_br(RESP_AGENT)
+    surviving_article.create_journal_article()
+    surviving_article.has_title("Survivor")
+    first_journal = graph_set.add_br(RESP_AGENT)
+    first_journal.create_journal()
+    add_id(first_journal, "1234-5678", "issn", graph_set)
+    first_merged = _article_in_container(graph_set, first_journal, "First")
+    second_journal = graph_set.add_br(RESP_AGENT)
+    second_journal.create_journal()
+    add_id(second_journal, "1234-5678", "issn", graph_set)
+    second_merged = _article_in_container(graph_set, second_journal, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters(
+        {str(surviving_article): [str(first_merged), str(second_merged)]},
+    )
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == sorted(
+        [str(surviving_article), str(first_journal)],
+    )
+    assert str(surviving_article.get_is_part_of()) == str(first_journal)
+
+
+def test_merge_clusters_keeps_survivor_publisher_responsible_agent() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = graph_set.add_br(RESP_AGENT)
+    first_br.create_journal_article()
+    second_br = graph_set.add_br(RESP_AGENT)
+    second_br.create_journal_article()
+    surviving_publisher = _add_publisher(graph_set, first_br, identifier="crossref-1")
+    surviving_agent = surviving_publisher.get_is_held_by()
+    _add_publisher(graph_set, second_br, identifier="crossref-1")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_publisher)]
+    assert str(surviving_publisher.get_is_held_by()) == str(surviving_agent)
+
+
 def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:
     graph_set = GraphSet(BASE_IRI)
     br = graph_set.add_br(RESP_AGENT)
@@ -793,6 +835,26 @@ def test_merge_clusters_rejects_mixed_entity_types_before_mutation() -> None:
 
     assert _entity_uris_with_triples(graph_set.get_br()) == [str(br)]
     assert _entity_uris_with_triples(graph_set.get_ra()) == [str(ra)]
+
+
+def test_merge_clusters_rejects_incompatible_bibliographic_resource_types_before_mutation() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    article = graph_set.add_br(RESP_AGENT)
+    article.create_journal_article()
+    add_id(article, "Q1", "wikidata", graph_set)
+    journal = graph_set.add_br(RESP_AGENT)
+    journal.create_journal()
+    add_id(journal, "Q1", "wikidata", graph_set)
+    child = _article_in_container(graph_set, journal, "Child")
+    graph_set.commit_changes()
+
+    with pytest.raises(ValueError, match="incompatible types"):
+        GraphDeduplicator(graph_set).merge_clusters({str(article): [str(journal)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == sorted(
+        [str(article), str(journal), str(child)],
+    )
+    assert str(child.get_is_part_of()) == str(journal)
 
 
 def test_merge_clusters_rejects_self_merge_before_mutation() -> None:

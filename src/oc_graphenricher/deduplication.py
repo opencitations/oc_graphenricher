@@ -256,6 +256,7 @@ class GraphDeduplicator:
         normalized_clusters: list[tuple[ManualMergeEntity, list[ManualMergeEntity]]] = []
         survivors: set[str] = set()
         merged_to_survivor: dict[str, str] = {}
+        container_uris = self.__container_uris_with_members()
 
         for survivor_uri, merged_uris in clusters.items():
             survivor = self.__manual_survivor(survivor_uri, merged_uris, survivors, merged_to_survivor)
@@ -274,9 +275,39 @@ class GraphDeduplicator:
             if not merged_entities:
                 message = f"Merge cluster for survivor {survivor_uri} must include at least one merged entity."
                 raise ValueError(message)
+            self.__validate_container_type_compatibility(survivor, merged_entities, container_uris)
             normalized_clusters.append((survivor, merged_entities))
 
         return normalized_clusters
+
+    def __container_uris_with_members(self) -> set[str]:
+        members: set[str] = set()
+        for br in self.graph_set.get_br():
+            container = br.get_is_part_of()
+            if container is not None:
+                members.add(str(container.res))
+        return members
+
+    def __validate_container_type_compatibility(
+        self,
+        survivor: ManualMergeEntity,
+        merged_entities: Iterable[ManualMergeEntity],
+        container_uris: set[str],
+    ) -> None:
+        if not isinstance(survivor, BibliographicResource):
+            return
+        survivor_types = set(self.__specific_types(survivor))
+        for merged_entity in merged_entities:
+            merged = self.__as_bibliographic_resource(merged_entity)
+            merged_types = set(self.__specific_types(merged))
+            if not survivor_types or not merged_types or not survivor_types.isdisjoint(merged_types):
+                continue
+            if str(survivor.res) in container_uris or str(merged.res) in container_uris:
+                message = (
+                    "Cannot merge bibliographic resources with incompatible types: "
+                    f"{survivor.res} is {sorted(survivor_types)}, {merged.res} is {sorted(merged_types)}."
+                )
+                raise ValueError(message)
 
     def __validate_identifier_clusters(
         self,
@@ -405,10 +436,12 @@ class GraphDeduplicator:
         entity_first: BibliographicResource,
         other_entities: Iterable[BibliographicResource],
     ) -> None:
-        publisher_first = self.__get_publisher(entity_first)
-        entity_first_partofs = self.__get_part_of(entity_first)
-
         for other_entity in other_entities:
+            # Recompute the survivor's publisher and part-of chain on every iteration: an
+            # earlier merge may have filled a previously missing publisher or container, and
+            # the next equivalent one must merge into it instead of surviving as a duplicate.
+            publisher_first = self.__get_publisher(entity_first)
+            entity_first_partofs = self.__get_part_of(entity_first)
             self.__merge_containers(entity_first_partofs, self.__get_part_of(other_entity))
             self.__merge_publisher(publisher_first, other_entity)
             entity_first.merge(other_entity, prefer_self=True)
@@ -493,7 +526,7 @@ class GraphDeduplicator:
             and publisher != publisher_first
             and self.__publishers_are_equivalent(publisher_first, publisher)
         ):
-            publisher_first.merge(publisher)
+            publisher_first.merge(publisher, prefer_self=True)
             self.__debug("\tMerging publisher %s in publisher %s", publisher, publisher_first)
 
     def __publishers_are_equivalent(self, first: AgentRole, second: AgentRole) -> bool:
