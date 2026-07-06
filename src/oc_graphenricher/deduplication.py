@@ -472,7 +472,7 @@ class GraphDeduplicator:
         return False
 
     @staticmethod
-    def __identifier_signatures(entity: BibliographicResource) -> set[IdentifierSignature]:
+    def __identifier_signatures(entity: BibliographicResource | ResponsibleAgent) -> set[IdentifierSignature]:
         signatures: set[IdentifierSignature] = set()
         for identifier in entity.get_identifiers():
             scheme = identifier.get_scheme()
@@ -487,9 +487,36 @@ class GraphDeduplicator:
 
     def __merge_publisher(self, publisher_first: AgentRole | None, entity: BibliographicResource) -> None:
         publisher = self.__get_publisher(entity)
-        if publisher is not None and publisher_first is not None and publisher != publisher_first:
+        if (
+            publisher is not None
+            and publisher_first is not None
+            and publisher != publisher_first
+            and self.__publishers_are_equivalent(publisher_first, publisher)
+        ):
             publisher_first.merge(publisher)
             self.__debug("\tMerging publisher %s in publisher %s", publisher, publisher_first)
+
+    def __publishers_are_equivalent(self, first: AgentRole, second: AgentRole) -> bool:
+        first_agent = first.get_is_held_by()
+        second_agent = second.get_is_held_by()
+        if first_agent is None or second_agent is None:
+            return False
+        first_signatures = self.__identifier_signatures(first_agent)
+        second_signatures = self.__identifier_signatures(second_agent)
+        if first_signatures and second_signatures:
+            return not first_signatures.isdisjoint(second_signatures)
+        first_name = self.__agent_full_name(first_agent)
+        second_name = self.__agent_full_name(second_agent)
+        if first_name and second_name:
+            return first_name == second_name
+        return False
+
+    def __agent_full_name(self, agent: ResponsibleAgent) -> str:
+        name = agent.get_name()
+        if name is not None:
+            return self.__normalized_text(name)
+        parts = [part for part in (agent.get_given_name(), agent.get_family_name()) if part is not None]
+        return self.__normalized_text(" ".join(parts)) if parts else ""
 
     def __bibliographic_resources_for_contributors(
         self,

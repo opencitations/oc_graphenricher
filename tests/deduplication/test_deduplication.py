@@ -599,6 +599,72 @@ def test_merge_clusters_keeps_container_shared_by_survivor_and_merged_entity() -
     assert str(first_br.get_is_part_of()) == str(shared_issue)
 
 
+def _add_publisher(
+    graph_set: GraphSet,
+    br: BibliographicResource,
+    *,
+    identifier: str | None = None,
+    name: str | None = None,
+) -> AgentRole:
+    agent = graph_set.add_ra(RESP_AGENT)
+    if name is not None:
+        agent.has_name(name)
+    if identifier is not None:
+        add_id(agent, identifier, "crossref", graph_set)
+    role = graph_set.add_ar(RESP_AGENT)
+    role.create_publisher()
+    role.is_held_by(agent)
+    br.has_contributor(role)
+    return role
+
+
+def test_merge_clusters_merges_publishers_that_share_an_identifier() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = graph_set.add_br(RESP_AGENT)
+    first_br.create_journal_article()
+    second_br = graph_set.add_br(RESP_AGENT)
+    second_br.create_journal_article()
+    surviving_publisher = _add_publisher(graph_set, first_br, identifier="crossref-1")
+    _add_publisher(graph_set, second_br, identifier="crossref-1")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_publisher)]
+
+
+def test_merge_clusters_keeps_publishers_with_conflicting_identifiers() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = graph_set.add_br(RESP_AGENT)
+    first_br.create_journal_article()
+    second_br = graph_set.add_br(RESP_AGENT)
+    second_br.create_journal_article()
+    surviving_publisher = _add_publisher(graph_set, first_br, identifier="crossref-1")
+    merged_publisher = _add_publisher(graph_set, second_br, identifier="crossref-2")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == sorted(
+        [str(surviving_publisher), str(merged_publisher)],
+    )
+
+
+def test_merge_clusters_merges_publishers_with_matching_name() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = graph_set.add_br(RESP_AGENT)
+    first_br.create_journal_article()
+    second_br = graph_set.add_br(RESP_AGENT)
+    second_br.create_journal_article()
+    surviving_publisher = _add_publisher(graph_set, first_br, name="ACME Press")
+    _add_publisher(graph_set, second_br, name="acme press")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_publisher)]
+
+
 def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:
     graph_set = GraphSet(BASE_IRI)
     br = graph_set.add_br(RESP_AGENT)
