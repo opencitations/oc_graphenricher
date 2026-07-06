@@ -353,6 +353,88 @@ def test_deduplicate_responsible_agents_merges_duplicate_contributors_after_ra_m
     assert [str(first_author_role.get_is_held_by())] == [str(first_ra)]
 
 
+def _has_next_chain_has_cycle(agent_roles: Iterable[AgentRole]) -> bool:
+    surviving = [ar for ar in agent_roles if list(ar.g.triples((None, None, None)))]
+    for start in surviving:
+        seen: set[str] = set()
+        current: AgentRole | None = start
+        while current is not None:
+            key = str(current.res)
+            if key in seen:
+                return True
+            seen.add(key)
+            current = current.get_next()
+    return False
+
+
+def test_deduplicate_contributors_keeps_author_chain_acyclic_after_ra_merge() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = graph_set.add_br(RESP_AGENT)
+    br.create_journal_article()
+    br.has_title("Paper")
+    surviving_ra = graph_set.add_ra(RESP_AGENT)
+    surviving_ra.has_given_name("Ada")
+    surviving_ra.has_family_name("Lovelace")
+    middle_ra = graph_set.add_ra(RESP_AGENT)
+    middle_ra.has_given_name("Alan")
+    middle_ra.has_family_name("Turing")
+    duplicate_ra = graph_set.add_ra(RESP_AGENT)
+    duplicate_ra.has_given_name("Ada")
+    duplicate_ra.has_family_name("Lovelace")
+    first_role = graph_set.add_ar(RESP_AGENT)
+    first_role.create_author()
+    first_role.is_held_by(surviving_ra)
+    middle_role = graph_set.add_ar(RESP_AGENT)
+    middle_role.create_author()
+    middle_role.is_held_by(middle_ra)
+    last_role = graph_set.add_ar(RESP_AGENT)
+    last_role.create_author()
+    last_role.is_held_by(duplicate_ra)
+    first_role.has_next(middle_role)
+    middle_role.has_next(last_role)
+    br.has_contributor(first_role)
+    br.has_contributor(middle_role)
+    br.has_contributor(last_role)
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_ra): [str(duplicate_ra)]})
+
+    assert not _has_next_chain_has_cycle(graph_set.get_ar())
+    surviving_roles = _entity_uris_with_triples(graph_set.get_ar())
+    assert surviving_roles == sorted([str(first_role), str(middle_role)])
+
+
+def test_deduplicate_adjacent_duplicate_contributors_avoids_self_loop_after_ra_merge() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = graph_set.add_br(RESP_AGENT)
+    br.create_journal_article()
+    br.has_title("Paper")
+    surviving_ra = graph_set.add_ra(RESP_AGENT)
+    surviving_ra.has_given_name("Ada")
+    surviving_ra.has_family_name("Lovelace")
+    duplicate_ra = graph_set.add_ra(RESP_AGENT)
+    duplicate_ra.has_given_name("Ada")
+    duplicate_ra.has_family_name("Lovelace")
+    first_role = graph_set.add_ar(RESP_AGENT)
+    first_role.create_author()
+    first_role.is_held_by(surviving_ra)
+    second_role = graph_set.add_ar(RESP_AGENT)
+    second_role.create_author()
+    second_role.is_held_by(duplicate_ra)
+    first_role.has_next(second_role)
+    br.has_contributor(first_role)
+    br.has_contributor(second_role)
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_ra): [str(duplicate_ra)]})
+
+    assert not _has_next_chain_has_cycle(graph_set.get_ar())
+    surviving_roles = _entity_uris_with_triples(graph_set.get_ar())
+    assert surviving_roles == [str(first_role)]
+    remaining_role = next(ar for ar in graph_set.get_ar() if list(ar.g.triples((None, None, None))))
+    assert remaining_role.get_next() is None
+
+
 def test_merge_clusters_merges_only_requested_bibliographic_resources() -> None:
     graph_set = GraphSet(BASE_IRI)
     first_br = graph_set.add_br(RESP_AGENT)

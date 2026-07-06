@@ -652,12 +652,32 @@ class GraphDeduplicator:
         merged_contributor: AgentRole,
     ) -> None:
         surviving_responsible_agent = surviving_contributor.get_is_held_by()
-        surviving_contributor.merge(merged_contributor)
+        self.__unlink_contributor_from_order(entity_first, merged_contributor)
+        surviving_contributor.merge(merged_contributor, prefer_self=True)
         if surviving_responsible_agent is not None:
             surviving_contributor.is_held_by(surviving_responsible_agent)
         entity_first.remove_contributor(merged_contributor)
         if str(surviving_contributor.res) not in {str(ar.res) for ar in entity_first.get_contributors()}:
             entity_first.has_contributor(surviving_contributor)
+
+    def __unlink_contributor_from_order(
+        self,
+        entity_first: BibliographicResource,
+        contributor: AgentRole,
+    ) -> None:
+        # Splice the duplicate role out of the oco:hasNext order: its predecessor must
+        # point at its successor. Merging it into the survivor instead would redirect the
+        # predecessor onto the survivor and turn the author list into a cycle.
+        successor = contributor.get_next()
+        for role in self.__author_contributors(entity_first):
+            role_next = role.get_next()
+            if role_next is None or str(role_next.res) != str(contributor.res):
+                continue
+            if successor is not None and str(successor.res) != str(role.res):
+                role.has_next(successor)
+            else:
+                role.remove_next()
+        contributor.remove_next()
 
     def __author_contributors(self, br: BibliographicResource) -> list[AgentRole]:
         return [
