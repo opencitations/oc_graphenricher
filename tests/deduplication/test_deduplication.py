@@ -19,10 +19,15 @@ from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.storage import directory_storage, single_file_storage
 from tests.helpers import BASE_IRI, RESP_AGENT, add_id, load_graph_set
 
+# br/4 and br/5 are BR6's volume and issue: they carry DOIs that conflict with
+# BR3's volume/issue DOIs, so the container safeguard keeps them distinct even
+# though the two papers (br/3 and br/6) are merged.
 EXPECTED_BR_CONTRIBUTOR_COUNTS = {
     "http://example.com/br/1": 0,
     "http://example.com/br/2": 0,
     "http://example.com/br/3": 2,
+    "http://example.com/br/4": 0,
+    "http://example.com/br/5": 0,
     "http://example.com/br/7": 1,
 }
 
@@ -88,6 +93,8 @@ def test_brs_merged(deduplicated_graph_set: GraphSet) -> None:
         "http://example.com/br/1",
         "http://example.com/br/2",
         "http://example.com/br/3",
+        "http://example.com/br/4",
+        "http://example.com/br/5",
         "http://example.com/br/7",
     ]
 
@@ -414,6 +421,182 @@ def test_merge_clusters_preserves_bibliographic_resource_functional_values_and_f
         "http://purl.org/spar/datacite/doi10.555/first",
         "http://purl.org/spar/datacite/doi10.555/second",
     ]
+
+
+def _article_in_container(
+    graph_set: GraphSet,
+    container: BibliographicResource,
+    title: str,
+) -> BibliographicResource:
+    article = graph_set.add_br(RESP_AGENT)
+    article.create_journal_article()
+    article.has_title(title)
+    article.is_part_of(container)
+    return article
+
+
+def test_merge_clusters_merges_containers_with_matching_sequence_number() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_issue = graph_set.add_br(RESP_AGENT)
+    surviving_issue.create_issue()
+    surviving_issue.has_number("3")
+    merged_issue = graph_set.add_br(RESP_AGENT)
+    merged_issue.create_issue()
+    merged_issue.has_number("3")
+    first_br = _article_in_container(graph_set, surviving_issue, "First")
+    second_br = _article_in_container(graph_set, merged_issue, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [str(surviving_issue), str(first_br)]
+    assert str(first_br.get_is_part_of()) == str(surviving_issue)
+
+
+def test_merge_clusters_keeps_containers_with_different_sequence_number() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_volume = graph_set.add_br(RESP_AGENT)
+    surviving_volume.create_volume()
+    surviving_volume.has_number("5")
+    merged_volume = graph_set.add_br(RESP_AGENT)
+    merged_volume.create_volume()
+    merged_volume.has_number("7")
+    first_br = _article_in_container(graph_set, surviving_volume, "First")
+    second_br = _article_in_container(graph_set, merged_volume, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [
+        str(surviving_volume),
+        str(merged_volume),
+        str(first_br),
+    ]
+    assert str(first_br.get_is_part_of()) == str(surviving_volume)
+
+
+def test_merge_clusters_keeps_containers_with_conflicting_identifiers() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_issue = graph_set.add_br(RESP_AGENT)
+    surviving_issue.create_issue()
+    add_id(surviving_issue, "10.555/issue-a", "doi", graph_set)
+    merged_issue = graph_set.add_br(RESP_AGENT)
+    merged_issue.create_issue()
+    add_id(merged_issue, "10.555/issue-b", "doi", graph_set)
+    first_br = _article_in_container(graph_set, surviving_issue, "First")
+    second_br = _article_in_container(graph_set, merged_issue, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [
+        str(surviving_issue),
+        str(merged_issue),
+        str(first_br),
+    ]
+
+
+def test_merge_clusters_merges_containers_that_share_an_identifier() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_issue = graph_set.add_br(RESP_AGENT)
+    surviving_issue.create_issue()
+    surviving_issue.has_number("5")
+    add_id(surviving_issue, "10.555/issue", "doi", graph_set)
+    merged_issue = graph_set.add_br(RESP_AGENT)
+    merged_issue.create_issue()
+    merged_issue.has_number("7")
+    add_id(merged_issue, "10.555/issue", "doi", graph_set)
+    first_br = _article_in_container(graph_set, surviving_issue, "First")
+    second_br = _article_in_container(graph_set, merged_issue, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [str(surviving_issue), str(first_br)]
+
+
+def test_merge_clusters_merges_journals_with_matching_title() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_journal = graph_set.add_br(RESP_AGENT)
+    surviving_journal.create_journal()
+    surviving_journal.has_title("Journal of Testing")
+    merged_journal = graph_set.add_br(RESP_AGENT)
+    merged_journal.create_journal()
+    merged_journal.has_title("journal of testing")
+    first_br = _article_in_container(graph_set, surviving_journal, "First")
+    second_br = _article_in_container(graph_set, merged_journal, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [str(surviving_journal), str(first_br)]
+
+
+def test_merge_clusters_keeps_journals_with_different_title() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_journal = graph_set.add_br(RESP_AGENT)
+    surviving_journal.create_journal()
+    surviving_journal.has_title("Nature")
+    merged_journal = graph_set.add_br(RESP_AGENT)
+    merged_journal.create_journal()
+    merged_journal.has_title("Science")
+    first_br = _article_in_container(graph_set, surviving_journal, "First")
+    second_br = _article_in_container(graph_set, merged_journal, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [
+        str(surviving_journal),
+        str(merged_journal),
+        str(first_br),
+    ]
+
+
+def test_merge_clusters_does_not_merge_equal_numbered_volumes_across_different_journals() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_journal = graph_set.add_br(RESP_AGENT)
+    surviving_journal.create_journal()
+    surviving_journal.has_title("Nature")
+    merged_journal = graph_set.add_br(RESP_AGENT)
+    merged_journal.create_journal()
+    merged_journal.has_title("Science")
+    surviving_volume = graph_set.add_br(RESP_AGENT)
+    surviving_volume.create_volume()
+    surviving_volume.has_number("5")
+    surviving_volume.is_part_of(surviving_journal)
+    merged_volume = graph_set.add_br(RESP_AGENT)
+    merged_volume.create_volume()
+    merged_volume.has_number("5")
+    merged_volume.is_part_of(merged_journal)
+    first_br = _article_in_container(graph_set, surviving_volume, "First")
+    second_br = _article_in_container(graph_set, merged_volume, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [
+        str(surviving_journal),
+        str(merged_journal),
+        str(surviving_volume),
+        str(merged_volume),
+        str(first_br),
+    ]
+
+
+def test_merge_clusters_keeps_container_shared_by_survivor_and_merged_entity() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    shared_issue = graph_set.add_br(RESP_AGENT)
+    shared_issue.create_issue()
+    shared_issue.has_number("3")
+    first_br = _article_in_container(graph_set, shared_issue, "First")
+    second_br = _article_in_container(graph_set, shared_issue, "Second")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == [str(shared_issue), str(first_br)]
+    assert str(first_br.get_is_part_of()) == str(shared_issue)
 
 
 def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:

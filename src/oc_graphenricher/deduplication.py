@@ -419,21 +419,71 @@ class GraphDeduplicator:
         entity_first_partofs: list[BibliographicResource],
         partofs: list[BibliographicResource],
     ) -> None:
-        for first_partof in entity_first_partofs:
-            first_types = first_partof.get_types()
-            first_types.remove(GraphEntity.iri_expression)
-            for second_partof in partofs:
-                second_types = second_partof.get_types()
-                second_types.remove(GraphEntity.iri_expression)
-                intersection_of_types = set(second_types).intersection(set(first_types))
-                if intersection_of_types:
-                    first_partof.merge(second_partof, prefer_self=True)
-                    self.__debug(
-                        "\tMerging container %s in container %s (%s)",
-                        second_partof,
-                        first_partof,
-                        intersection_of_types,
-                    )
+        second_by_type: dict[str, BibliographicResource] = {}
+        for container in partofs:
+            for type_iri in self.__specific_types(container):
+                second_by_type.setdefault(type_iri, container)
+
+        parent_merged = True
+        for first_partof in reversed(entity_first_partofs):  # walk from the top of the hierarchy downward
+            second_partof = self.__matching_container(first_partof, second_by_type)
+            if second_partof is None or first_partof.res == second_partof.res:
+                continue
+            if parent_merged and self.__containers_are_equivalent(first_partof, second_partof):
+                first_partof.merge(second_partof, prefer_self=True)
+                self.__debug("\tMerging container %s in container %s", second_partof, first_partof)
+            else:
+                parent_merged = False
+
+    @staticmethod
+    def __specific_types(container: BibliographicResource) -> list[str]:
+        return [type_iri for type_iri in container.get_types() if type_iri != GraphEntity.iri_expression]
+
+    def __matching_container(
+        self,
+        container: BibliographicResource,
+        second_by_type: dict[str, BibliographicResource],
+    ) -> BibliographicResource | None:
+        for type_iri in self.__specific_types(container):
+            if type_iri in second_by_type:
+                return second_by_type[type_iri]
+        return None
+
+    def __containers_are_equivalent(
+        self,
+        first: BibliographicResource,
+        second: BibliographicResource,
+    ) -> bool:
+        first_signatures = self.__identifier_signatures(first)
+        second_signatures = self.__identifier_signatures(second)
+        if first_signatures and second_signatures:
+            return not first_signatures.isdisjoint(second_signatures)
+
+        first_number = first.get_number()
+        second_number = second.get_number()
+        if first_number is not None and second_number is not None:
+            return first_number == second_number
+
+        first_title = first.get_title()
+        second_title = second.get_title()
+        if first_title is not None and second_title is not None:
+            return self.__normalized_text(first_title) == self.__normalized_text(second_title)
+
+        return False
+
+    @staticmethod
+    def __identifier_signatures(entity: BibliographicResource) -> set[IdentifierSignature]:
+        signatures: set[IdentifierSignature] = set()
+        for identifier in entity.get_identifiers():
+            scheme = identifier.get_scheme()
+            literal = identifier.get_literal_value()
+            if scheme is not None and literal is not None:
+                signatures.add((scheme, literal))
+        return signatures
+
+    @staticmethod
+    def __normalized_text(value: str) -> str:
+        return " ".join(value.casefold().split())
 
     def __merge_publisher(self, publisher_first: AgentRole | None, entity: BibliographicResource) -> None:
         publisher = self.__get_publisher(entity)
