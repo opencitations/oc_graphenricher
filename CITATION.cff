@@ -10,6 +10,6 @@ authors:
   - name: Silvio Peroni
   - name: Simone Persiani
   - name: Davide Brembilla
-version: 2.1.8
+version: 2.1.9
 date-released: '2026-07-06'
-url: https://archive.softwareheritage.org/swh:1:snp:5f58a0cd8d71190be26edbf4fcf9535dbc49c693;origin=https://github.com/opencitations/oc_graphenricher
+url: https://archive.softwareheritage.org/swh:1:snp:a7c0c64be9c3ff673284b7c91559c5f6991189a1;origin=https://github.com/opencitations/oc_graphenricher
