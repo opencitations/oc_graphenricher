@@ -866,6 +866,39 @@ def test_merge_clusters_keeps_cascaded_container_publishers_with_conflicting_ide
     )
 
 
+def test_merge_clusters_deduplicates_repeated_publisher_roles_after_ra_merge() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_agent = graph_set.add_ra(RESP_AGENT)
+    add_id(surviving_agent, "crossref-1", "crossref", graph_set)
+    duplicate_agent = graph_set.add_ra(RESP_AGENT)
+    add_id(duplicate_agent, "crossref-1", "crossref", graph_set)
+    journal = _journal_with_issn(graph_set, "1234-5678")
+    surviving_publisher = _add_role_held_by(graph_set, journal, surviving_agent)
+    _add_role_held_by(graph_set, journal, duplicate_agent)
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_agent): [str(duplicate_agent)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_publisher)]
+
+
+def test_merge_clusters_deduplicates_repeated_publisher_roles_on_merged_container() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    agent = graph_set.add_ra(RESP_AGENT)
+    first_journal = _journal_with_issn(graph_set, "1234-5678")
+    surviving_publisher = _add_role_held_by(graph_set, first_journal, agent)
+    surviving_article = _article_in_container(graph_set, first_journal, "Survivor")
+    second_journal = _journal_with_issn(graph_set, "1234-5678")
+    _add_role_held_by(graph_set, second_journal, agent)
+    _add_role_held_by(graph_set, second_journal, agent)
+    merged_article = _article_in_container(graph_set, second_journal, "Merged")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_article): [str(merged_article)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_publisher)]
+
+
 def test_merge_clusters_merges_cascaded_container_editors_held_by_the_same_agent() -> None:
     graph_set = GraphSet(BASE_IRI)
     journal = _journal_with_issn(graph_set, "1234-5678")

@@ -585,8 +585,13 @@ class GraphDeduplicator:
             self.__remove_contributors_without_ra(bibliographic_resource)
 
     def __merge_same_ra_contributors(self, entity_first: BibliographicResource) -> set[AgentRole]:
+        # Group every contributor role, publishers included, by (RA, role type). A
+        # direct RA merge or a container merge can leave two publisher roles held by
+        # the same agent on one resource, and __merge_publisher only reconciles the
+        # single publisher returned by __get_publisher, so the extras must collapse
+        # here alongside authors and editors.
         contributors_by_agent_role: dict[tuple[str, str], list[AgentRole]] = {}
-        for contributor in self.__author_contributors(entity_first):
+        for contributor in entity_first.get_contributors():
             responsible_agent = contributor.get_is_held_by()
             role_type = contributor.get_role_type()
             if responsible_agent is None or role_type is None:
