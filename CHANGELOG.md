@@ -1,3 +1,10 @@
+## [2.1.9](https://github.com/opencitations/oc_graphenricher/compare/v2.1.8...v2.1.9) (2026-07-06)
+
+
+### Bug Fixes
+
+* **deduplication:** collapse duplicate same-agent publisher roles [release] ([0f0f0fc](https://github.com/opencitations/oc_graphenricher/commit/0f0f0fc5eef615b3713f986f7fe5016fabf0d148))
+
 ## [2.1.8](https://github.com/opencitations/oc_graphenricher/compare/v2.1.7...v2.1.8) (2026-07-06)
 
 
