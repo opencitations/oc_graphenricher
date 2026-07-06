@@ -1,3 +1,10 @@
+## [2.1.5](https://github.com/opencitations/oc_graphenricher/compare/v2.1.4...v2.1.5) (2026-07-06)
+
+
+### Bug Fixes
+
+* **deduplication:** keep distinct publisher roles [release] ([e1aa5cd](https://github.com/opencitations/oc_graphenricher/commit/e1aa5cdf29700ec5662b69631a545f843826d128))
+
 ## [2.1.4](https://github.com/opencitations/oc_graphenricher/compare/v2.1.3...v2.1.4) (2026-07-06)
 
 
