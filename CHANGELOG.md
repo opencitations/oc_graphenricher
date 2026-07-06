@@ -1,3 +1,10 @@
+## [2.1.4](https://github.com/opencitations/oc_graphenricher/compare/v2.1.3...v2.1.4) (2026-07-06)
+
+
+### Bug Fixes
+
+* **deduplication:** avoid merging distinct containers [release] ([3a1da2f](https://github.com/opencitations/oc_graphenricher/commit/3a1da2f0e8b36d8f627e559e53df23d60db0e1bf))
+
 ## [2.1.3](https://github.com/opencitations/oc_graphenricher/compare/v2.1.2...v2.1.3) (2026-07-05)
 
 
