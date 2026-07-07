@@ -1,3 +1,10 @@
+## [2.1.10](https://github.com/opencitations/oc_graphenricher/compare/v2.1.9...v2.1.10) (2026-07-07)
+
+
+### Bug Fixes
+
+* **deduplication:** order merge clusters before mutation [release] ([9c0a1ea](https://github.com/opencitations/oc_graphenricher/commit/9c0a1eab569a580a9f308842d78316018f8bc894))
+
 ## [2.1.9](https://github.com/opencitations/oc_graphenricher/compare/v2.1.8...v2.1.9) (2026-07-06)
 
 
