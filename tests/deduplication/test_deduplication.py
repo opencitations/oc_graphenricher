@@ -789,6 +789,46 @@ def test_merge_clusters_keeps_survivor_publisher_responsible_agent() -> None:
     assert str(surviving_publisher.get_is_held_by()) == str(surviving_agent)
 
 
+def test_merge_clusters_discards_author_editor_roles_from_manually_merged_br() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_br = graph_set.add_br(RESP_AGENT)
+    first_br.create_journal_article()
+    second_br = graph_set.add_br(RESP_AGENT)
+    second_br.create_journal_article()
+    surviving_author = _add_author_role(graph_set, first_br)
+    surviving_editor = _add_editor_role(graph_set, first_br)
+    _add_author_role(graph_set, second_br)
+    _add_editor_role(graph_set, second_br)
+    publisher = _add_role_held_by(graph_set, second_br, graph_set.add_ra(RESP_AGENT))
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(first_br): [str(second_br)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == sorted(
+        [str(surviving_author), str(surviving_editor), str(publisher)],
+    )
+
+
+def test_merge_clusters_keeps_richest_author_donor_when_survivor_has_no_authors() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_br = graph_set.add_br(RESP_AGENT)
+    surviving_br.create_journal_article()
+    poor_donor = graph_set.add_br(RESP_AGENT)
+    poor_donor.create_journal_article()
+    _add_author_role(graph_set, poor_donor)
+    rich_donor = graph_set.add_br(RESP_AGENT)
+    rich_donor.create_journal_article()
+    first_rich_author = _add_author_role(graph_set, rich_donor)
+    second_rich_author = _add_author_role(graph_set, rich_donor)
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_br): [str(poor_donor), str(rich_donor)]})
+
+    assert _entity_uris_with_triples(graph_set.get_ar()) == sorted(
+        [str(first_rich_author), str(second_rich_author)],
+    )
+
+
 def _journal_with_issn(graph_set: GraphSet, issn: str) -> BibliographicResource:
     journal = graph_set.add_br(RESP_AGENT)
     journal.create_journal()
@@ -923,6 +963,24 @@ def test_merge_clusters_merges_cascaded_container_editors_held_by_the_same_agent
 
     assert _entity_uris_with_triples(graph_set.get_br()) == sorted(
         [str(surviving_article), str(journal), str(first_volume)],
+    )
+    assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_editor)]
+
+
+def test_merge_clusters_discards_cascaded_container_editors_from_manually_merged_br() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    first_journal = _journal_with_issn(graph_set, "1234-5678")
+    second_journal = _journal_with_issn(graph_set, "1234-5678")
+    surviving_editor = _add_editor_role(graph_set, first_journal)
+    _add_editor_role(graph_set, second_journal)
+    surviving_article = _article_in_container(graph_set, first_journal, "Survivor")
+    merged_article = _article_in_container(graph_set, second_journal, "Merged")
+    graph_set.commit_changes()
+
+    GraphDeduplicator(graph_set).merge_clusters({str(surviving_article): [str(merged_article)]})
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == sorted(
+        [str(surviving_article), str(first_journal)],
     )
     assert _entity_uris_with_triples(graph_set.get_ar()) == [str(surviving_editor)]
 
@@ -1258,6 +1316,24 @@ def _add_author_with_responsible_agent(
     author.create_author()
     author.is_held_by(responsible_agent)
     br.has_contributor(author)
+
+
+def _add_author_role(graph_set: GraphSet, br: BibliographicResource) -> AgentRole:
+    agent = graph_set.add_ra(RESP_AGENT)
+    role = graph_set.add_ar(RESP_AGENT)
+    role.create_author()
+    role.is_held_by(agent)
+    br.has_contributor(role)
+    return role
+
+
+def _add_editor_role(graph_set: GraphSet, br: BibliographicResource) -> AgentRole:
+    agent = graph_set.add_ra(RESP_AGENT)
+    role = graph_set.add_ar(RESP_AGENT)
+    role.create_editor()
+    role.is_held_by(agent)
+    br.has_contributor(role)
+    return role
 
 
 def _add_responsible_agent_with_orcid(

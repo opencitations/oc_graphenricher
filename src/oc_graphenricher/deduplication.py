@@ -33,6 +33,7 @@ NAME_SIMILARITY_THRESHOLD = 0.95
 Entity = TypeVar("Entity")
 ManualMergeEntity: TypeAlias = BibliographicResource | ResponsibleAgent | Identifier
 IdentifierSignature: TypeAlias = tuple[str, str]
+MANUAL_BR_ROLE_TYPES = (GraphEntity.iri_author, GraphEntity.iri_editor)
 
 
 class GraphDeduplicator:
@@ -116,7 +117,7 @@ class GraphDeduplicator:
                         associated_ar_ra,
                     )
             elif isinstance(surviving_entity, BibliographicResource):
-                self.__merge_bibliographic_resources(
+                self.__merge_manual_bibliographic_resources(
                     surviving_entity,
                     [self.__as_bibliographic_resource(merged_entity) for merged_entity in merged_entities],
                 )
@@ -495,31 +496,53 @@ class GraphDeduplicator:
             entity_first.merge(other_entity, prefer_self=True)
             self.__deduplicate_contributors_for_bibliographic_resources([entity_first])
 
+    def __merge_manual_bibliographic_resources(
+        self,
+        entity_first: BibliographicResource,
+        other_entities: Iterable[BibliographicResource],
+    ) -> None:
+        merged_entities = list(other_entities)
+        self.__discard_merged_author_editor_roles(entity_first, merged_entities)
+        for other_entity in merged_entities:
+            for first_partof, second_partof in self.__container_merge_pairs(
+                self.__get_part_of(entity_first),
+                self.__get_part_of(other_entity),
+            ):
+                self.__discard_merged_author_editor_roles(first_partof, [second_partof])
+            self.__merge_bibliographic_resources(entity_first, [other_entity])
+
     def __merge_containers(
         self,
         entity_first_partofs: list[BibliographicResource],
         partofs: list[BibliographicResource],
     ) -> None:
+        for first_partof, second_partof in self.__container_merge_pairs(entity_first_partofs, partofs):
+            self.__merge_publisher(self.__get_publisher(first_partof), second_partof)
+            first_partof.merge(second_partof, prefer_self=True)
+            self.__deduplicate_contributors_for_bibliographic_resources([first_partof])
+            self.__debug("\tMerging container %s in container %s", second_partof, first_partof)
+
+    def __container_merge_pairs(
+        self,
+        entity_first_partofs: list[BibliographicResource],
+        partofs: list[BibliographicResource],
+    ) -> list[tuple[BibliographicResource, BibliographicResource]]:
         second_by_type: dict[str, BibliographicResource] = {}
         for container in partofs:
             for type_iri in self.__specific_types(container):
                 second_by_type.setdefault(type_iri, container)
 
+        pairs: list[tuple[BibliographicResource, BibliographicResource]] = []
         parent_merged = True
         for first_partof in reversed(entity_first_partofs):  # walk from the top of the hierarchy downward
             second_partof = self.__matching_container(first_partof, second_by_type)
             if second_partof is None or first_partof.res == second_partof.res:
                 continue
             if parent_merged and self.__containers_are_equivalent(first_partof, second_partof):
-                # Deduplicate the container's contributors the same way the article
-                # level does: a raw merge would union the merged container's publisher
-                # and editor roles onto the survivor, leaving duplicates behind.
-                self.__merge_publisher(self.__get_publisher(first_partof), second_partof)
-                first_partof.merge(second_partof, prefer_self=True)
-                self.__deduplicate_contributors_for_bibliographic_resources([first_partof])
-                self.__debug("\tMerging container %s in container %s", second_partof, first_partof)
+                pairs.append((first_partof, second_partof))
             else:
                 parent_merged = False
+        return pairs
 
     @staticmethod
     def __specific_types(container: BibliographicResource) -> list[str]:
@@ -631,6 +654,47 @@ class GraphDeduplicator:
             if self.merge_similar_named_contributors:
                 self.__merge_similar_named_contributors(bibliographic_resource, already_merged)
             self.__remove_contributors_without_ra(bibliographic_resource)
+
+    def __discard_merged_author_editor_roles(
+        self,
+        entity_first: BibliographicResource,
+        merged_entities: list[BibliographicResource],
+    ) -> None:
+        for role_type in MANUAL_BR_ROLE_TYPES:
+            self.__keep_single_role_chain(entity_first, merged_entities, role_type)
+
+    def __keep_single_role_chain(
+        self,
+        entity_first: BibliographicResource,
+        merged_entities: list[BibliographicResource],
+        role_type: str,
+    ) -> None:
+        donor = None
+        if not self.__has_contributor_role(entity_first, role_type):
+            donor = self.__richest_role_donor(merged_entities, role_type)
+        for merged_entity in merged_entities:
+            if merged_entity is donor:
+                continue
+            for contributor in list(merged_entity.get_contributors()):
+                if contributor.get_role_type() == role_type:
+                    merged_entity.remove_contributor(contributor)
+                    contributor.mark_as_to_be_deleted()
+
+    def __richest_role_donor(
+        self,
+        merged_entities: list[BibliographicResource],
+        role_type: str,
+    ) -> BibliographicResource | None:
+        donors = [entity for entity in merged_entities if self.__contributor_role_count(entity, role_type) > 0]
+        if not donors:
+            return None
+        return min(donors, key=lambda entity: (-self.__contributor_role_count(entity, role_type), str(entity.res)))
+
+    def __has_contributor_role(self, entity: BibliographicResource, role_type: str) -> bool:
+        return any(contributor.get_role_type() == role_type for contributor in entity.get_contributors())
+
+    def __contributor_role_count(self, entity: BibliographicResource, role_type: str) -> int:
+        return sum(1 for contributor in entity.get_contributors() if contributor.get_role_type() == role_type)
 
     def __merge_same_ra_contributors(self, entity_first: BibliographicResource) -> set[AgentRole]:
         # Group every contributor role, publishers included, by (RA, role type). A

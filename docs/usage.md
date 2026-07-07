@@ -209,6 +209,10 @@ deduplicator.merge_clusters(
 does not discover additional duplicate clusters. Use `merge_clusters_and_save()` to run the same caller-provided merge
 and then write the graph and provenance through the configured storage.
 
+For manual BR clusters, `merge_clusters()` keeps one author/editor chain per role type. The surviving BR's chain wins;
+when the survivor has no chain of that type, the merged BR with the most roles of that type donates its chain. The same
+rule is applied to equivalent containers merged by the container cascade.
+
 Manual clusters can contain responsible agents, bibliographic resources or identifiers, but each cluster must contain only one entity type. Identifier clusters are accepted only when every merged identifier has the same scheme and literal as the survivor. Otherwise `merge_clusters()` raises `ValueError` before changing the graph.
 
 For provenance generated during deduplication, use the same storage options used for enrichment.
