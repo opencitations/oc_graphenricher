@@ -1,3 +1,10 @@
+## [2.1.11](https://github.com/opencitations/oc_graphenricher/compare/v2.1.10...v2.1.11) (2026-07-07)
+
+
+### Bug Fixes
+
+* **deduplication:** keep one br contributor chain in manual merges [release] ([80f7006](https://github.com/opencitations/oc_graphenricher/commit/80f7006ae2818d1e0211c6a5dfd4f820f2b59623))
+
 ## [2.1.10](https://github.com/opencitations/oc_graphenricher/compare/v2.1.9...v2.1.10) (2026-07-07)
 
 
