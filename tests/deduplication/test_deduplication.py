@@ -1124,6 +1124,70 @@ def test_merge_clusters_rejects_entity_as_survivor_and_merged_entity() -> None:
     assert _entity_uris_with_triples(graph_set.get_ra()) == [str(first_ra), str(second_ra), str(third_ra)]
 
 
+def test_merge_clusters_orders_container_clusters_before_cascading_article_clusters() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    canonical_journal = _journal_with_issn(graph_set, "1111-1111")
+    cascaded_journal = _journal_with_issn(graph_set, "1111-1111")
+    merged_journal = _journal_with_issn(graph_set, "1111-1111")
+    surviving_article = _article_in_container(graph_set, canonical_journal, "Duplicated")
+    merged_article = _article_in_container(graph_set, cascaded_journal, "Duplicated")
+    sibling_article = _article_in_container(graph_set, merged_journal, "Sibling")
+    graph_set.commit_changes()
+
+    # The article cluster comes first in the mapping: its container cascade merges
+    # cascaded_journal into canonical_journal and deletes it, so the journal
+    # cluster would otherwise merge merged_journal into a deleted survivor,
+    # leaving sibling_article's partOf dangling.
+    GraphDeduplicator(graph_set).merge_clusters(
+        {
+            str(surviving_article): [str(merged_article)],
+            str(cascaded_journal): [str(merged_journal)],
+        },
+    )
+
+    assert _entity_uris_with_triples(graph_set.get_br()) == sorted(
+        [str(canonical_journal), str(surviving_article), str(sibling_article)],
+    )
+    assert str(sibling_article.get_is_part_of()) == str(canonical_journal)
+
+
+def test_merge_clusters_orders_identifier_clusters_before_bibliographic_resource_clusters() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_br = _add_article_with_shared_doi(graph_set, "First")
+    merged_br = _add_article_with_shared_doi(graph_set, "Second")
+    third_br = _add_article_with_shared_doi(graph_set, "Third")
+    merged_br_identifier = merged_br.get_identifiers()[0]
+    third_br_identifier = third_br.get_identifiers()[0]
+    graph_set.commit_changes()
+
+    # The BR cluster comes first in the mapping: merging it deduplicates the
+    # shared DOI and deletes one of the two identifier copies, which is the
+    # survivor of the identifier cluster, so third_br's reference would
+    # otherwise be redirected onto a deleted identifier.
+    GraphDeduplicator(graph_set).merge_clusters(
+        {
+            str(surviving_br): [str(merged_br)],
+            str(merged_br_identifier): [str(third_br_identifier)],
+        },
+    )
+
+    surviving_identifiers = _entity_uris_with_triples(graph_set.get_id())
+    assert len(surviving_identifiers) == 1
+    assert [str(identifier) for identifier in surviving_br.get_identifiers()] == surviving_identifiers
+    assert [str(identifier) for identifier in third_br.get_identifiers()] == surviving_identifiers
+
+
+def test_merge_clusters_rejects_cluster_entity_already_deleted() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    surviving_br = _add_article_with_shared_doi(graph_set, "First")
+    merged_br = _add_article_with_shared_doi(graph_set, "Second")
+    graph_set.commit_changes()
+    surviving_br.mark_as_to_be_deleted()
+
+    with pytest.raises(ValueError, match="is deleted"):
+        GraphDeduplicator(graph_set).merge_clusters({str(surviving_br): [str(merged_br)]})
+
+
 def test_provenance_configuration_is_forwarded_to_prov_set() -> None:
     counter_handler = _CounterHandler()
     storage = single_file_storage(

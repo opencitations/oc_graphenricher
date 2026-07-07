@@ -106,7 +106,8 @@ class GraphDeduplicator:
         associated_ar_ra = self.__get_association_ar_ra()
         _, id_to_resources = self.__id_maps()
 
-        for surviving_entity, merged_entities in normalized_clusters:
+        for surviving_entity, merged_entities in self.__ordered_clusters(normalized_clusters):
+            self.__ensure_cluster_entities_alive(surviving_entity, merged_entities)
             if isinstance(surviving_entity, ResponsibleAgent):
                 for merged_entity in merged_entities:
                     self.__merge_responsible_agent(
@@ -127,6 +128,53 @@ class GraphDeduplicator:
                 )
 
         self.modified_entities.update(self.prov.generate_provenance())
+
+    def __ordered_clusters(
+        self,
+        normalized_clusters: list[tuple[ManualMergeEntity, list[ManualMergeEntity]]],
+    ) -> list[tuple[ManualMergeEntity, list[ManualMergeEntity]]]:
+        # A merge can delete entities other clusters name: a BR/RA merge
+        # deduplicates identifiers by scheme and literal (one of the two dies)
+        # and the container cascade of a BR merge deletes ancestor containers.
+        # Identifier clusters therefore run first, and BR clusters run top-down
+        # by container depth, so every cluster is merged before anything can
+        # delete its entities.
+        return sorted(normalized_clusters, key=self.__cluster_rank)
+
+    def __cluster_rank(
+        self,
+        cluster: tuple[ManualMergeEntity, list[ManualMergeEntity]],
+    ) -> tuple[int, int]:
+        surviving_entity, merged_entities = cluster
+        if isinstance(surviving_entity, Identifier):
+            return (0, 0)
+        if isinstance(surviving_entity, ResponsibleAgent):
+            return (1, 0)
+        depth = max(
+            len(self.__get_part_of(self.__as_bibliographic_resource(entity)))
+            for entity in (surviving_entity, *merged_entities)
+        )
+        return (2, depth)
+
+    def __ensure_cluster_entities_alive(
+        self,
+        surviving_entity: ManualMergeEntity,
+        merged_entities: list[ManualMergeEntity],
+    ) -> None:
+        for entity in (surviving_entity, *merged_entities):
+            if entity.to_be_deleted:
+                message = (
+                    f"Entity {entity.res} is deleted ({self.__deletion_cause(entity)}) "
+                    f"and cannot take part in the merge cluster of {surviving_entity.res}."
+                )
+                raise ValueError(message)
+
+    def __deletion_cause(self, entity: ManualMergeEntity) -> str:
+        target = str(entity.res)
+        for candidate in self.graph_set.res_to_entity.values():
+            if any(str(merged.res) == target for merged in candidate.merge_list):
+                return f"merged into {candidate.res}"
+        return "marked for deletion"
 
     def merge_clusters_and_save(self, clusters: Mapping[str, Iterable[str]]) -> GraphSet:
         self.__merge_clusters(clusters)
