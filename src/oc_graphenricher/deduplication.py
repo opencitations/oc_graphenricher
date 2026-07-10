@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from dataclasses import replace
 from typing import TYPE_CHECKING, TypeAlias, TypeVar, cast
 
@@ -33,6 +34,7 @@ NAME_SIMILARITY_THRESHOLD = 0.95
 Entity = TypeVar("Entity")
 ManualMergeEntity: TypeAlias = BibliographicResource | ResponsibleAgent | Identifier
 IdentifierSignature: TypeAlias = tuple[str, str]
+IdentifierReferenceSources: TypeAlias = defaultdict[Identifier, list[GraphEntity]]
 MANUAL_BR_ROLE_TYPES = (GraphEntity.iri_author, GraphEntity.iri_editor)
 
 
@@ -105,7 +107,7 @@ class GraphDeduplicator:
 
         self.__validate_identifier_clusters(normalized_clusters)
         associated_ar_ra = self.__get_association_ar_ra()
-        _, id_to_resources = self.__id_maps()
+        identifier_reference_sources: IdentifierReferenceSources | None = None
 
         for surviving_entity, merged_entities in self.__ordered_clusters(normalized_clusters):
             self.__ensure_cluster_entities_alive(surviving_entity, merged_entities)
@@ -122,10 +124,12 @@ class GraphDeduplicator:
                     [self.__as_bibliographic_resource(merged_entity) for merged_entity in merged_entities],
                 )
             else:
+                if identifier_reference_sources is None:
+                    identifier_reference_sources = self.__identifier_reference_sources()
                 self.__merge_identifiers(
                     surviving_entity,
                     [self.__as_identifier(merged_entity) for merged_entity in merged_entities],
-                    id_to_resources,
+                    identifier_reference_sources,
                 )
 
         self.modified_entities.update(self.prov.generate_provenance())
@@ -260,10 +264,13 @@ class GraphDeduplicator:
         self.graph_set.commit_changes()
 
     def __deduplicate_identifiers(self) -> None:
-        literal_to_id, id_to_resources = self.__id_maps()
+        literal_to_id = self.__identifier_groups()
+        identifier_reference_sources: IdentifierReferenceSources | None = None
         for literal, identifiers in literal_to_id.items():
             if len(identifiers) > 1:
-                self.__merge_identifier_group(literal, identifiers, id_to_resources)
+                if identifier_reference_sources is None:
+                    identifier_reference_sources = self.__identifier_reference_sources()
+                self.__merge_identifier_group(literal, identifiers, identifier_reference_sources)
 
         self.modified_entities.update(self.prov.generate_provenance())
 
@@ -825,16 +832,8 @@ class GraphDeduplicator:
         max_length = max(len(left_normalized), len(right_normalized))
         return 1 - Levenshtein.distance(left_normalized, right_normalized) / max_length
 
-    def __id_maps(
-        self,
-    ) -> tuple[
-        dict[str, list[Identifier]],
-        dict[Identifier, list[BibliographicResource | ResponsibleAgent]],
-    ]:
+    def __identifier_groups(self) -> dict[str, list[Identifier]]:
         literal_to_id: dict[str, list[Identifier]] = {}
-        id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]] = {
-            identifier: [] for identifier in self.graph_set.get_id()
-        }
         entities: list[BibliographicResource | ResponsibleAgent] = list(self.graph_set.get_br())
         entities.extend(list(self.graph_set.get_ra()))
 
@@ -845,15 +844,28 @@ class GraphDeduplicator:
                 if scheme is None or value is None:
                     continue
                 literal = f"{scheme}#{value}"
-                id_to_resources[identifier].append(entity)
                 literal_to_id.setdefault(literal, []).append(identifier)
-        return literal_to_id, id_to_resources
+        return literal_to_id
+
+    def __identifier_reference_sources(self) -> IdentifierReferenceSources:
+        reference_sources: IdentifierReferenceSources = defaultdict(list)
+        for entity in self.graph_set.res_to_entity.values():
+            referenced_identifiers: set[Identifier] = set()
+            for _, _, obj in entity.g.triples((entity.res, None, None)):
+                if obj.type != "uri":
+                    continue
+                referenced_entity = self.graph_set.res_to_entity.get(obj.value)
+                if isinstance(referenced_entity, Identifier):
+                    referenced_identifiers.add(referenced_entity)
+            for identifier in referenced_identifiers:
+                reference_sources[identifier].append(entity)
+        return reference_sources
 
     def __merge_identifier_group(
         self,
         literal: str,
         identifiers: list[Identifier],
-        id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]],
+        identifier_reference_sources: IdentifierReferenceSources,
     ) -> None:
         schema, value = literal.split("#", maxsplit=1)
         merged_identifier, other_identifiers = self.__ordered_entities(identifiers)
@@ -865,26 +877,27 @@ class GraphDeduplicator:
             schema,
         )
         for actual_id in other_identifiers:
-            self.__merge_identifier(merged_identifier, actual_id, id_to_resources)
+            self.__merge_identifier(merged_identifier, actual_id, identifier_reference_sources)
 
     def __merge_identifiers(
         self,
         surviving_identifier: Identifier,
         merged_identifiers: Iterable[Identifier],
-        id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]],
+        identifier_reference_sources: IdentifierReferenceSources,
     ) -> None:
         for merged_identifier in merged_identifiers:
-            self.__merge_identifier(surviving_identifier, merged_identifier, id_to_resources)
+            self.__merge_identifier(surviving_identifier, merged_identifier, identifier_reference_sources)
 
     def __merge_identifier(
         self,
         surviving_identifier: Identifier,
         merged_identifier: Identifier,
-        id_to_resources: dict[Identifier, list[BibliographicResource | ResponsibleAgent]],
+        identifier_reference_sources: IdentifierReferenceSources,
     ) -> None:
-        surviving_identifier.merge(merged_identifier)
-        self.__replace_identifier(merged_identifier, surviving_identifier, id_to_resources[merged_identifier])
-        merged_identifier.mark_as_to_be_deleted()
+        surviving_identifier.merge(
+            merged_identifier,
+            reference_sources=identifier_reference_sources[merged_identifier],
+        )
 
     def __ordered_entities(self, entities: Iterable[Entity]) -> tuple[Entity, list[Entity]]:
         entities_by_key = {str(entity): entity for entity in entities}
@@ -962,17 +975,6 @@ class GraphDeduplicator:
             custom_counter_handler=self.storage.counter_handler,
             supplier_prefix=self.storage.supplier_prefix,
         )
-
-    def __replace_identifier(
-        self,
-        actual_id: Identifier,
-        merged_identifier: Identifier,
-        entities: list[BibliographicResource | ResponsibleAgent],
-    ) -> None:
-        for entity in entities:
-            entity.remove_identifier(actual_id)
-            if merged_identifier not in entity.get_identifiers():
-                entity.has_identifier(merged_identifier)
 
     @staticmethod
     def __get_part_of(br: BibliographicResource) -> list[BibliographicResource]:

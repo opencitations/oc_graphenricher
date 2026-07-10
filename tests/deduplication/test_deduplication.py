@@ -13,7 +13,9 @@ from oc_ocdm.graph.entities.bibliographic.agent_role import AgentRole
 from oc_ocdm.graph.entities.bibliographic.bibliographic_resource import BibliographicResource
 from oc_ocdm.graph.entities.bibliographic.responsible_agent import ResponsibleAgent
 from oc_ocdm.graph.entities.identifier import Identifier
+from oc_ocdm.graph.graph_entity import GraphEntity
 from oc_ocdm.graph.graph_set import GraphSet
+from triplelite import RDFTerm
 
 from oc_graphenricher.deduplication import GraphDeduplicator
 from oc_graphenricher.storage import directory_storage, single_file_storage
@@ -1002,6 +1004,95 @@ def test_merge_clusters_merges_identifiers_and_rewrites_references() -> None:
     assert _entity_uris_with_triples(graph_set.get_id()) == [str(surviving_identifier)]
     assert [str(identifier) for identifier in br.get_identifiers()] == [str(surviving_identifier)]
     assert surviving_identifier.get_literal_value() == "10.555/first"
+
+
+def test_merge_clusters_rewrites_every_loaded_identifier_reference() -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = graph_set.add_br(RESP_AGENT)
+    br.create_journal_article()
+    ra = graph_set.add_ra(RESP_AGENT)
+    arbitrary_source = graph_set.add_ar(RESP_AGENT)
+    unrelated_source = graph_set.add_br(RESP_AGENT)
+    unrelated_source.create_book()
+    surviving_identifier = graph_set.add_id(RESP_AGENT)
+    surviving_identifier.create_doi("10.555/shared")
+    merged_identifier = graph_set.add_id(RESP_AGENT)
+    merged_identifier.create_doi("10.555/shared")
+    unrelated_identifier = graph_set.add_id(RESP_AGENT)
+    unrelated_identifier.create_doi("10.555/unrelated")
+    br.has_identifier(surviving_identifier)
+    br.has_identifier(merged_identifier)
+    ra.has_identifier(merged_identifier)
+    predicate = "http://example.org/refersTo"
+    surviving_term = RDFTerm("uri", str(surviving_identifier))
+    merged_term = RDFTerm("uri", str(merged_identifier))
+    arbitrary_source.g.add((arbitrary_source.res, predicate, surviving_term))
+    arbitrary_source.g.add((arbitrary_source.res, predicate, merged_term))
+    unrelated_source.g.add((unrelated_source.res, predicate, RDFTerm("uri", str(unrelated_identifier))))
+    graph_set.commit_changes()
+    unrelated_triples = frozenset(unrelated_source.g.triples((unrelated_source.res, None, None)))
+    deduplicator = GraphDeduplicator(graph_set)
+
+    deduplicator.merge_clusters({str(surviving_identifier): [str(merged_identifier)]})
+
+    assert _entity_uris_with_triples(graph_set.get_id()) == [
+        str(surviving_identifier),
+        str(unrelated_identifier),
+    ]
+    assert {str(identifier) for identifier in br.get_identifiers()} == {str(surviving_identifier)}
+    assert {str(identifier) for identifier in ra.get_identifiers()} == {str(surviving_identifier)}
+    assert set(arbitrary_source.g.objects(arbitrary_source.res, predicate)) == {surviving_term}
+    assert frozenset(unrelated_source.g.triples((unrelated_source.res, None, None))) == unrelated_triples
+    assert deduplicator.modified_entities == {
+        str(surviving_identifier),
+        str(unrelated_identifier),
+        str(br),
+        str(ra),
+        str(arbitrary_source),
+        str(unrelated_source),
+    }
+
+
+def test_merge_clusters_passes_only_indexed_identifier_sources(monkeypatch: pytest.MonkeyPatch) -> None:
+    graph_set = GraphSet(BASE_IRI)
+    br = graph_set.add_br(RESP_AGENT)
+    arbitrary_source = graph_set.add_ar(RESP_AGENT)
+    surviving_identifier = graph_set.add_id(RESP_AGENT)
+    surviving_identifier.create_doi("10.555/shared")
+    merged_identifier = graph_set.add_id(RESP_AGENT)
+    merged_identifier.create_doi("10.555/shared")
+    br.has_identifier(merged_identifier)
+    predicate = "http://example.org/refersTo"
+    arbitrary_source.g.add(
+        (arbitrary_source.res, predicate, RDFTerm("uri", str(merged_identifier))),
+    )
+    graph_set.commit_changes()
+    reference_source_calls: list[set[str]] = []
+    original_merge = Identifier.merge
+
+    def record_reference_sources(
+        self: Identifier,
+        other: object,
+        *,
+        prefer_self: bool = False,
+        reference_sources: Iterable[GraphEntity] | None = None,
+    ) -> None:
+        assert reference_sources is not None
+        sources = tuple(reference_sources)
+        reference_source_calls.append({str(source) for source in sources})
+        original_merge(self, other, prefer_self, reference_sources=sources)
+
+    def reject_redundant_deletion(self: Identifier) -> None:
+        pytest.fail(f"Redundant deletion scan for {self}")
+
+    monkeypatch.setattr(Identifier, "merge", record_reference_sources)
+    monkeypatch.setattr(Identifier, "mark_as_to_be_deleted", reject_redundant_deletion)
+
+    GraphDeduplicator(graph_set).merge_clusters(
+        {str(surviving_identifier): [str(merged_identifier)]},
+    )
+
+    assert reference_source_calls == [{str(br), str(arbitrary_source)}]
 
 
 def test_merge_clusters_rejects_identifier_cluster_with_different_signature_before_mutation() -> None:
