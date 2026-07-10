@@ -1,3 +1,10 @@
+## [2.1.12](https://github.com/opencitations/oc_graphenricher/compare/v2.1.11...v2.1.12) (2026-07-10)
+
+
+### Bug Fixes
+
+* **deduplication:** index identifier references [release] ([a03add8](https://github.com/opencitations/oc_graphenricher/commit/a03add86ff079a5e55df24c14968066023d340db))
+
 ## [2.1.11](https://github.com/opencitations/oc_graphenricher/compare/v2.1.10...v2.1.11) (2026-07-07)
 
 
