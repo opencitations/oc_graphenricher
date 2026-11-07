@@ -469,16 +469,7 @@ class GraphDeduplicator:
         associated_ar_ra: dict[ResponsibleAgent, list[AgentRole]],
     ) -> None:
         self.__debug("\tMerging responsible agent %s in responsible agent %s", other_entity, entity_first)
-        entity_first.merge(other_entity, prefer_self=True)
-        associated_ars = associated_ar_ra.get(other_entity, [])
-        for ar in associated_ars:
-            ar.is_held_by(entity_first)
-            self.__debug("\tUnset %s as helded by of %s", other_entity, ar)
-            self.__debug("\tSet %s as helded by of %s", entity_first, ar)
-        self.__deduplicate_contributors_for_bibliographic_resources(
-            self.__bibliographic_resources_for_contributors(associated_ars),
-        )
-        self.__debug("\tMarking to delete: %s", other_entity)
+        entity_first.merge(other_entity, prefer_self=True, reference_sources=associated_ar_ra.get(other_entity, []))
 
     def __merge_br_cluster(self, cluster: set[ResponsibleAgent | BibliographicResource]) -> None:
         entity_first_raw, other_entities_raw = self.__ordered_entities(cluster)
@@ -638,19 +629,6 @@ class GraphDeduplicator:
             return self.__normalized_text(name)
         parts = [part for part in (agent.get_given_name(), agent.get_family_name()) if part is not None]
         return self.__normalized_text(" ".join(parts)) if parts else ""
-
-    def __bibliographic_resources_for_contributors(
-        self,
-        contributors: Iterable[AgentRole],
-    ) -> list[BibliographicResource]:
-        contributor_uris = {str(contributor.res) for contributor in contributors}
-        if not contributor_uris:
-            return []
-        return [
-            br
-            for br in sorted(self.graph_set.get_br(), key=str)
-            if any(str(contributor.res) in contributor_uris for contributor in br.get_contributors())
-        ]
 
     def __deduplicate_contributors_for_bibliographic_resources(
         self,
