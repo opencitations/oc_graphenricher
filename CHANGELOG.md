@@ -1,3 +1,10 @@
+## [2.1.13](https://github.com/opencitations/oc_graphenricher/compare/v2.1.12...v2.1.13) (2026-11-07)
+
+
+### Bug Fixes
+
+* **deduplication:** skip bibliographic resources when merging agents [release] ([b0bb86a](https://github.com/opencitations/oc_graphenricher/commit/b0bb86a9e5709633a611742a85fd0c858b57daff))
+
 ## [2.1.12](https://github.com/opencitations/oc_graphenricher/compare/v2.1.11...v2.1.12) (2026-07-10)
 
 
